@@ -1,0 +1,9 @@
+geemap==0.9.3
+earthengine-api==0.1.304
+rasterio==1.2.10
+streamlit==1.13.0
+localtunnel==2.0.0
+numpy==1.21.2
+Pillow==8.4.0
+matplotlib==3.4.3
+folium==0.12.1
