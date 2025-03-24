@@ -13,7 +13,13 @@ Under the following terms:
 No additional restrictions — You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
 
 To reference this work:
-"Freeze-Thaw Mapping Tool using Sentinel-1 SAR and Random Forest Classifier," © 2025 Shahabeddin Taghipourjavi,  
+"Freeze-Thaw Mapping Tool using Sentinel-1 SAR and Random Forest Classifier," © 2025 Shahabeddin Taghipourjavi, 
+
+Taghipourjavi, S., Kinnard, C., Roy, A. 2025. Freeze-Thaw Mapping Tool using Sentinel-1 SAR and Random Forest Classifier.  
+GitHub Repository: [Shahab-J/Freeze-Thaw-Detection](https://github.com/Shahab-J/Freeze-Thaw-Detection)  
+License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)  
+
+
 
 Developed by:
 - Shahabeddin Taghipourjavi (ORCID: [0000-0002-2036-9863](https://orcid.org/0000-0002-2036-9863))
@@ -23,8 +29,6 @@ Email: Shahabeddin.taghipourjavi@uqtr.ca
 - Supervised by Prof. Christophe Kinnard (Christophe.Kinnard@uqtr.ca) and Prof. Alexandre Roy (Alexandre.roy@uqtr.ca) 
 Institution: Université du Québec à Trois-Rivières
 Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
-
-GitHub: https://github.com/Shahab-J/Freeze-Thaw-Detection  
 
 
 ****For non-commercial use only. For other permissions, please contact: **Shahabeddin.taghipourjavi@uqtr.ca**
