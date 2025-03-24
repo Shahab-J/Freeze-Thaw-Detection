@@ -42,10 +42,11 @@ Institution: Université du Québec à Trois-Rivières
 Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
 Email: Shahabeddin.taghipourjavi@uqtr.ca
 
-📚 Supervision
+📚 Supervision:
 This project is carried out under the supervision of:  
 - **Prof. Christophe Kinnard** (Christophe.Kinnard@uqtr.ca)  
 - **Prof. Alexandre Roy** (Alexandre.roy@uqtr.ca)
+
 Institution: Université du Québec à Trois-Rivières
 Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
 
@@ -64,5 +65,3 @@ Full License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
 
 ## ✨ Google Colab Launch Button to README
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Shahab-J/Freeze-Thaw-Detection/blob/main/Freeze_Thaw_Mapping_Tool.ipynb)
-
-
