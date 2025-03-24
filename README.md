@@ -7,9 +7,9 @@ This interactive tool allows you to detect **freeze-thaw (FT) states** in agricu
 
 - Draw your Region of Interest (ROI) on the map
 - Select date range (October–June, adjusted automatically)
-- Optionally limit analysis to **cropland only (Class 15)**
-- Compute SigmaDiff, Freeze/Thaw thresholds, K, DeltaTheta, and EFTA
-- Classify freeze/thaw conditions using a pre-trained Random Forest model
+- Optionally limit analysis to **cropland only **
+- Compute the Exponential Freeze-Thaw Algorithm (EFTA) derived from VH radar backscatter (VHEFTA). For more info please refer to https://doi.org/10.3390/rs16071294 
+- Classify Freeze-Thaw states using a pre-trained Random Forest model (Link: TBD)
 - View classified maps directly in notebook
 
 ## 🚀 How to Run
@@ -34,15 +34,15 @@ You can choose to clip analysis only to **agricultural land** using the 2020 NAL
 - `Freeze_Thaw_Mapping_Tool.ipynb`: Main interactive tool
 - `README.md`: This file
 
-## ✨ Author
-
+## ✨ Authors
 Developed by [Shahabeddin Taghipourjavi](https://github.com/Shahab-J) 
-Department of Environmental Sciences, University of Québec at Trois-Rivières (UQTR), Trois-Rivieres, QC G8Z 4M3, Canada.
 
 📚 Supervision  
 This project is carried out under the supervision of:  
 - **Prof. Christophe Kinnard** (UQTR)  
 - **Prof. Alexandre Roy** (UQTR)
+Department of Environmental Sciences, University of Québec at Trois-Rivières (UQTR), Trois-Rivieres, QC G8Z 4M3, Canada.
+
 
 
 Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
@@ -50,3 +50,7 @@ Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
 ## ✨ Google Colab Launch Button to README
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Shahab-J/Freeze-Thaw-Detection/blob/main/Freeze_Thaw_Mapping_Tool.ipynb)
 
+## 🛡 License
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+
+🔗 Please read the full LICENSE file in the Repo.
