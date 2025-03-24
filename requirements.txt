@@ -2,7 +2,6 @@ geemap==0.35.3
 earthengine-api==1.5.7
 rasterio==1.4.3
 streamlit==1.43.2
-localtunnel==2.0.0  
 numpy==2.0.2
 Pillow==11.1.0
 matplotlib==3.10.0
