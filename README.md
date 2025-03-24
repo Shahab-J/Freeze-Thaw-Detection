@@ -36,5 +36,13 @@ You can choose to clip analysis only to **agricultural land** using the 2020 NAL
 
 ## ✨ Author
 
-Developed by [Shahabeddin Taghipourjavi](https://github.com/Shahab-J)  
+Developed by [Shahabeddin Taghipourjavi](https://github.com/Shahab-J) 
+Department of Environmental Sciences, University of Québec at Trois-Rivières, Trois-Rivieres, QC G8Z 4M3, Canada.
+
+📚 Supervision  
+This project is carried out under the supervision of:  
+- **Prof. Christophe Kinnard** (UQTR)  
+- **Prof. Alexandre Roy** (UQTR)
+
+
 Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
