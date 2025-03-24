@@ -46,3 +46,7 @@ This project is carried out under the supervision of:
 
 
 Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
+
+## ✨ Google Colab Launch Button to README
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Shahab-J/Freeze-Thaw-Detection/blob/main/Freeze_Thaw_Mapping_Tool.ipynb)
+
