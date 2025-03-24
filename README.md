@@ -28,7 +28,8 @@ The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for dete
 
 - Google Colab
 - Earth Engine Python API
-- `geemap`, `ipywidgets`, `matplotlib`, `PIL`, `numpy`
+- `geemap`, `ipywidgets`, `matplotlib`, `PIL`, `numpy`, `pillow`, `streamlit`, `earthengine-api`
+
 
 ## 🌱 Cropland-Only Option
 
