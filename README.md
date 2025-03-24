@@ -4,13 +4,18 @@
 This interactive tool allows you to detect **freeze-thaw (FT) states** in agricultural land using **Sentinel-1 SAR data** and a **Random Forest classifier**, implemented in **Google Earth Engine (GEE)**.
 
 ## 🔍 Features
+The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for detecting and classifying freeze-thaw conditions in agricultural areas. The key functionalities are summarized below:
 
-- Draw your Region of Interest (ROI) on the map
-- Select date range (October–June, adjusted automatically)
-- Optionally limit analysis to **cropland only **
-- Compute the Exponential Freeze-Thaw Algorithm (EFTA) derived from VH radar backscatter (VHEFTA). For more info please refer to https://doi.org/10.3390/rs16071294 
-- Classify Freeze-Thaw states using a pre-trained Random Forest model (Link: TBD)
-- View classified maps directly in notebook
+- 🗺️ Interactive region selection: Allows users to define a custom Region of Interest (ROI) directly on a map interface.
+- 📅 Customizable temporal range: Enables selection of a date range between October and June, with automatic adjustment to align with seasonal freeze–thaw periods.
+- 🌱 Optional cropland-only analysis: Provides the option to restrict analysis to agricultural areas (Class 15) using the 2020 NALCMS land cover dataset.
+- 🧩 User-defined spatial resolution: Supports output resolutions of 10 m, 30 m, or 100 m to match user needs and computational resources.
+- ⚙️ EFTA computation: Implements the Exponential Freeze–Thaw Algorithm (EFTA) using Sentinel-1 VH backscatter for enhanced transition detection (Refer to: https://doi.org/10.3390/rs16071294).
+- 🌐 Random Forest classification: Applies a pre-trained Random Forest (RF) model to classify each image pixel as either Frozen (1) or Thawed (0).
+- 📊 Multi-image visualization: Displays classified results in organized image panels with date labels and a freeze-thaw color legend.
+- 📉 Statistical reporting: Generates pixel-based summaries of class frequency (frozen vs. thawed) for each output image, including percentages and spatial resolution context.
+- 💾 Export capability: Allows downloading classified outputs as GeoTIFF for GIS analysis or JPG/PNG for documentation and presentations.
+
 
 ## 🚀 How to Run
 
