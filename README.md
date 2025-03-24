@@ -33,24 +33,36 @@ You can choose to clip analysis only to **agricultural land** using the 2020 NAL
 
 - `Freeze_Thaw_Mapping_Tool.ipynb`: Main interactive tool
 - `README.md`: This file
+- `LICENSE`: Please read the full LICENSE file in the Repo
 
 ## ✨ Authors
-Developed by [Shahabeddin Taghipourjavi](https://github.com/Shahab-J) 
+Developed by:
+- Shahabeddin Taghipourjavi (ORCID: [0000-0002-2036-9863](https://orcid.org/0000-0002-2036-9863))
+Institution: Université du Québec à Trois-Rivières
+Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
+Email: Shahabeddin.taghipourjavi@uqtr.ca
 
-📚 Supervision  
+📚 Supervision
 This project is carried out under the supervision of:  
-- **Prof. Christophe Kinnard** (UQTR)  
-- **Prof. Alexandre Roy** (UQTR)
-Department of Environmental Sciences, University of Québec at Trois-Rivières (UQTR), Trois-Rivieres, QC G8Z 4M3, Canada.
+- **Prof. Christophe Kinnard** (Christophe.Kinnard@uqtr.ca)  
+- **Prof. Alexandre Roy** (Alexandre.roy@uqtr.ca)
+Institution: Université du Québec à Trois-Rivières
+Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
+
+To reference this work:
+Taghipourjavi, S., Kinnard, C., Roy, A. 2025. Freeze-Thaw Mapping Tool using Sentinel-1 SAR and Random Forest Classifier. GitHub repository. https://github.com/Shahab-J/Freeze-Thaw-Detection. 
 
 
+## 🛡 License
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
+🔗 Please read the full LICENSE file in the Repo.
 
-Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
+****For non-commercial use only. For other permissions, please contact: **Shahabeddin.taghipourjavi@uqtr.ca**
+
+GitHub Repository: [Shahab-J/Freeze-Thaw-Detection](https://github.com/Shahab-J/Freeze-Thaw-Detection)  
+Full License: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 
 
 ## ✨ Google Colab Launch Button to README
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Shahab-J/Freeze-Thaw-Detection/blob/main/Freeze_Thaw_Mapping_Tool.ipynb)
 
-## 🛡 License
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
 
-🔗 Please read the full LICENSE file in the Repo.
