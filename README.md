@@ -36,5 +36,5 @@ You can choose to clip analysis only to **agricultural land** using the 2020 NAL
 
 ## ✨ Author
 
-Developed by [Shahab](https://github.com/Shahab-J)  
+Developed by [Shahabeddin Taghipourjavi](https://github.com/Shahab-J)  
 Repository: https://github.com/Shahab-J/Freeze-Thaw-Detection
