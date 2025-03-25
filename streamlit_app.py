@@ -36,7 +36,7 @@ Map.add_draw_control()
 # Display the map using Streamlit's HTML component
 map_html = Map.to_html()  # Save HTML content of the map
 st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
-st.components.v1.html(map_html, height=500)  # Use st.components.v1.html to display the map
+st.components.v1.html(map_html, height=600)  # Use st.components.v1.html to display the map
 
 # Step 3: Check if ROI is drawn
 roi = Map.user_roi
