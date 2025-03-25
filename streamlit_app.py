@@ -18,19 +18,21 @@ import json
 import os
 
 
+st.write(st.secrets)
+
 # Step 1: Access the Service Account JSON from Streamlit secrets
 try:
     # Load the service account JSON from Streamlit secrets
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
-    
+
     # Extract the private key and client email
     private_key = service_account_json["private_key"]
     client_email = service_account_json["client_email"]
-    
+
     # Use the private key and client email to create credentials
     credentials = ee.ServiceAccountCredentials(client_email, private_key)
-    
-    # Step 2: Initialize Earth Engine with the credentials
+
+    # Initialize Earth Engine with the credentials
     ee.Initialize(credentials)
     st.write("✅ Earth Engine initialized successfully!")
 
