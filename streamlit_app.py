@@ -18,11 +18,8 @@ import json
 import os
 from google.oauth2 import service_account
 
-st.write(st.secrets)
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
-
-
 try:
     # Load the service account JSON from Streamlit secrets
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
