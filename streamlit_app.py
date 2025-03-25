@@ -22,22 +22,16 @@ import os
 from google.auth.credentials import AnonymousCredentials
 
 # Load the service account JSON from Streamlit secrets
-service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+# Authenticate to Earth Engine using the service account JSON from Streamlit secrets
+try:
+    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+    credentials = ee.ServiceAccountCredentials(service_account_json["client_email"], service_account_json["private_key"])
 
-# Check if the credentials are loaded properly
-st.write("Credentials loaded:", service_account_json)
-
-# Authenticate using the service account credentials
-credentials = ee.ServiceAccountCredentials(
-    service_account_json["client_email"],
-    service_account_json["private_key"]
-)
-
-# Initialize Earth Engine
-ee.Initialize(credentials=credentials)
-
-st.write("✅ Earth Engine initialized successfully!")
-
+    # Initialize Earth Engine API
+    ee.Initialize(credentials)
+    st.write("✅ Earth Engine initialized successfully!")
+except Exception as e:
+    st.write(f"❌ Error during authentication: {e}")
 
 
 # Step 2: Map & User Inputs
