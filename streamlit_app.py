@@ -16,28 +16,27 @@ import numpy as np
 from PIL import Image
 import json
 import os
-
+from google.oauth2 import service_account
 
 st.write(st.secrets)
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
+
+
 try:
     # Load the service account JSON from Streamlit secrets
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
-
-    # Extract the private key and client email
-    private_key = service_account_json["private_key"]
-    client_email = service_account_json["client_email"]
-
-    # Use the private key and client email to create credentials
-    credentials = ee.ServiceAccountCredentials(client_email, private_key)
-
+    
+    # Create credentials from the secrets (no file path used here)
+    credentials = service_account.Credentials.from_service_account_info(service_account_json)
+    
     # Initialize Earth Engine with the credentials
     ee.Initialize(credentials)
     st.write("✅ Earth Engine initialized successfully!")
 
 except Exception as e:
     st.write(f"❌ Error during authentication: {e}")
+
 
 
 
