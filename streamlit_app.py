@@ -19,8 +19,13 @@ import os
 
 # Step 1: Authenticate with Earth Engine using Streamlit Secrets
 
+from google.auth.credentials import AnonymousCredentials
+
 # Load the service account JSON from Streamlit secrets
 service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+
+# Check if the credentials are loaded properly
+st.write("Credentials loaded:", service_account_json)
 
 # Authenticate using the service account credentials
 credentials = ee.ServiceAccountCredentials(
