@@ -28,9 +28,12 @@ try:
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
     
     # Create credentials from the secrets (no file path used here)
-    credentials = service_account.Credentials.from_service_account_info(service_account_json)
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_json, 
+        scopes=["https://www.googleapis.com/auth/earthengine.readonly"]
+    )
     
-    # Initialize Earth Engine with the credentials
+    # Initialize Earth Engine
     ee.Initialize(credentials)
     st.write("✅ Earth Engine initialized successfully!")
 
