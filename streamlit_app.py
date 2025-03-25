@@ -18,19 +18,22 @@ import json
 import os
 
 # Step 1: Authenticate with Earth Engine using Streamlit Secrets
-try:
-    # Retrieve the service account JSON from Streamlit Secrets
-    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
 
-    # Load the JSON key into the script
-    credentials = json.loads(service_account_json)
+# Load the service account JSON from Streamlit secrets
+service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
 
-    # Authenticate Earth Engine
-    ee.Initialize(credentials=credentials)
-    st.write("✅ Earth Engine initialized!")
-except Exception as e:
-    st.write("❌ Error during authentication.")
-    st.write(e)
+# Authenticate using the service account credentials
+credentials = ee.ServiceAccountCredentials(
+    service_account_json["client_email"],
+    service_account_json["private_key"]
+)
+
+# Initialize Earth Engine
+ee.Initialize(credentials=credentials)
+
+st.write("✅ Earth Engine initialized successfully!")
+
+
 
 # Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
