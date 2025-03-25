@@ -40,17 +40,32 @@ except Exception as e:
 
 
 
+
+
 # Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
 
+
+
+# Initialize the map using geemap
 Map = geemap.Map()
+
+# Add basemap and set the region of interest
 Map.add_basemap('SATELLITE')
 Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
+
+# Optional: Add other map controls or layers here
 Map.add_draw_control()
-st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
-st.map(Map)
+
+# Display the map using Streamlit's HTML component
+st.components.v1.html(Map.to_html(), height=500)
+
+
+
+
+
 
 # Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
