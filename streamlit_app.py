@@ -17,8 +17,13 @@ from PIL import Image
 import json
 import os
 
-# Step 1: Authenticate with Earth Engine using Streamlit Secrets
 
+# Debugging step: Print all secrets to check if the key exists
+st.write(st.secrets)
+
+
+
+# Step 1: Authenticate with Earth Engine using Streamlit Secrets
 from google.auth.credentials import AnonymousCredentials
 
 # Load the service account JSON from Streamlit secrets
