@@ -7,4 +7,3 @@ Pillow==11.1.0
 matplotlib==3.10.0
 folium==0.19.5
 setuptools==75.1.0
-pip install geemap
