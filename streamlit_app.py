@@ -14,18 +14,25 @@ from datetime import date
 import urllib.request
 import numpy as np
 from PIL import Image
+import json
+import os
 
-# Initialize Earth Engine
+# Step 1: Authenticate with Earth Engine using Streamlit Secrets
 try:
-    ee.Initialize()
-    st.write("✅ Earth Engine initialized!")
-except Exception:
-    st.write("🔄 Authenticating to Earth Engine...")
-    ee.Authenticate()
-    ee.Initialize(project='ee-shahabeddinj')
-    st.write("✅ Earth Engine initialized successfully!")
+    # Retrieve the service account JSON from Streamlit Secrets
+    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
 
-# Step 1: Map & User Inputs
+    # Load the JSON key into the script
+    credentials = json.loads(service_account_json)
+
+    # Authenticate Earth Engine
+    ee.Initialize(credentials=credentials)
+    st.write("✅ Earth Engine initialized!")
+except Exception as e:
+    st.write("❌ Error during authentication.")
+    st.write(e)
+
+# Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
@@ -37,7 +44,7 @@ Map.add_draw_control()
 st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
 st.map(Map)
 
-# Step 2: Process Sentinel-1 Data
+# Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
     if roi is None:
@@ -65,7 +72,7 @@ def process_sentinel1(start_date, end_date, roi):
 
 processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
 
-# Step 3: Show Classified Images
+# Step 4: Show Classified Images
 def show_classified_images(classified_images):
     """Display classified images in Streamlit."""
     image_list = classified_images.toList(classified_images.size())
@@ -79,7 +86,7 @@ def show_classified_images(classified_images):
 if processed_images:
     show_classified_images(processed_images)
 
-# Step 4: Show Statistics
+# Step 5: Show Statistics
 def summarize_statistics(classified_collection, user_roi):
     """Summary stats for freeze-thaw classification."""
     summary = []
