@@ -1,11 +1,9 @@
 import ee
-import geemap.foliumap as geemap  # Use geemap's folium wrapper
+import geemap.foliumap as geemap  # Folium-based map from geemap
 import streamlit as st
 from datetime import date
-import urllib.request
 import numpy as np
 from PIL import Image
-import json
 from google.oauth2 import service_account
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
@@ -31,7 +29,7 @@ start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015,
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
 
-# Step 3: Initialize the map using geemap
+# Initialize the map using geemap's folium wrapper
 Map = geemap.Map()
 
 # Add basemap and set the region of interest
@@ -39,12 +37,12 @@ Map.add_basemap('SATELLITE')
 Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
 
 # Optional: Add other map controls or layers here
-Map.add_draw_control()
+Map.add_draw_control()  # Enable drawing functionality
 
 # Display the map using Streamlit's HTML component
 st.components.v1.html(Map.to_html(), height=500)
 
-# Step 4: Process Sentinel-1 Data
+# Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
     if roi is None:
@@ -72,7 +70,7 @@ def process_sentinel1(start_date, end_date, roi):
 
 processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
 
-# Step 5: Show Classified Images
+# Step 4: Show Classified Images
 def show_classified_images(classified_images):
     """Display classified images in Streamlit."""
     image_list = classified_images.toList(classified_images.size())
@@ -86,7 +84,7 @@ def show_classified_images(classified_images):
 if processed_images:
     show_classified_images(processed_images)
 
-# Step 6: Show Statistics
+# Step 5: Show Statistics
 def summarize_statistics(classified_collection, user_roi):
     """Summary stats for freeze-thaw classification."""
     summary = []
