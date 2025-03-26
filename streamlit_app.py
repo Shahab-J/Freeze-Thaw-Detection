@@ -5,19 +5,45 @@ from datetime import date
 import numpy as np
 from PIL import Image
 from google.oauth2 import service_account
+import subprocess
+import sys
+import urllib.request
 
-# Step 1: Ensure that required packages are installed
-try:
-    import ee
-    import geemap
-    import streamlit
-    import google.auth
-    import google.auth.oAuthlib
-except ImportError as e:
-    st.write(f"❌ Required package missing: {e.name}. Please install it by running `pip install {e.name}`.")
-    st.stop()  # Stop the script if required packages are missing.
 
-# Step 2: Access the Service Account JSON from Streamlit secrets
+# Step 1: Check if required libraries are installed
+required_libraries = [
+    'geemap', 
+    'earthengine-api', 
+    'rasterio', 
+    'streamlit', 
+    'numpy', 
+    'Pillow', 
+    'matplotlib', 
+    'folium', 
+    'setuptools'
+]
+
+missing_libraries = []
+
+for lib in required_libraries:
+    try:
+        __import__(lib)
+        st.write(f"✅ {lib} is installed.")
+    except ImportError:
+        missing_libraries.append(lib)
+        st.write(f"❌ {lib} is not installed.")
+
+if missing_libraries:
+    st.write("Please install the missing libraries using the following command:")
+    st.code(f"pip install {' '.join(missing_libraries)}")
+
+
+
+
+
+
+
+# Step 1: Access the Service Account JSON from Streamlit secrets
 try:
     # Load the service account JSON from Streamlit secrets
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
@@ -34,9 +60,8 @@ try:
 
 except Exception as e:
     st.write(f"❌ Error during authentication: {e}")
-    st.stop()  # Stop the script if Earth Engine authentication fails.
 
-# Step 3: Map & User Inputs
+# Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
@@ -48,14 +73,13 @@ Map = geemap.Map()
 Map.add_basemap('SATELLITE')
 Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
 
-# Add drawing controls to allow the user to draw an ROI
-Map.add_draw_control()
+# Optional: Add other map controls or layers here
+Map.add_draw_control()  # Enable drawing functionality
 
 # Display the map using Streamlit's HTML component
-st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
 st.components.v1.html(Map.to_html(), height=500)
 
-# Step 4: Process Sentinel-1 Data
+# Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
     if roi is None:
@@ -78,19 +102,50 @@ def process_sentinel1(start_date, end_date, roi):
         return None
 
     st.write(f"🔍 Found {collection.size().getInfo()} Sentinel-1 images in ROI.")
+    # Process the images as per your logic (e.g., apply Refined Lee filtering, etc.)
     return collection
 
-# Get the drawn ROI
-roi = Map.user_roi
+processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
 
-# Run the processing if ROI is selected
-if roi is not None:
-    processed_images = process_sentinel1(str(start_date), str(end_date), roi)
+# Step 4: Show Classified Images
+def show_classified_images(classified_images):
+    """Display classified images in Streamlit."""
+    image_list = classified_images.toList(classified_images.size())
+    for i in range(classified_images.size().getInfo()):
+        img = ee.Image(image_list.get(i))
+        url = img.select('FT_State').getThumbURL({"min": 0, "max": 1, "dimensions": 512, "palette": ["blue", "red"]})
+        image_array = np.array(PIL.Image.open(urllib.request.urlopen(url)))
+        st.image(image_array, caption=f"Classified Image {i+1}", use_column_width=True)
 
-    # Continue with your code to display results
-    # For example, display processed images
-    if processed_images:
-        # Show the processed images (implement your method for this)
-        pass
-else:
-    st.write("❌ Please draw an ROI to proceed.")
+# Call the function to display images
+if processed_images:
+    show_classified_images(processed_images)
+
+# Step 5: Show Statistics
+def summarize_statistics(classified_collection, user_roi):
+    """Summary stats for freeze-thaw classification."""
+    summary = []
+    # Loop through images and extract statistics for frozen/thawed areas
+    for i in range(classified_collection.size().getInfo()):
+        img = ee.Image(classified_collection.toList(classified_collection.size()).get(i))
+        stats = img.select("FT_State").reduceRegion(
+            reducer=ee.Reducer.frequencyHistogram(),
+            geometry=user_roi,
+            scale=resolution,
+            maxPixels=1e13
+        ).getInfo()
+
+        hist = stats.get("FT_State", {})
+        thawed_count = int(hist.get("0", 0))
+        frozen_count = int(hist.get("1", 0))
+        total_count = thawed_count + frozen_count
+        thawed_percent = (thawed_count / total_count * 100) if total_count > 0 else 0
+        frozen_percent = (frozen_count / total_count * 100) if total_count > 0 else 0
+
+        summary.append(f"Image {i+1}: Frozen={frozen_count} ({frozen_percent:.1f}%) | Thawed={thawed_count} ({thawed_percent:.1f}%)")
+
+    st.write("\n".join(summary))
+
+# Call the function to show stats
+if processed_images:
+    summarize_statistics(processed_images, Map.user_roi)
