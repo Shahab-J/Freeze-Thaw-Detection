@@ -9,6 +9,10 @@ import json
 import os
 from google.oauth2 import service_account
 
+
+# Clear Streamlit's cache
+st.cache_clear()
+
 # Step 1: Check if all required libraries are installed
 required_libraries = [
     "geemap",
