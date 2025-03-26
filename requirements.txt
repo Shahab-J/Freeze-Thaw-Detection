@@ -1,9 +1,9 @@
-geemap
-earthengine-api
-rasterio
-streamlit
-numpy
-Pillow
-matplotlib
-folium
-setuptools
+geemap==0.35.3
+earthengine-api==1.5.6  # Older stable version
+Pillow==9.0.0  # Older stable version
+rasterio==1.4.3
+streamlit==1.43.2
+numpy==1.21.5
+matplotlib==3.10.0
+folium==0.19.5
+setuptools==75.1.0
