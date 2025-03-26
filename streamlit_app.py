@@ -1,5 +1,5 @@
 import ee
-import geemap.foliumap as geemap  # Folium-based map from geemap
+import geemap
 import streamlit as st
 from datetime import date
 import numpy as np
@@ -29,7 +29,7 @@ start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015,
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
 
-# Initialize the map using geemap's folium wrapper
+# Initialize the map using geemap
 Map = geemap.Map()
 
 # Add basemap and set the region of interest
