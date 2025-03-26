@@ -1,6 +1,14 @@
 import streamlit as st
-import subprocess
-import sys
+import geemap
+import ee
+import folium
+import numpy as np
+import rasterio
+from datetime import datetime
+from PIL import Image
+
+# Initialize Earth Engine
+ee.Initialize()
 
 # Function to check and install missing packages
 def check_and_install(package):
@@ -27,21 +35,6 @@ required_packages = [
 # Check each package and install if missing
 for package in required_packages:
     check_and_install(package)
-
-import geemap
-import ee
-import folium
-import numpy as np
-import rasterio
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from geemap import foliumap
-import matplotlib.pyplot as plt
-from datetime import datetime
-from PIL import Image
-
-# Initialize Earth Engine
-ee.Initialize()
 
 # Define Streamlit app title and description
 st.title("Freeze-Thaw Cycle Detection Tool")
@@ -82,54 +75,31 @@ Map.add_basemap("SATELLITE")
 roi_geometry = Map.draw_roi()
 st.write(f"ROI Geometry: {roi_geometry}")
 
-# Function to get Sentinel-1 data and process it
-def get_sentinel_data(start_date, end_date, roi_geometry, resolution):
-    # Define Sentinel-1 imagery collection
-    collection = ee.ImageCollection('COPERNICUS/S1_GRD') \
-                .filterBounds(roi_geometry) \
-                .filterDate(ee.Date(start_date), ee.Date(end_date)) \
-                .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV')) \
-                .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+# Button to submit the selection and process data
+if st.button('Submit and Process'):
+    # Call your code here to process the Freeze-Thaw mapping, using the selected parameters
+    st.write(f"Processing data for the following parameters:\nROI: {roi}\nDate Range: {start_date} to {end_date}\nResolution: {resolution} meters")
 
-    # Apply geospatial resolution filter
-    collection_res = collection.select('VV', 'VH').reproject(crs='EPSG:4326', scale=resolution)
+    # Add your code to integrate EFTA and model prediction here
+    # For example, call the model or function that processes the Sentinel-1 data and uses the EFTA algorithm.
+    
+    # Placeholder for Freeze-Thaw map
+    st.write("Generating Freeze-Thaw map... (This is a placeholder until model integration)")
+    
+    # Example of showing the map
+    sample_image = Image.open('sample_ft_result.jpg')  # Replace with actual FT result
+    st.image(sample_image, caption='Sample Freeze-Thaw Result')
+    
+    # Show a processed FT result map
+    Map.add_ee_layer(roi_geometry, {}, "Freeze-Thaw")  # Add your processed data layer here
+    Map.to_streamlit()
 
-    return collection_res
-
-# Function to process FT data
-def process_freeze_thaw(collection):
-    # Exponential Freeze-Thaw Algorithm (EFTA)
-    def efta_algorithm(image):
-        # Implement your EFTA function here
-        return image
-
-    # Apply EFTA algorithm to collection
-    ft_collection = collection.map(efta_algorithm)
-    return ft_collection
-
-# Fetch and process data
-ft_collection = get_sentinel_data(start_date, end_date, roi_geometry, resolution)
-processed_ft = process_freeze_thaw(ft_collection)
-
-# Show processed FT results
-st.write("Freeze-Thaw Detection Results:")
-
-# Show the result on the map
-Map.add_ee_layer(processed_ft, {}, "Freeze-Thaw")
-
-# Display the map
-Map.to_streamlit()
-
-# Option to export the results
-export_option = st.sidebar.checkbox("Export Results")
-if export_option:
-    export_format = st.sidebar.selectbox("Select Export Format", ['GeoTIFF', 'JPEG'])
-    st.write(f"Exporting to {export_format}... (This is a mock-up, implement actual export logic)")
-    # Implement export functionality here
-
-# Show a sample image of the freeze-thaw results (this can be replaced with actual data)
-sample_image = Image.open('sample_ft_result.jpg')
-st.image(sample_image, caption='Sample Freeze-Thaw Result')
+    # Option to export the results
+    export_option = st.sidebar.checkbox("Export Results")
+    if export_option:
+        export_format = st.sidebar.selectbox("Select Export Format", ['GeoTIFF', 'JPEG'])
+        st.write(f"Exporting to {export_format}... (This is a mock-up, implement actual export logic)")
+        # Implement actual export functionality based on your model's output
 
 # Footer or Credits
 st.write("### Credits")
