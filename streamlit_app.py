@@ -13,8 +13,17 @@ from google.oauth2 import service_account
 import subprocess
 import sys
 
-# Installing earthengine-api and Pillow
-subprocess.check_call([sys.executable, "-m", "pip", "install", "earthengine-api", "Pillow"])
+def install_packages():
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "earthengine-api==1.5.6", "Pillow==9.0.0"])
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing packages: {e}")
+
+# Check if libraries are installed, if not, install them
+install_packages()
+
+
+
 
 
 
