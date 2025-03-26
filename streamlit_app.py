@@ -2,8 +2,6 @@ import ee
 import geemap
 import streamlit as st
 from datetime import date
-import numpy as np
-from PIL import Image
 from google.oauth2 import service_account
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
@@ -39,6 +37,10 @@ Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
 # Add drawing controls to allow the user to draw an ROI
 Map.add_draw_control()
 
+# Display the map using Streamlit’s geemap integration
+st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
+Map
+
 # Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
@@ -64,19 +66,17 @@ def process_sentinel1(start_date, end_date, roi):
     st.write(f"🔍 Found {collection.size().getInfo()} Sentinel-1 images in ROI.")
     return collection
 
-# Display the map using Streamlit’s geemap integration
-st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
-Map
+# Get the drawn ROI (this should be updated using the appropriate geemap method)
+roi = Map.draw_last_feature
 
-# Get the drawn ROI (now handled through geemap)
-roi = Map.user_roi
-
-# Run the processing if ROI is selected
 if roi is not None:
-    processed_images = process_sentinel1(str(start_date), str(end_date), roi)
+    roi_geometry = roi.geometry()  # Extract the geometry from the drawn feature
+    st.write(f"ROI geometry: {roi_geometry.getInfo()}")  # Display the ROI geometry
+
+    # Run the processing if ROI is selected
+    processed_images = process_sentinel1(str(start_date), str(end_date), roi_geometry)
 
     # Continue with your code to display results
-    # For example, display processed images
     if processed_images:
         # Show the processed images (implement your method for this)
         pass
