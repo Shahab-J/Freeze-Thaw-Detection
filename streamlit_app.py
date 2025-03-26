@@ -1,90 +1,93 @@
 import streamlit as st
-import geemap
-import ee
-import json
-import os
+import pandas as pd
+import numpy as np
+import altair as alt
 
-# Initialize Earth Engine
-def initialize_gee():
-    # Fetch the GEE_SERVICE_ACCOUNT_JSON secret from Streamlit secrets
-    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+st.title("Freeze-Thaw Detection")
 
-    # Save the secret as a temporary file
-    with open("service_account.json", "w") as json_file:
-        json.dump(service_account_json, json_file)
+st.write(
+    "This app identifies freeze-thaw transitions in temperature data. "
+    "Upload a CSV file with date and temperature columns, or use the example data."
+)
 
-    # Authenticate using the service account
-    ee.Authenticate(service_account='service_account.json', authorization_code=None)
-    ee.Initialize()
+# File uploader for user data
+uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
-# Call the GEE initialization function
-initialize_gee()
-
-# Define Streamlit app title and description
-st.title("Freeze-Thaw Cycle Detection Tool")
-st.write("""
-    This tool allows you to visualize and analyze the freeze-thaw (FT) cycles in agricultural regions of Canada using Sentinel-1 SAR data.
-    You can select regions of interest (ROI), specify date ranges, and clip the results to agricultural land for freeze-thaw classification and prediction.
-""")
-
-# Sidebar for user input
-st.sidebar.header("User Input Parameters")
-
-# ROI selection using geemap
-roi = st.sidebar.selectbox("Select Region of Interest (ROI)", ['Yamaska', 'Quebec', 'Other'])
-if roi == 'Yamaska':
-    roi_coords = [-72.75, 46.29]  # Example coordinates for Yamaska
-elif roi == 'Quebec':
-    roi_coords = [-71.2082, 46.8139]  # Example coordinates for Quebec City
+if uploaded_file:
+    # Read user-provided dataset
+    try:
+        df = pd.read_csv(uploaded_file)
+    except Exception as e:
+        st.error(f"Error reading file: {e}")
+        st.stop()
 else:
-    roi_coords = st.sidebar.text_input("Enter coordinates (lat, lon)", "46.29,-72.75")
+    # Use built-in example data when no file is uploaded
+    st.info("No file uploaded. Using example data for demonstration.")
+    dates = pd.date_range(start="2025-01-01", periods=14, freq='D')
+    temps = [-5, -3, -1, 1, 4, 2, -2, -6, -1, 1, 3, -4, 0, 5]  # Example temperature series
+    df = pd.DataFrame({"date": dates, "temperature": temps})
 
-# Date range selection
-start_date = st.sidebar.date_input("Start Date", datetime(2017, 10, 1))
-end_date = st.sidebar.date_input("End Date", datetime(2023, 6, 30))
+# Ensure proper dtypes
+if 'date' in df.columns:
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    df = df.dropna(subset=['date'])
+    df = df.sort_values('date')
+    df = df.reset_index(drop=True)
+else:
+    st.error("No 'date' column found in data. Please include dates for analysis.")
+    st.stop()
 
-# Land cover clipping option
-clip_to_cropland = st.sidebar.checkbox("Clip to Agricultural Land (Cropland only)", value=True)
+# UI control for freezing threshold
+threshold = st.slider("Freezing threshold (°C)", min_value=-10.0, max_value=10.0, value=0.0, step=0.5)
 
-# Define resolution selection
-resolution = st.sidebar.selectbox("Select resolution", [10, 30, 100])
+# Determine frozen/thawed state
+df['frozen'] = df['temperature'] <= threshold
 
-# Create a map with geemap
-Map = geemap.Map(center=roi_coords, zoom=8)
+# Compute transitions: +1 = thaw->freeze, -1 = freeze->thaw
+states = df['frozen'].astype(int).to_numpy()
+transitions = np.diff(states, prepend=states[0])  # prepend first state to align lengths
 
-# Add base map
-Map.add_basemap("SATELLITE")
+# Identify transition events
+freeze_to_thaw_events = np.where(transitions == -1)[0]  # indices where freeze->thaw
+thaw_to_freeze_events = np.where(transitions == 1)[0]   # indices where thaw->freeze
 
-# Draw ROI on the map
-roi_geometry = Map.draw_roi()
-st.write(f"ROI Geometry: {roi_geometry}")
+# Count transitions
+freeze_to_thaw_count = len(freeze_to_thaw_events)
+thaw_to_freeze_count = len(thaw_to_freeze_events)
 
-# Button to submit the selection and process data
-if st.button('Submit and Process'):
-    # Call your code here to process the Freeze-Thaw mapping, using the selected parameters
-    st.write(f"Processing data for the following parameters:\nROI: {roi}\nDate Range: {start_date} to {end_date}\nResolution: {resolution} meters")
+# Display summary metrics
+st.markdown(f"**Freeze-to-thaw transitions** (freeze → thaw events): **{freeze_to_thaw_count}**")
+st.markdown(f"**Thaw-to-freeze transitions** (thaw → freeze events): **{thaw_to_freeze_count}**")
 
-    # Add your code to integrate EFTA and model prediction here
-    # For example, call the model or function that processes the Sentinel-1 data and uses the EFTA algorithm.
-    
-    # Placeholder for Freeze-Thaw map
-    st.write("Generating Freeze-Thaw map... (This is a placeholder until model integration)")
-    
-    # Example of showing the map
-    sample_image = Image.open('sample_ft_result.jpg')  # Replace with actual FT result
-    st.image(sample_image, caption='Sample Freeze-Thaw Result')
-    
-    # Show a processed FT result map
-    Map.add_ee_layer(roi_geometry, {}, "Freeze-Thaw")  # Add your processed data layer here
-    Map.to_streamlit()
+# If any transitions, list their dates
+if freeze_to_thaw_count > 0:
+    ft_dates = df.loc[freeze_to_thaw_events, 'date'].dt.strftime("%Y-%m-%d").tolist()
+    st.write(f"Freeze → Thaw on: {', '.join(ft_dates)}")
+if thaw_to_freeze_count > 0:
+    tf_dates = df.loc[thaw_to_freeze_events, 'date'].dt.strftime("%Y-%m-%d").tolist()
+    st.write(f"Thaw → Freeze on: {', '.join(tf_dates)}")
 
-    # Option to export the results
-    export_option = st.sidebar.checkbox("Export Results")
-    if export_option:
-        export_format = st.sidebar.selectbox("Select Export Format", ['GeoTIFF', 'JPEG'])
-        st.write(f"Exporting to {export_format}... (This is a mock-up, implement actual export logic)")
-        # Implement actual export functionality based on your model's output
+# Create a line chart of temperature over time
+line_chart = alt.Chart(df).mark_line(color='gray').encode(
+    x=alt.X('date:T', title='Date'),
+    y=alt.Y('temperature:Q', title='Temperature (°C)')
+)
 
-# Footer or Credits
-st.write("### Credits")
-st.write("This tool was developed by [Your Name], using Sentinel-1 SAR data and machine learning models. Special thanks to my supervisor and co-supervisor.")
+# Mark transition points on the chart
+points = alt.Chart(df).mark_point(size=80).encode(
+    x='date:T',
+    y='temperature:Q',
+    color=alt.condition(df['frozen'], alt.value('blue'), alt.value('red')),
+    shape=alt.ShapeValue('triangle-up')  # use triangle markers for emphasis
+).transform_filter(
+    # Filter points to only those indices in transition events
+    alt.FieldOneOfPredicate(field='index', oneOf=freeze_to_thaw_events.tolist() + thaw_to_freeze_events.tolist())
+).encode(tooltip=['date:T', 'temperature:Q'])
+
+# Combine line and points
+chart = line_chart + points
+st.altair_chart(chart, use_container_width=True)
+
+# Show the data table with freeze/thaw indicator
+st.write("**Data Preview:**")
+st.dataframe(df[['date', 'temperature', 'frozen']].head(20))
