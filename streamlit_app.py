@@ -8,6 +8,7 @@ from PIL import Image
 import json
 import os
 from google.oauth2 import service_account
+pip install earthengine-api Pillow
 
 
 
