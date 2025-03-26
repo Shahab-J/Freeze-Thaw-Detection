@@ -49,6 +49,10 @@ except Exception as e:
 # Your rest of the code...
 
 
+import subprocess
+
+# Check if earthengine-api and Pillow are installed
+subprocess.run([sys.executable, "-m", "pip", "list"])
 
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
