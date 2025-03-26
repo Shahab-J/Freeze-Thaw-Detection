@@ -2,9 +2,44 @@ import ee
 import geemap
 import streamlit as st
 from datetime import date
+import urllib.request
 import numpy as np
 from PIL import Image
+import json
+import os
 from google.oauth2 import service_account
+
+
+
+# Function to check if required libraries are installed
+def check_installations():
+    required_libraries = [
+        "geemap", "earthengine-api", "rasterio", "streamlit", 
+        "numpy", "Pillow", "matplotlib", "folium", "setuptools"
+    ]
+    
+    missing_libraries = []
+    
+    for lib in required_libraries:
+        try:
+            __import__(lib)
+            st.write(f"✅ {lib} is installed.")
+        except ImportError:
+            st.write(f"❌ {lib} is **not** installed.")
+            missing_libraries.append(lib)
+
+    if missing_libraries:
+        st.write("Please install the missing libraries using the following command:")
+        st.code(f"pip install {' '.join(missing_libraries)}")
+
+# Call the check function
+check_installations()
+
+# Now your Streamlit app should show the status of the required libraries.
+
+
+
+
 
 # Step 1: Access the Service Account JSON from Streamlit secrets
 try:
@@ -24,6 +59,7 @@ try:
 except Exception as e:
     st.write(f"❌ Error during authentication: {e}")
 
+
 # Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
@@ -36,8 +72,8 @@ Map = geemap.Map()
 Map.add_basemap('SATELLITE')
 Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
 
-# Optional: Add other map controls or layers here
-Map.add_draw_control()  # Enable drawing functionality
+# Add the drawing control to let users define the ROI
+Map.add_draw_control()
 
 # Display the map using Streamlit's HTML component
 st.components.v1.html(Map.to_html(), height=500)
@@ -68,7 +104,9 @@ def process_sentinel1(start_date, end_date, roi):
     # Process the images as per your logic (e.g., apply Refined Lee filtering, etc.)
     return collection
 
-processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
+# Ensure that the ROI is drawn and captured in the Map object
+if Map.user_roi:
+    processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
 
 # Step 4: Show Classified Images
 def show_classified_images(classified_images):
