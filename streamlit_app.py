@@ -41,111 +41,111 @@ if missing_libraries:
 
 
 
+import streamlit as st
+import geemap
+import ee
+import folium
+import numpy as np
+import rasterio
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from geemap import foliumap
+import matplotlib.pyplot as plt
+from datetime import datetime
+from PIL import Image
 
+# Initialize Earth Engine
+ee.Initialize()
 
-# Step 1: Access the Service Account JSON from Streamlit secrets
-try:
-    # Load the service account JSON from Streamlit secrets
-    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
-    
-    # Create credentials from the secrets (no file path used here)
-    credentials = service_account.Credentials.from_service_account_info(
-        service_account_json, 
-        scopes=["https://www.googleapis.com/auth/earthengine.readonly"]
-    )
-    
-    # Initialize Earth Engine
-    ee.Initialize(credentials)
-    st.write("✅ Earth Engine initialized successfully!")
+# Define Streamlit app title and description
+st.title("Freeze-Thaw Cycle Detection Tool")
+st.write("""
+    This tool allows you to visualize and analyze the freeze-thaw (FT) cycles in agricultural regions of Canada using Sentinel-1 SAR data.
+    You can select regions of interest (ROI), specify date ranges, and clip the results to agricultural land for freeze-thaw classification and prediction.
+""")
 
-except Exception as e:
-    st.write(f"❌ Error during authentication: {e}")
+# Sidebar for user input
+st.sidebar.header("User Input Parameters")
 
-# Step 2: Map & User Inputs
-start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
-end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
-resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
+# ROI selection using geemap
+roi = st.sidebar.selectbox("Select Region of Interest (ROI)", ['Yamaska', 'Quebec', 'Other'])
+if roi == 'Yamaska':
+    roi_coords = [-72.75, 46.29]  # Example coordinates for Yamaska
+elif roi == 'Quebec':
+    roi_coords = [-71.2082, 46.8139]  # Example coordinates for Quebec City
+else:
+    roi_coords = st.sidebar.text_input("Enter coordinates (lat, lon)", "46.29,-72.75")
 
-# Initialize the map using geemap
-Map = geemap.Map()
+# Date range selection
+start_date = st.sidebar.date_input("Start Date", datetime(2017, 10, 1))
+end_date = st.sidebar.date_input("End Date", datetime(2023, 6, 30))
 
-# Add basemap and set the region of interest
-Map.add_basemap('SATELLITE')
-Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
+# Land cover clipping option
+clip_to_cropland = st.sidebar.checkbox("Clip to Agricultural Land (Cropland only)", value=True)
 
-# Optional: Add other map controls or layers here
-Map.add_draw_control()  # Enable drawing functionality
+# Define resolution selection
+resolution = st.sidebar.selectbox("Select resolution", [10, 30, 100])
 
-# Display the map using Streamlit's HTML component
-st.components.v1.html(Map.to_html(), height=500)
+# Create a map with geemap
+Map = geemap.Map(center=roi_coords, zoom=8)
 
-# Step 3: Process Sentinel-1 Data
-def process_sentinel1(start_date, end_date, roi):
-    """Process Sentinel-1 data."""
-    if roi is None:
-        st.write("❌ No ROI selected. Please draw an ROI before processing.")
-        return None
+# Add base map
+Map.add_basemap("SATELLITE")
 
-    selected_resolution = resolution  # User-selected resolution
+# Draw ROI on the map
+roi_geometry = Map.draw_roi()
+st.write(f"ROI Geometry: {roi_geometry}")
 
-    # Process Sentinel-1 data (this should be implemented using your Sentinel-1 processing code)
-    collection = (
-        ee.ImageCollection('COPERNICUS/S1_GRD')
-        .filterDate(start_date, end_date)
-        .filterBounds(roi)
-        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
-        .filter(ee.Filter.eq('instrumentMode', 'IW'))
-    )
+# Function to get Sentinel-1 data and process it
+def get_sentinel_data(start_date, end_date, roi_geometry, resolution):
+    # Define Sentinel-1 imagery collection
+    collection = ee.ImageCollection('COPERNICUS/S1_GRD') \
+                .filterBounds(roi_geometry) \
+                .filterDate(ee.Date(start_date), ee.Date(end_date)) \
+                .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV')) \
+                .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
 
-    if collection.size().getInfo() == 0:
-        st.write("❌ No Sentinel-1 images found for the selected date range and ROI.")
-        return None
+    # Apply geospatial resolution filter
+    collection_res = collection.select('VV', 'VH').reproject(crs='EPSG:4326', scale=resolution)
 
-    st.write(f"🔍 Found {collection.size().getInfo()} Sentinel-1 images in ROI.")
-    # Process the images as per your logic (e.g., apply Refined Lee filtering, etc.)
-    return collection
+    return collection_res
 
-processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
+# Function to process FT data
+def process_freeze_thaw(collection):
+    # Exponential Freeze-Thaw Algorithm (EFTA)
+    def efta_algorithm(image):
+        # Implement your EFTA function here
+        return image
 
-# Step 4: Show Classified Images
-def show_classified_images(classified_images):
-    """Display classified images in Streamlit."""
-    image_list = classified_images.toList(classified_images.size())
-    for i in range(classified_images.size().getInfo()):
-        img = ee.Image(image_list.get(i))
-        url = img.select('FT_State').getThumbURL({"min": 0, "max": 1, "dimensions": 512, "palette": ["blue", "red"]})
-        image_array = np.array(PIL.Image.open(urllib.request.urlopen(url)))
-        st.image(image_array, caption=f"Classified Image {i+1}", use_column_width=True)
+    # Apply EFTA algorithm to collection
+    ft_collection = collection.map(efta_algorithm)
+    return ft_collection
 
-# Call the function to display images
-if processed_images:
-    show_classified_images(processed_images)
+# Fetch and process data
+ft_collection = get_sentinel_data(start_date, end_date, roi_geometry, resolution)
+processed_ft = process_freeze_thaw(ft_collection)
 
-# Step 5: Show Statistics
-def summarize_statistics(classified_collection, user_roi):
-    """Summary stats for freeze-thaw classification."""
-    summary = []
-    # Loop through images and extract statistics for frozen/thawed areas
-    for i in range(classified_collection.size().getInfo()):
-        img = ee.Image(classified_collection.toList(classified_collection.size()).get(i))
-        stats = img.select("FT_State").reduceRegion(
-            reducer=ee.Reducer.frequencyHistogram(),
-            geometry=user_roi,
-            scale=resolution,
-            maxPixels=1e13
-        ).getInfo()
+# Show processed FT results
+st.write("Freeze-Thaw Detection Results:")
 
-        hist = stats.get("FT_State", {})
-        thawed_count = int(hist.get("0", 0))
-        frozen_count = int(hist.get("1", 0))
-        total_count = thawed_count + frozen_count
-        thawed_percent = (thawed_count / total_count * 100) if total_count > 0 else 0
-        frozen_percent = (frozen_count / total_count * 100) if total_count > 0 else 0
+# Show the result on the map
+Map.add_ee_layer(processed_ft, {}, "Freeze-Thaw")
 
-        summary.append(f"Image {i+1}: Frozen={frozen_count} ({frozen_percent:.1f}%) | Thawed={thawed_count} ({thawed_percent:.1f}%)")
+# Display the map
+Map.to_streamlit()
 
-    st.write("\n".join(summary))
+# Option to export the results
+export_option = st.sidebar.checkbox("Export Results")
+if export_option:
+    export_format = st.sidebar.selectbox("Select Export Format", ['GeoTIFF', 'JPEG'])
+    st.write(f"Exporting to {export_format}... (This is a mock-up, implement actual export logic)")
+    # Implement export functionality here
 
-# Call the function to show stats
-if processed_images:
-    summarize_statistics(processed_images, Map.user_roi)
+# Show a sample image of the freeze-thaw results (this can be replaced with actual data)
+sample_image = Image.open('sample_ft_result.jpg')
+st.image(sample_image, caption='Sample Freeze-Thaw Result')
+
+# Footer or Credits
+st.write("### Credits")
+st.write("This tool was developed by [Your Name], using Sentinel-1 SAR data and machine learning models. Special thanks to my supervisor and co-supervisor.")
+
