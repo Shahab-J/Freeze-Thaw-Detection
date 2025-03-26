@@ -1,59 +1,33 @@
-
 import ee
 import geemap
 import streamlit as st
-import subprocess
-import sys
 from datetime import date
+import urllib.request
 import numpy as np
 from PIL import Image
-import urllib.request
+import json
+import os
 from google.oauth2 import service_account
 
-
-import subprocess
-import sys
-
-def install_packages():
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "earthengine-api==1.5.6", "Pillow==9.0.0"])
-    except subprocess.CalledProcessError as e:
-        print(f"Error installing packages: {e}")
-
-# Check if libraries are installed, if not, install them
-install_packages()
-
-
-
-
-
-
-# Step 1: Check if required libraries are installed
+# Step 1: Check if all required libraries are installed
 required_libraries = [
-    'geemap', 
-    'earthengine-api', 
-    'rasterio', 
-    'streamlit', 
-    'numpy', 
-    'Pillow', 
-    'matplotlib', 
-    'folium', 
-    'setuptools'
+    "geemap",
+    "earthengine-api",
+    "rasterio",
+    "streamlit",
+    "numpy",
+    "Pillow",
+    "matplotlib",
+    "folium",
+    "setuptools"
 ]
 
-missing_libraries = []
-
-for lib in required_libraries:
+for library in required_libraries:
     try:
-        __import__(lib)
-        st.write(f"✅ {lib} is installed.")
+        __import__(library)
+        st.write(f"✅ {library} is installed.")
     except ImportError:
-        missing_libraries.append(lib)
-        st.write(f"❌ {lib} is not installed.")
-
-if missing_libraries:
-    st.write("Please install the missing libraries using the following command:")
-    st.code(f"pip install {' '.join(missing_libraries)}")
+        st.write(f"❌ {library} is not installed. Please install it.")
 
 # Step 2: Access the Service Account JSON from Streamlit secrets
 try:
@@ -73,10 +47,12 @@ try:
 except Exception as e:
     st.write(f"❌ Error during authentication: {e}")
 
+
 # Step 3: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
+
 
 # Initialize the map using geemap
 Map = geemap.Map()
@@ -90,6 +66,7 @@ Map.add_draw_control()
 
 # Display the map using Streamlit's HTML component
 st.components.v1.html(Map.to_html(), height=500)
+
 
 # Step 4: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
