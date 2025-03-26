@@ -1,93 +1,85 @@
+import ee
+import geemap
 import streamlit as st
-import pandas as pd
+from datetime import date
 import numpy as np
-import altair as alt
+from PIL import Image
+from google.oauth2 import service_account
 
-st.title("Freeze-Thaw Detection")
+# Step 1: Access the Service Account JSON from Streamlit secrets
+try:
+    # Load the service account JSON from Streamlit secrets
+    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+    
+    # Create credentials from the secrets (no file path used here)
+    credentials = service_account.Credentials.from_service_account_info(
+        service_account_json, 
+        scopes=["https://www.googleapis.com/auth/earthengine.readonly"]
+    )
+    
+    # Initialize Earth Engine
+    ee.Initialize(credentials)
+    st.write("✅ Earth Engine initialized successfully!")
 
-st.write(
-    "This app identifies freeze-thaw transitions in temperature data. "
-    "Upload a CSV file with date and temperature columns, or use the example data."
-)
+except Exception as e:
+    st.write(f"❌ Error during authentication: {e}")
 
-# File uploader for user data
-uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+# Step 2: Map & User Inputs
+start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
+end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
+resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
 
-if uploaded_file:
-    # Read user-provided dataset
-    try:
-        df = pd.read_csv(uploaded_file)
-    except Exception as e:
-        st.error(f"Error reading file: {e}")
-        st.stop()
+# Initialize the map using geemap
+Map = geemap.Map()
+
+# Add basemap and set the region of interest
+Map.add_basemap('SATELLITE')
+Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
+
+# Add drawing controls to allow the user to draw an ROI
+Map.add_draw_control()
+
+# Display the map using Streamlit's HTML component
+st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
+st.components.v1.html(Map.to_html(), height=500)
+
+# Step 3: Process Sentinel-1 Data
+def process_sentinel1(start_date, end_date, roi):
+    """Process Sentinel-1 data."""
+    if roi is None:
+        st.write("❌ No ROI selected. Please draw an ROI before processing.")
+        return None
+
+    selected_resolution = resolution  # User-selected resolution
+
+    # Process Sentinel-1 data (this should be implemented using your Sentinel-1 processing code)
+    collection = (
+        ee.ImageCollection('COPERNICUS/S1_GRD')
+        .filterDate(start_date, end_date)
+        .filterBounds(roi)
+        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+        .filter(ee.Filter.eq('instrumentMode', 'IW'))
+    )
+
+    if collection.size().getInfo() == 0:
+        st.write("❌ No Sentinel-1 images found for the selected date range and ROI.")
+        return None
+
+    st.write(f"🔍 Found {collection.size().getInfo()} Sentinel-1 images in ROI.")
+    return collection
+
+# Get the drawn ROI
+roi = Map.user_roi
+
+# Run the processing if ROI is selected
+if roi is not None:
+    processed_images = process_sentinel1(str(start_date), str(end_date), roi)
+
+    # Continue with your code to display results
+    # For example, display processed images
+    if processed_images:
+        # Show the processed images (implement your method for this)
+        pass
 else:
-    # Use built-in example data when no file is uploaded
-    st.info("No file uploaded. Using example data for demonstration.")
-    dates = pd.date_range(start="2025-01-01", periods=14, freq='D')
-    temps = [-5, -3, -1, 1, 4, 2, -2, -6, -1, 1, 3, -4, 0, 5]  # Example temperature series
-    df = pd.DataFrame({"date": dates, "temperature": temps})
+    st.write("❌ Please draw an ROI to proceed.")
 
-# Ensure proper dtypes
-if 'date' in df.columns:
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df = df.dropna(subset=['date'])
-    df = df.sort_values('date')
-    df = df.reset_index(drop=True)
-else:
-    st.error("No 'date' column found in data. Please include dates for analysis.")
-    st.stop()
-
-# UI control for freezing threshold
-threshold = st.slider("Freezing threshold (°C)", min_value=-10.0, max_value=10.0, value=0.0, step=0.5)
-
-# Determine frozen/thawed state
-df['frozen'] = df['temperature'] <= threshold
-
-# Compute transitions: +1 = thaw->freeze, -1 = freeze->thaw
-states = df['frozen'].astype(int).to_numpy()
-transitions = np.diff(states, prepend=states[0])  # prepend first state to align lengths
-
-# Identify transition events
-freeze_to_thaw_events = np.where(transitions == -1)[0]  # indices where freeze->thaw
-thaw_to_freeze_events = np.where(transitions == 1)[0]   # indices where thaw->freeze
-
-# Count transitions
-freeze_to_thaw_count = len(freeze_to_thaw_events)
-thaw_to_freeze_count = len(thaw_to_freeze_events)
-
-# Display summary metrics
-st.markdown(f"**Freeze-to-thaw transitions** (freeze → thaw events): **{freeze_to_thaw_count}**")
-st.markdown(f"**Thaw-to-freeze transitions** (thaw → freeze events): **{thaw_to_freeze_count}**")
-
-# If any transitions, list their dates
-if freeze_to_thaw_count > 0:
-    ft_dates = df.loc[freeze_to_thaw_events, 'date'].dt.strftime("%Y-%m-%d").tolist()
-    st.write(f"Freeze → Thaw on: {', '.join(ft_dates)}")
-if thaw_to_freeze_count > 0:
-    tf_dates = df.loc[thaw_to_freeze_events, 'date'].dt.strftime("%Y-%m-%d").tolist()
-    st.write(f"Thaw → Freeze on: {', '.join(tf_dates)}")
-
-# Create a line chart of temperature over time
-line_chart = alt.Chart(df).mark_line(color='gray').encode(
-    x=alt.X('date:T', title='Date'),
-    y=alt.Y('temperature:Q', title='Temperature (°C)')
-)
-
-# Mark transition points on the chart
-points = alt.Chart(df).mark_point(size=80).encode(
-    x='date:T',
-    y='temperature:Q',
-    color=alt.condition(df['frozen'], alt.value('blue'), alt.value('red')),
-    shape=alt.ShapeValue('triangle-up')  # use triangle markers for emphasis
-).transform_filter(
-    # Filter points to only those indices in transition events
-    alt.FieldOneOfPredicate(field='index', oneOf=freeze_to_thaw_events.tolist() + thaw_to_freeze_events.tolist())
-).encode(tooltip=['date:T', 'temperature:Q'])
-
-# Combine line and points
-chart = line_chart + points
-st.altair_chart(chart, use_container_width=True)
-
-# Show the data table with freeze/thaw indicator
-st.write("**Data Preview:**")
-st.dataframe(df[['date', 'temperature', 'frozen']].head(20))
