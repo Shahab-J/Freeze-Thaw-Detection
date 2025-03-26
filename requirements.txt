@@ -1,6 +1,6 @@
 geemap==0.35.3
-earthengine-api==1.5.8  # Older stable version
-Pillow==11.1.0  # Older stable version
+earthengine-api==1.5.8  
+Pillow==11.1.0 
 rasterio==1.4.3
 streamlit==1.43.2
 numpy==1.24.3 
