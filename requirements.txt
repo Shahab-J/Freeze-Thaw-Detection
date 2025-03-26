@@ -5,7 +5,8 @@ rasterio==1.4.3
 matplotlib==3.10.0
 folium==0.19.5
 setuptools==75.1.0
-streamlit==1.43.0        # Latest Streamlit (fixes invalid 1.46.0 pin)
 numpy==1.26.1            # Supports Python 3.12 (no distutils needed)&#8203;:contentReference[oaicite:2]{index=2}
 pandas==2.2.3            # Pandas 2.x with Python 3.12 support
 altair==5.0.1            # Altair for interactive charts (compatible with 3.12)
+streamlit==1.16.0
+zlib==1.2.1
