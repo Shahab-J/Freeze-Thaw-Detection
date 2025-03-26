@@ -2,7 +2,7 @@ geemap==0.35.3
 earthengine-api==1.5.8
 rasterio==1.4.3
 streamlit==1.43.2
-numpy==2.0.2
+numpy==1.21.5
 Pillow==11.1.0
 matplotlib==3.10.0
 folium==0.19.5
