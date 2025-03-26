@@ -2,38 +2,13 @@ import ee
 import geemap
 import streamlit as st
 from datetime import date
-import urllib.request
 import numpy as np
 from PIL import Image
 import json
 import os
 from google.oauth2 import service_account
 
-
-# Clear Streamlit's cache
-st.cache_clear()
-
-# Step 1: Check if all required libraries are installed
-required_libraries = [
-    "geemap",
-    "earthengine-api",
-    "rasterio",
-    "streamlit",
-    "numpy",
-    "Pillow",
-    "matplotlib",
-    "folium",
-    "setuptools"
-]
-
-for library in required_libraries:
-    try:
-        __import__(library)
-        st.write(f"✅ {library} is installed.")
-    except ImportError:
-        st.write(f"❌ {library} is not installed. Please install it.")
-
-# Step 2: Access the Service Account JSON from Streamlit secrets
+# Step 1: Access the Service Account JSON from Streamlit secrets
 try:
     # Load the service account JSON from Streamlit secrets
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
@@ -52,11 +27,10 @@ except Exception as e:
     st.write(f"❌ Error during authentication: {e}")
 
 
-# Step 3: Map & User Inputs
+# Step 2: Map & User Inputs
 start_date = st.date_input("Start Date", date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 end_date = st.date_input("End Date", date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31))
 resolution = st.selectbox("Resolution (m)", [10, 30, 100], index=1)
-
 
 # Initialize the map using geemap
 Map = geemap.Map()
@@ -71,8 +45,7 @@ Map.add_draw_control()
 # Display the map using Streamlit's HTML component
 st.components.v1.html(Map.to_html(), height=500)
 
-
-# Step 4: Process Sentinel-1 Data
+# Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
     if roi is None:
@@ -98,9 +71,12 @@ def process_sentinel1(start_date, end_date, roi):
     # Process the images as per your logic (e.g., apply Refined Lee filtering, etc.)
     return collection
 
-processed_images = process_sentinel1(str(start_date), str(end_date), Map.user_roi)
+# Get ROI from the map
+roi = Map.user_roi  # The user will define this ROI on the map
 
-# Step 5: Show Classified Images
+processed_images = process_sentinel1(str(start_date), str(end_date), roi)
+
+# Step 4: Show Classified Images
 def show_classified_images(classified_images):
     """Display classified images in Streamlit."""
     image_list = classified_images.toList(classified_images.size())
@@ -114,7 +90,7 @@ def show_classified_images(classified_images):
 if processed_images:
     show_classified_images(processed_images)
 
-# Step 6: Show Statistics
+# Step 5: Show Statistics
 def summarize_statistics(classified_collection, user_roi):
     """Summary stats for freeze-thaw classification."""
     summary = []
@@ -141,4 +117,4 @@ def summarize_statistics(classified_collection, user_roi):
 
 # Call the function to show stats
 if processed_images:
-    summarize_statistics(processed_images, Map.user_roi)
+    summarize_statistics(processed_images, roi)
