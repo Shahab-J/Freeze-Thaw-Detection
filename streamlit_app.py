@@ -39,10 +39,6 @@ Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
 # Add drawing controls to allow the user to draw an ROI
 Map.add_draw_control()
 
-# Display the map using Streamlit's HTML component
-st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
-st.components.v1.html(Map.to_html(), height=500)
-
 # Step 3: Process Sentinel-1 Data
 def process_sentinel1(start_date, end_date, roi):
     """Process Sentinel-1 data."""
@@ -68,7 +64,11 @@ def process_sentinel1(start_date, end_date, roi):
     st.write(f"🔍 Found {collection.size().getInfo()} Sentinel-1 images in ROI.")
     return collection
 
-# Get the drawn ROI
+# Display the map using Streamlit’s geemap integration
+st.write("🔹 Please **draw** your ROI on the map and click **Submit**.")
+Map
+
+# Get the drawn ROI (now handled through geemap)
 roi = Map.user_roi
 
 # Run the processing if ROI is selected
@@ -82,4 +82,3 @@ if roi is not None:
         pass
 else:
     st.write("❌ Please draw an ROI to proceed.")
-
