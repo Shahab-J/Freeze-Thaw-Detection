@@ -6,6 +6,51 @@ import numpy as np
 from PIL import Image
 from google.oauth2 import service_account
 
+import subprocess
+import sys
+
+# Check if 'earthengine-api' and 'Pillow' are installed, otherwise install them
+def install_missing_libraries():
+    missing_libs = []
+    try:
+        import earthengine_api
+    except ImportError:
+        missing_libs.append("earthengine-api")
+    
+    try:
+        import PIL
+    except ImportError:
+        missing_libs.append("Pillow")
+    
+    if missing_libs:
+        for lib in missing_libs:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", lib])
+
+install_missing_libraries()
+
+# Continue with the rest of the code
+import ee
+import geemap
+import streamlit as st
+from datetime import date
+import urllib.request
+import numpy as np
+from PIL import Image
+
+# Earth Engine Authentication
+try:
+    service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
+    credentials = ee.ServiceAccountCredentials(service_account_json["client_email"], service_account_json["private_key"])
+    ee.Initialize(credentials)
+    st.write("✅ Earth Engine initialized successfully!")
+except Exception as e:
+    st.write(f"❌ Error during authentication: {e}")
+
+# Your rest of the code...
+
+
+
+
 # Step 1: Access the Service Account JSON from Streamlit secrets
 try:
     service_account_json = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
