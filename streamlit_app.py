@@ -9,6 +9,15 @@ from PIL import Image
 import urllib.request
 from google.oauth2 import service_account
 
+
+import subprocess
+import sys
+
+# Installing earthengine-api and Pillow
+subprocess.check_call([sys.executable, "-m", "pip", "install", "earthengine-api", "Pillow"])
+
+
+
 # Step 1: Check if required libraries are installed
 required_libraries = [
     'geemap', 
