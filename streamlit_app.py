@@ -1,3 +1,10 @@
+import subprocess
+import sys
+
+# Custom installation of earthengine-api
+subprocess.check_call([sys.executable, "-m", "pip", "install", "earthengine-api"])
+
+
 import ee
 import geemap
 import streamlit as st
