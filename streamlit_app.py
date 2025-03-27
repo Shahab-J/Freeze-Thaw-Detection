@@ -20,6 +20,17 @@ from PIL import Image
 import json
 import os
 
+import traceback
+
+try:
+    # Your main code here
+    ee.Initialize(credentials)  # Example: Earth Engine initialization
+except Exception as e:
+    st.error(f"An error occurred: {str(e)}")
+    st.text(traceback.format_exc())  # This will print the full traceback for debugging
+
+
+
 # Step 1: Check if required libraries are installed
 required_libraries = [
     'geemap', 
