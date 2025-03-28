@@ -1,11 +1,13 @@
-streamlit==1.18.0           # Streamlit can remain pinned (1.18.0 is stable; Cloud has later versions by default too)
-geemap==0.35.3             # Geemap as given (latest version)
-earthengine-api==1.5.8     # **Updated**: Use Earth Engine API 1.x to satisfy geemap and avoid build issues
-matplotlib==3.7.2          # **Updated**: Newer Matplotlib for compatibility with new NumPy
-wheel                      # Ensure wheel is available to build any packages if needed
+streamlit==1.18.0
 geemap==0.35.3
 earthengine-api==1.5.8
 matplotlib==3.7.2
 numpy>=1.26.0
 ipywidgets
 Pillow
+setuptools>=64.0.0
+rich>=10.14.0
+markdown-it-py>=2.2.0
+pygments>=2.13.0
+mdurl>=0.1.2
+wheel
