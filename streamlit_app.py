@@ -35,6 +35,17 @@ required_packages = [
     'Pillow'
 ]
 
+
+
+# 🌍 **Step 1: Initialize Google Earth Engine Authentication**
+# Access the service account JSON key directly from Streamlit Secrets
+service_account = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]  # Ensure you have stored the key in Streamlit Secrets
+
+# Initialize Earth Engine
+ee.Initialize(credentials=service_account)
+
+
+
 # Function to check if the package is installed
 def install_package(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
