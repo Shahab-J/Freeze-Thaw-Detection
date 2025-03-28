@@ -5,3 +5,4 @@ matplotlib==3.5.0  # Update matplotlib version
 numpy==1.21.0
 ipywidgets==7.6.3
 Pillow==8.4.0
+setuptools==58.0.4  # Older version of setuptools that avoids certain compatibility issues
