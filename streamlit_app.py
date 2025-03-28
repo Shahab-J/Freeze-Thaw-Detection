@@ -49,28 +49,6 @@ for package in required_packages:
         install_package(package)
 
 
-# ✅ Function to authenticate using the service account JSON key file
-def authenticate_ee_with_json():
-    # Path to your JSON key file (you can provide this as a user input in Streamlit)
-    json_key_path = st.text_input("Enter the path to your service account JSON key file:")
-
-    if json_key_path:
-        try:
-            # Authenticate using the service account credentials
-            credentials = service_account.Credentials.from_service_account_file(
-                json_key_path,
-                scopes=["https://www.googleapis.com/auth/earthengine.readonly"]
-            )
-            ee.Initialize(credentials=credentials)
-            st.success("✅ Earth Engine initialized successfully using the service account!")
-        except Exception as e:
-            st.error(f"❌ Error initializing Earth Engine: {e}")
-    else:
-        st.warning("Please enter the path to the JSON key file.")
-
-# Authenticate Earth Engine
-authenticate_ee_with_json()
-
 
 # 🌍 **Step 1: Interactive Map for ROI Selection**
 def display_map():
