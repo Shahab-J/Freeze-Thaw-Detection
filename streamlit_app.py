@@ -1,7 +1,7 @@
 # ✅ Install Google Earth Engine and Geemap
 ## installation commands in the background without showing the installation process using (capture)
 
-!pip install geemap
+#!pip install geemap
 !pip install earthengine-api
 # Install required libraries (run once)
 !pip install --upgrade earthengine-api geemap rasterio
