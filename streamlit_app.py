@@ -1,3 +1,14 @@
+# ✅ Install Google Earth Engine and Geemap
+## installation commands in the background without showing the installation process using (capture)
+
+!pip install geemap
+!pip install earthengine-api
+# Install required libraries (run once)
+!pip install --upgrade earthengine-api geemap rasterio
+!pip install streamlit
+!pip install localtunnel
+
+
 # -*- coding: utf-8 -*-
 """Chapter3_GEE_PythonAPI_23March2025_GitHub- Streamlit
 
