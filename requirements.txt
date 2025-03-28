@@ -1,5 +1,5 @@
 geemap==0.35.3
-earthengine-api==0.1.315
+earthengine-api==0.1.296
 Pillow==8.4.0
 rasterio==1.4.3
 streamlit==1.43.2
