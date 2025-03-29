@@ -17,6 +17,8 @@ from google.oauth2 import service_account
 
 
 
+
+
 # Earth Engine Auth
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
@@ -28,12 +30,16 @@ credentials = ee.ServiceAccountCredentials(
 
 ee.Initialize(credentials)
 
-# Create interactive map
+# Title and instructions
+st.title("Freeze-Thaw Mapping Tool")
+st.markdown("🔹 Draw your ROI on the map below and click Submit.")
+
+# Create and display map
 Map = geemap.Map()
 Map.add_draw_control()
-
-# Display in Streamlit
 Map.to_streamlit()
+
+
 
 
 
