@@ -80,6 +80,7 @@ clip_to_agriculture_checkbox = st.checkbox(
 # 🌍 **Submit Button**
 roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
+
 # Check if button is pressed
 if roi_button:
     st.write("🚀 Starting Freeze-Thaw Detection...")
