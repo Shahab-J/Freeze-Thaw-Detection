@@ -15,13 +15,12 @@ from google.auth import credentials
 from google.oauth2 import service_account
 
 
-# Load as dict from Streamlit secrets
-service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 
-# Convert dict back to JSON string
+
+# Earth Engine Auth
+service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
 
-# Initialize EE credentials
 credentials = ee.ServiceAccountCredentials(
     service_account_dict["client_email"],
     key_data=service_account_json
@@ -29,6 +28,12 @@ credentials = ee.ServiceAccountCredentials(
 
 ee.Initialize(credentials)
 
+# Create interactive map
+Map = geemap.Map()
+Map.add_draw_control()
+
+# Display in Streamlit
+Map.to_streamlit()
 
 
 
