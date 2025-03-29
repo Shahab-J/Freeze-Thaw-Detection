@@ -10,4 +10,4 @@ pandas
 numpy
 matplotlib
 scikit-learn
-
+earthengine-api==0.1.347
