@@ -22,31 +22,32 @@ from streamlit_folium import folium_static
 
 import streamlit as st
 
-st.title("🧪 Package Installation Check")
+st.title("🔍 Package Check (Inline in Main App)")
 
-packages = {
-    "streamlit": "streamlit",
-    "folium": "folium",
-    "streamlit-folium": "streamlit_folium",
-    "geemap": "geemap",
-    "earthengine-api": "ee",
-    "pandas": "pandas",
-    "numpy": "numpy",
-    "matplotlib": "matplotlib",
-    "scikit-learn": "sklearn",
-    "ipywidgets": "ipywidgets",
-    "Pillow": "PIL"
-}
+try:
+    import folium
+    st.success(f"✅ folium version: {folium.__version__}")
+except Exception as e:
+    st.error(f"❌ folium error: {e}")
 
-for pkg_name, import_name in packages.items():
-    try:
-        mod = __import__(import_name)
-        version = getattr(mod, "__version__", "version not found")
-        st.success(f"✅ {pkg_name} (import `{import_name}`) is installed — version: {version}")
-    except ImportError:
-        st.error(f"❌ {pkg_name} (import `{import_name}`) is NOT installed")
-    except Exception as e:
-        st.warning(f"⚠️ {pkg_name} (import `{import_name}`) — Error: {e}")
+try:
+    from streamlit_folium import folium_static
+    st.success("✅ streamlit-folium is working")
+except Exception as e:
+    st.error(f"❌ streamlit-folium error: {e}")
+
+try:
+    import geemap
+    st.success(f"✅ geemap version: {geemap.__version__}")
+except Exception as e:
+    st.error(f"❌ geemap error: {e}")
+
+try:
+    import ee
+    st.success(f"✅ earthengine-api version: {ee.__version__}")
+except Exception as e:
+    st.error(f"❌ earthengine-api error: {e}")
+
 
 
 
