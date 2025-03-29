@@ -32,19 +32,6 @@ ee.Initialize(credentials)
 
 
 
-# Function to check if the package is installed
-def install_package(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-# Install packages that are not installed
-for package in required_packages:
-    try:
-        __import__(package)
-        print(f"✅ {package} is already installed.")
-    except ImportError:
-        print(f"❌ {package} not found. Installing...")
-        install_package(package)
-
 # 🌍 **Step 2: Interactive Map for ROI Selection**
 def display_map():
     Map = geemap.Map()
