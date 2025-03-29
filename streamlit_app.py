@@ -35,6 +35,7 @@ ee.Initialize(credentials)
 st.title("Freeze-Thaw Mapping Tool")
 st.markdown("🔹 Draw your ROI on the map below and click Submit.")
 
+# Display the interactive map
 # Interactive map function
 def display_map():
     m = geemap.Map()
@@ -45,7 +46,12 @@ def display_map():
 
 # Show map once
 Map = display_map()
-Map.to_streamlit(height=600)
+Map.to_streamlit(height=600)  # <-- This line must be here and outside any condition
+
+
+
+
+
 
 
 
