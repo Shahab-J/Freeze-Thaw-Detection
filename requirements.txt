@@ -6,4 +6,4 @@ pandas
 numpy
 setuptools
 streamlit-folium
-
+scikit-learn
