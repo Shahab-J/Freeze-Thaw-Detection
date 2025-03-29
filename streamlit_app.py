@@ -13,10 +13,10 @@ from datetime import date
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 from folium.plugins import Draw
+import geemap.foliumap as geemap
 from google.auth import credentials
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
-
 
 # test_geemap.py
 import geemap
