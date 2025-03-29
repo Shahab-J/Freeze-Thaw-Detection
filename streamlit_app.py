@@ -18,11 +18,7 @@ from streamlit_folium import folium_static
 import folium
 from folium.plugins import Draw
 
-
-
-
-import streamlit as st
-
+# 🔍 Check installed packages
 st.subheader("✅ Package Check")
 
 required_packages = [
@@ -46,10 +42,6 @@ for pkg_name, module_name in required_packages:
     except ImportError:
         st.error(f"❌ {pkg_name} is MISSING!")
 
-# Show version info
-import geemap, folium, ee, pandas as pd, numpy as np
-from streamlit_folium import folium_static
-
 st.markdown("---")
 st.text(f"geemap version: {geemap.__version__}")
 st.text(f"folium version: {folium.__version__}")
@@ -57,31 +49,26 @@ st.text(f"Earth Engine version: {ee.__version__}")
 st.text(f"pandas version: {pd.__version__}")
 st.text(f"numpy version: {np.__version__}")
 
-
-
-# Authenticate Earth Engine
+# ✅ Earth Engine Auth
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
-
 credentials = ee.ServiceAccountCredentials(
     service_account_dict["client_email"],
     key_data=service_account_json
 )
 ee.Initialize(credentials)
-
 st.success("✅ Earth Engine Initialized")
+
+# ✅ Show title and instructions
 st.title("Freeze-Thaw Mapping Tool")
 st.markdown("🔹 Draw your ROI on the map below and click Submit.")
 
-# Create Folium map with drawing tools
+# ✅ Create Folium map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12)
-Draw(export=True).add_to(m)  # Allow user to draw polygon or point
+Draw(export=True).add_to(m)
 
-# Display the map
+# ✅ Show map
 folium_static(m, height=600)
-
-
-
 
 
 
