@@ -18,17 +18,15 @@ from google.oauth2 import service_account
 
 
 
-
 # Earth Engine Auth
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
-
 credentials = ee.ServiceAccountCredentials(
     service_account_dict["client_email"],
     key_data=service_account_json
 )
-
 ee.Initialize(credentials)
+
 
 
 # Title and instructions
@@ -44,13 +42,11 @@ def display_map():
     m.add_draw_control()
     return m
 
+m.add_marker(ee.Geometry.Point([-72.75, 46.29]), "Center Point")
+
 # Show map once
 Map = display_map()
 Map.to_streamlit(height=600)  # <-- This line must be here and outside any condition
-
-
-
-
 
 
 
