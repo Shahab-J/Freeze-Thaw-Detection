@@ -502,130 +502,97 @@ if roi_button:
 
 # ✅ Step 11: ROI Selection Before Processing for Streamlit
 def submit_roi():
-    """
-    Handles the entire pipeline from ROI selection to Freeze-Thaw classification.
-    """
-    # Ensure the user has drawn an ROI before proceeding
+    """Handles the full pipeline from ROI selection to classification."""
+    
+    # ✅ Ensure ROI exists
     if "user_roi" not in st.session_state:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
 
-    # Extract user-selected ROI
-    user_roi = st.session_state.user_roi  # Use Streamlit's session_state to store ROI
+    user_roi = st.session_state.user_roi
 
-    # Optional Cropland Masking (Clip to Agriculture Only)
-    # This section is commented out, but you can enable it if needed
-    # if clip_to_agriculture_checkbox.value:
-    #    st.write("🌱 Cropland-only mode enabled. Clipping ROI to agricultural areas ...")
+    # ✅ Optional Cropland Clipping
+    if st.session_state.get("clip_to_agriculture", False):
+        st.write("🌱 Cropland-only mode enabled. Clipping ROI to agricultural areas...")
 
-    # Load North America 2020 Land Cover (NALCMS)
-    landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+        landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+        cropland_mask = landcover.eq(15)
 
-    # Create a mask for cropland only (class 15)
-    cropland_mask = landcover.eq(15)
+        cropland_geometry = cropland_mask.selfMask().reduceToVectors(
+            geometry=user_roi,
+            geometryType='polygon',
+            scale=30,
+            maxPixels=1e13
+        )
 
-    # Extract cropland geometry within the user ROI
-    cropland_geometry = cropland_mask.selfMask().reduceToVectors(
-        geometry=user_roi,
-        geometryType='polygon',
-        scale=30,
-        maxPixels=1e13
-    )
+        user_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
 
-    # Intersect user's ROI with cropland polygons
-    user_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
+        empty_check = user_roi.coordinates().size().getInfo()
+        if empty_check == 0:
+            st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
+            return
 
-    # Check if ROI still contains valid cropland area
-    empty_check = user_roi.coordinates().size().getInfo()
-    if empty_check == 0:
-        st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
-        return
-
+    # ✅ Date checks
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
-    today = date.today().strftime("%Y-%m-%d")  # Get today's date as string
+    today = date.today().strftime("%Y-%m-%d")
 
-    # Prevent user from selecting a future date beyond today
     if user_selected_end >= today:
         st.error(f"❌ ERROR: Selected end date ({user_selected_end}) is in the future. Please choose a date before {today}.")
         return
 
-    # Ensure start_date is before end_date
     if user_selected_start >= user_selected_end:
         st.error(f"❌ ERROR: Start date ({user_selected_start}) must be earlier than end date ({user_selected_end}).")
         return
 
-    # Determine Processing Window (Always October to June)
+    # ✅ Adjust year logic
     start_year = int(user_selected_start[:4])
-
-    # Rule: If start date is between October 1st and December 31st → Keep `start_year`
-    # Rule: If start date is between January 1st and September 30th → Subtract 1 from `start_year`
-    if int(user_selected_start[5:7]) < 10:  # If month is January (01) to September (09)
+    if int(user_selected_start[5:7]) < 10:
         start_year -= 1
 
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-    # Handle Future Data Gaps
-    # If the user-selected period extends beyond available data (today), limit visualization
-    if end_date >= today:
-        st.warning(f"⚠️ WARNING: Some future dates are unavailable. Adjusting processing to available data.")
-        end_date = today  # Clip the processing end to today
+    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
-    st.write(f"✅ User Selected Inputs:\n - ROI: Defined\n - Start: {user_selected_start}\n - End: {user_selected_end}")
-    st.write(f"🔹 Adjusted Processing Range: {start_date} to {end_date}")
-
-    # Process Sentinel-1 Data
-    processed_images = process_sentinel1(start_date, end_date, user_roi)
+    # ✅ Process pipeline
+    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution_widget)
     if processed_images is None:
         return
 
-    # Apply Mosaicking
     mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
     if mosaicked_images is None:
         return
 
-    # Compute SigmaDiff (No Visualization)
     sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
     if sigma_diff_collection is None:
         return
 
-    # Compute SigmaDiff Min/Max (No Visualization)
     sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
     if sigma_extreme_collection is None:
         return
 
-    # Compute Freeze-Thaw K
     final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
     if final_k_collection is None:
         st.error("❌ ERROR: K computation failed. Stopping execution.")
         return
 
-    # Compute ThawRef
     thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
     if thaw_ref_image is None:
         return
 
-    # Add ThawRef Band to Each Image
     thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
-
-    # Compute DeltaTheta
     delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
     if delta_theta_collection is None:
-        st.error("❌ ERROR: DeltaTheta computation failed. Stopping execution.")
         return
 
-
-    # Compute EFTA
     efta_collection = compute_efta(delta_theta_collection, resolution_widget)
     if efta_collection is None:
-        st.error("❌ ERROR: EFTA computation failed. Stopping execution.")
         return
-        
+
     st.session_state.efta_collection = efta_collection
 
-
-    # Train the RF model in GEE
+    # ✅ Train RF
     rf_model = ee.Classifier.smileRandomForest(
         numberOfTrees=150,
         variablesPerSplit=1,
@@ -637,21 +604,17 @@ def submit_roi():
         inputProperties=['EFTA']
     )
 
-    # ✅ Classify images using the RF model
+    # ✅ Classify and visualize
     classified_collection = efta_collection.map(lambda img: img.addBands(
         img.select('EFTA').classify(rf_model).rename('FT_State')
     ))
 
-    # ✅ Filter by user-selected date range
     classified_collection_visual = classified_collection.filterDate(
-        st.session_state.start_date.strftime("%Y-%m-%d"),
-        st.session_state.end_date.strftime("%Y-%m-%d")
-    )   
+        user_selected_start, user_selected_end
+    )
 
-    # Visualize Freeze-Thaw Classification (Only User-Selected Date Range)
     visualize_ft_classification(classified_collection_visual, user_roi, resolution_widget.value)
     st.success("✅ All Processing Completed.")
-
 
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
