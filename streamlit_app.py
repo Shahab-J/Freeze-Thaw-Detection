@@ -78,7 +78,7 @@ clip_to_agriculture_checkbox = st.checkbox(
 
 
 # 🌍 **Submit Button**
-roi_button = st.button('Submit ROI & Start Processing')
+roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
 # Check if button is pressed
 if roi_button:
@@ -745,7 +745,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
 # ✅ Step: Attach the function to the button in Streamlit
 
 # Define the button in Streamlit
-roi_button = st.button("Submit ROI & Start Processing")
+#roi_button = st.button("Submit ROI & Start Processing")
 
 # Check if the button is clicked
 if roi_button:
