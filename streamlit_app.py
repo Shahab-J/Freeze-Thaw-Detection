@@ -53,7 +53,7 @@ st.write("📌 Draw your ROI on the map below and click Submit.")
 
 # ✅ Authenticate Earth Engine
 try:
-    service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
+    service_account = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
     key_data = json.dumps(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
     credentials = ee.ServiceAccountCredentials(service_account, key_data=key_data)
     ee.Initialize(credentials)
