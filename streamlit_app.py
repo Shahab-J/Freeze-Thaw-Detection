@@ -19,6 +19,48 @@ import folium
 from folium.plugins import Draw
 
 
+import streamlit as st
+
+st.subheader("✅ Package Check")
+
+required_packages = [
+    ("streamlit", "st"),
+    ("geemap", "geemap"),
+    ("earthengine-api", "ee"),
+    ("folium", "folium"),
+    ("streamlit_folium", "folium_static"),
+    ("pandas", "pd"),
+    ("numpy", "np"),
+    ("matplotlib", "plt"),
+    ("scikit-learn", "sklearn"),
+    ("ipywidgets", "widgets"),
+    ("Pillow", "PIL"),
+]
+
+for package, module in required_packages:
+    try:
+        __import__(module)
+        st.success(f"✅ {package} is installed.")
+    except ImportError:
+        st.error(f"❌ {package} is MISSING!")
+
+# Optional: Show version info
+import geemap, folium, ee, pandas as pd, numpy as np, streamlit_folium
+
+st.markdown("---")
+st.text(f"geemap version: {geemap.__version__}")
+st.text(f"folium version: {folium.__version__}")
+st.text(f"Earth Engine API version: {ee.__version__}")
+st.text(f"pandas version: {pd.__version__}")
+st.text(f"numpy version: {np.__version__}")
+
+
+
+
+
+
+
+
 # Authenticate Earth Engine
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
