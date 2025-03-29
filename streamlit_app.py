@@ -28,16 +28,17 @@ except Exception as e:
 
 
 
+import streamlit as st
 
-# 🔍 Check installed packages
-st.subheader("✅ Package Check")
+st.header("✅ Installed Package Check")
 
+# List of (package name, import name)
 required_packages = [
     ("streamlit", "streamlit"),
-    ("geemap", "geemap"),
-    ("earthengine-api", "ee"),
     ("folium", "folium"),
     ("streamlit-folium", "streamlit_folium"),
+    ("geemap", "geemap"),
+    ("earthengine-api", "ee"),
     ("pandas", "pandas"),
     ("numpy", "numpy"),
     ("matplotlib", "matplotlib"),
@@ -46,12 +47,18 @@ required_packages = [
     ("Pillow", "PIL"),
 ]
 
+# Try importing each and show result
 for pkg_name, module_name in required_packages:
     try:
-        __import__(module_name)
-        st.success(f"✅ {pkg_name} is installed.")
-    except ImportError:
-        st.error(f"❌ {pkg_name} is MISSING!")
+        mod = __import__(module_name)
+        version = getattr(mod, '__version__', 'No version info')
+        st.success(f"✅ {pkg_name} (import: `{module_name}`) is installed – version: {version}")
+    except ImportError as e:
+        st.error(f"❌ {pkg_name} (import: `{module_name}`) is MISSING!")
+    except Exception as ex:
+        st.warning(f"⚠️ {pkg_name}: Unknown error – {ex}")
+
+
 
 st.markdown("---")
 st.text(f"geemap version: {geemap.__version__}")
