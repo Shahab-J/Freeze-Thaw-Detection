@@ -46,18 +46,17 @@ check("Pillow (PIL)", "from PIL import Image")
 check("scikit-learn", "import sklearn")
 check("ipywidgets", "import ipywidgets")
 
+
 # ================== Actual App ==================
 
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
 
-
-
 # ✅ Authenticate Earth Engine
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
-    
+
     credentials = ee.ServiceAccountCredentials(
         service_account,
         key_data=json.dumps({
@@ -71,8 +70,6 @@ try:
     st.success("✅ Earth Engine initialized.")
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
-
-
 
 # ✅ Show Interactive Map
 try:
@@ -91,18 +88,15 @@ if Map.user_roi is not None:
 else:
     st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
 
-
-
-
 # 📆 **Date Selection Widgets**
-start_date_widget = st.date_input(
+st.session_state.start_date = st.date_input(
     'Start Date',
     value=date(2023, 10, 1),
     min_value=date(2015, 1, 1),
     max_value=date(2025, 12, 31)
 )
 
-end_date_widget = st.date_input(
+st.session_state.end_date = st.date_input(
     'End Date',
     value=date(2024, 6, 30),
     min_value=date(2015, 1, 1),
@@ -110,25 +104,21 @@ end_date_widget = st.date_input(
 )
 
 # 🌍 **Resolution Selector**
-resolution_widget = st.selectbox(
+st.session_state.resolution = st.selectbox(
     'Resolution (m):',
     [10, 30, 100],
     index=1  # Default is 30m
 )
 
 # 🌍 **Cropland Clipping Option**
-clip_to_agriculture_checkbox = st.checkbox(
+st.session_state.clip_to_agriculture = st.checkbox(
     'Clip to Agricultural Lands Only'
 )
-
 
 # 🌍 **Submit Button**
 roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
-
-
-
-# Check if button is pressed
+# ✅ If button is pressed, launch processing
 if roi_button:
     st.write("🚀 Starting Freeze-Thaw Detection...")
 
@@ -137,14 +127,14 @@ if roi_button:
         st.info("🗂 ROI found in session.")
 
         # ✅ Proceed with parameters and processing
-        st.write(f"Start Date: {start_date_widget}, End Date: {end_date_widget}")
-        st.write(f"Resolution: {resolution_widget} meters")
-        st.write(f"Agricultural Clipping: {'Yes' if clip_to_agriculture_checkbox else 'No'}")
+        st.write(f"Start Date: {st.session_state.start_date}, End Date: {st.session_state.end_date}")
+        st.write(f"Resolution: {st.session_state.resolution} meters")
+        st.write(f"Agricultural Clipping: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
 
-        submit_roi()  # ✅ Call your processing function
-
+        submit_roi()  # ✅ Call processing function
     else:
         st.error("❌ No ROI selected. Please draw an ROI on the map.")
+
 
 
 
@@ -503,13 +493,14 @@ if roi_button:
 # ✅ Step 11: ROI Selection Before Processing for Streamlit
 def submit_roi():
     """Handles the full pipeline from ROI selection to classification."""
-    
+
     # ✅ Ensure ROI exists
     if "user_roi" not in st.session_state:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
 
     user_roi = st.session_state.user_roi
+    resolution = st.session_state.get("resolution", 30)  # default resolution fallback
 
     # ✅ Optional Cropland Clipping
     if st.session_state.get("clip_to_agriculture", False):
@@ -556,7 +547,7 @@ def submit_roi():
     st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
     # ✅ Process pipeline
-    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution_widget)
+    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
     if processed_images is None:
         return
 
@@ -586,7 +577,7 @@ def submit_roi():
     if delta_theta_collection is None:
         return
 
-    efta_collection = compute_efta(delta_theta_collection, resolution_widget)
+    efta_collection = compute_efta(delta_theta_collection, resolution)
     if efta_collection is None:
         return
 
@@ -613,9 +604,8 @@ def submit_roi():
         user_selected_start, user_selected_end
     )
 
-    visualize_ft_classification(classified_collection_visual, user_roi, resolution_widget.value)
+    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
     st.success("✅ All Processing Completed.")
-
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
@@ -663,6 +653,7 @@ def summarize_ft_classification(collection, user_roi, resolution):
     st.success("✅ Freeze-Thaw Classification Summary Computed Successfully.")
 
 
+# ✅ Step 13: Visualize FT Classification for Streamlit
 # ✅ Step 13: Visualize FT Classification for Streamlit
 def visualize_ft_classification(collection, user_roi, resolution):
     """
@@ -756,12 +747,14 @@ def visualize_ft_classification(collection, user_roi, resolution):
     st.success("✅ Freeze-Thaw Classification Visualization Complete.")
 
 # ✅ Step: Attach the function to the button in Streamlit
-
-# Define the button in Streamlit
-#roi_button = st.button("Submit ROI & Start Processing")
-
-# Check if the button is clicked
 if roi_button:
     # Trigger the processing when the button is clicked
-    submit_roi()  # Call the function to process the selected ROI
+    st.session_state.start_date = start_date_widget
+    st.session_state.end_date = end_date_widget
+    st.session_state.clip_to_agriculture = clip_to_agriculture_checkbox
+    st.session_state.resolution = resolution_widget
 
+    if "user_roi" in st.session_state:
+        submit_roi()
+    else:
+        st.error("❌ No ROI selected. Please draw one on the map.")
