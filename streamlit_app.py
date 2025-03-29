@@ -20,61 +20,39 @@ from streamlit_folium import folium_static
 
 
 
+import streamlit as st
 
-# Test folium + streamlit-folium
-try:
-    import folium
-    import streamlit_folium
-    st.success(f"✅ folium version: {folium.__version__}")
-    st.success(f"✅ streamlit-folium version: {streamlit_folium.__version__}")
-except Exception as e:
-    st.error(f"❌ Error importing folium or streamlit-folium: {e}")
+st.title("🧪 Package Installation Check")
 
-# Show installed packages
-st.header("📦 Installed Packages Check")
+packages = {
+    "streamlit": "streamlit",
+    "folium": "folium",
+    "streamlit-folium": "streamlit_folium",
+    "geemap": "geemap",
+    "earthengine-api": "ee",
+    "pandas": "pandas",
+    "numpy": "numpy",
+    "matplotlib": "matplotlib",
+    "scikit-learn": "sklearn",
+    "ipywidgets": "ipywidgets",
+    "Pillow": "PIL"
+}
 
-# Test folium
-try:
-    import folium
-    st.success(f"✅ folium is installed (version: {folium.__version__})")
-except Exception as e:
-    st.error(f"❌ folium NOT installed: {e}")
+for pkg_name, import_name in packages.items():
+    try:
+        mod = __import__(import_name)
+        version = getattr(mod, "__version__", "version not found")
+        st.success(f"✅ {pkg_name} (import `{import_name}`) is installed — version: {version}")
+    except ImportError:
+        st.error(f"❌ {pkg_name} (import `{import_name}`) is NOT installed")
+    except Exception as e:
+        st.warning(f"⚠️ {pkg_name} (import `{import_name}`) — Error: {e}")
 
-# Test streamlit-folium
-try:
-    from streamlit_folium import folium_static
-    st.success("✅ streamlit-folium is installed")
-except Exception as e:
-    st.error(f"❌ streamlit-folium NOT installed: {e}")
 
-# Test geemap
-try:
-    import geemap
-    st.success(f"✅ geemap is installed (version: {geemap.__version__})")
-except Exception as e:
-    st.error(f"❌ geemap NOT installed: {e}")
 
-# Test Earth Engine
-try:
-    import ee
-    st.success(f"✅ earthengine-api is installed (version: {ee.__version__})")
-except Exception as e:
-    st.error(f"❌ earthengine-api NOT installed: {e}")
 
-# Optional: Test pandas & numpy
-try:
-    import pandas as pd
-    st.text(f"pandas version: {pd.__version__}")
-except:
-    st.warning("⚠️ pandas not available")
 
-try:
-    import numpy as np
-    st.text(f"numpy version: {np.__version__}")
-except:
-    st.warning("⚠️ numpy not available")
 
-st.markdown("---")
 
 # Authenticate Earth Engine
 try:
