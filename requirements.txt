@@ -1,9 +1,2 @@
-streamlit>=1.25.0
-folium==0.14.0
-streamlit-folium==0.11.1
-geemap==0.30.1
-Pillow
-pandas
-numpy
-matplotlib
-scikit-learn
+geemap
+streamlit
