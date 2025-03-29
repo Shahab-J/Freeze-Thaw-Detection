@@ -1,9 +1,12 @@
 streamlit>=1.25.0
 geemap>=0.30.0
-earthengine-api>=0.1.331
 pandas>=1.5.0
 numpy
 matplotlib
 scikit-learn
 ipywidgets
 Pillow
+streamlit-folium
+folium
+earthengine-api
+pandas
