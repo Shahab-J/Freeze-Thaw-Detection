@@ -134,29 +134,29 @@ clip_to_agriculture_checkbox = st.checkbox(
 roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
 
+
+
 # Check if button is pressed
 if roi_button:
     st.write("🚀 Starting Freeze-Thaw Detection...")
 
     # Get the ROI from the map
-    roi = Map.user_roi  # Assuming the map stores the ROI after user draws it
+    if Map.user_roi is not None:
+        st.session_state.user_roi = Map.user_roi  # Save ROI persistently
+        st.info("🗂 ROI selected and stored.")
 
-    # Check if an ROI is selected
-    if roi is None:
-        st.error("❌ No ROI selected. Please draw an ROI on the map.")
-    else:
-        # Process the data with the selected parameters
-        st.write("✅ Processing your data...")
-
-        # Call your process_freeze_thaw function here (e.g., passing the parameters)
-        # For now, we simulate a message
+        # ✅ Proceed with parameters and processing
         st.write(f"Start Date: {start_date_widget}, End Date: {end_date_widget}")
         st.write(f"Resolution: {resolution_widget} meters")
         st.write(f"Agricultural Clipping: {'Yes' if clip_to_agriculture_checkbox else 'No'}")
 
-        # Process and visualize the results
-        # result = process_freeze_thaw(roi, start_date_widget, end_date_widget, resolution_widget)
-        # st.pydeck_chart(result)  # Display processed results (could be a map or image)
+        # 🔁 Optional: run full processing
+        # submit_roi()
+
+    else:
+        st.error("❌ No ROI selected. Please draw an ROI on the map.")
+
+
 
 
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
