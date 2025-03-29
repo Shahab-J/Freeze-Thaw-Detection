@@ -76,23 +76,23 @@ try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
     Map.add_basemap('SATELLITE')  # Add satellite basemap
 
-    # ✅ Re-add previously selected ROI if available
+    # ✅ Try to retrieve the ROI before rendering the map
+    if Map.user_roi is not None:
+        # Save the user-drawn ROI before rerun clears it
+        st.session_state.user_roi = Map.user_roi
+
+    # ✅ Re-display stored ROI if available
     if "user_roi" in st.session_state:
         stored_roi = st.session_state.user_roi
         Map.addLayer(ee.FeatureCollection([ee.Feature(stored_roi)]), {}, "Stored ROI")
 
+    # ✅ Now render the map
     Map.to_streamlit(height=600)
     st.success("✅ Map loaded successfully.")
+
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
 
-# ✅ Handle ROI selection and update session state
-if Map.user_roi is not None:
-    st.session_state.user_roi = Map.user_roi  # Save the drawn ROI
-    st.info("🗂 ROI selected and stored.")
-    st.json(Map.user_roi.getInfo())  # Optional: show the geometry
-else:
-    st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
 
 
 
