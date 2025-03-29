@@ -18,18 +18,13 @@ from google.auth import credentials
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
-# test_geemap.py
-import geemap
-print("✅ geemap successfully imported")
-
-
-st.write("✅ Hello World")
 
 
 
 st.set_page_config(layout="wide")
 st.title("🧪 Startup Package Diagnostics")
 
+# ✅ Display environment info
 st.write(f"🔧 Python: {sys.version}")
 
 def check(name, code):
@@ -39,6 +34,7 @@ def check(name, code):
     except Exception as e:
         st.error(f"❌ {name} FAILED: {e}")
 
+# ✅ Dependency checks
 check("folium", "import folium")
 check("streamlit-folium", "from streamlit_folium import folium_static")
 check("geemap", "import geemap")
@@ -50,25 +46,12 @@ check("Pillow (PIL)", "from PIL import Image")
 check("scikit-learn", "import sklearn")
 check("ipywidgets", "import ipywidgets")
 
+# ================== Actual App ==================
 
-
-
-
-
-
-
-
-
-
-
-st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
 
-# Display environment info
-st.write("🔧 Python version:", sys.version)
-
-# ✅ Step 1: Authenticate Earth Engine (Safe)
+# ✅ Authenticate Earth Engine
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     key_data = json.dumps(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
@@ -78,7 +61,7 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
-# ✅ Step 2: Show Interactive Map with Drawing Tools
+# ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
     Map.to_streamlit(height=600)
@@ -86,11 +69,12 @@ try:
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
 
-# ✅ Step 3: ROI Extraction Feedback
+# ✅ Handle ROI selection
 if Map.user_roi is not None:
     st.info("🗂 ROI selected. Ready for processing.")
 else:
     st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
+
 
 
 
