@@ -18,6 +18,11 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+# test_geemap.py
+import geemap
+print("✅ geemap successfully imported")
+
+
 st.write("✅ Hello World")
 
 
