@@ -18,65 +18,36 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+st.set_page_config(layout="wide")
+st.title("🧊 Freeze–Thaw Mapping Tool")
+st.write("📌 Draw your ROI on the map below and click Submit.")
 
-m = folium.Map(location=[0, 0], zoom_start=2)
-Draw(export=True, control=False).add_to(m)
-folium_static(m, height=600)
+# Display environment info
+st.write("🔧 Python version:", sys.version)
 
-
-
-st.title("🔧 Folium Render Debug")
-st.write("Python version:", sys.version)
-st.write("folium version:", folium.__version__)
-
+# ✅ Step 1: Authenticate Earth Engine (Safe)
 try:
-    m = folium.Map(location=[0, 0], zoom_start=2)
-    folium_static(m, height=600)
-    st.success("✅ Map rendered")
+    service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
+    key_data = json.dumps(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
+    credentials = ee.ServiceAccountCredentials(service_account, key_data=key_data)
+    ee.Initialize(credentials)
+    st.success("✅ Earth Engine initialized.")
 except Exception as e:
-    st.error(f"❌ folium_static failed: {e}")
+    st.error(f"❌ EE Auth failed: {e}")
 
-
-
-
-# service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
-# service_account_json = json.dumps(service_account_dict)
-# credentials = ee.ServiceAccountCredentials(
-#     service_account_dict["client_email"],
-#     key_data=service_account_json
-# )
-# ee.Initialize(credentials)
-# st.success("✅ Earth Engine Initialized")
-
-
-
-
-# Authenticate Earth Engine
-#try:
-#    service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
-#    service_account_json = json.dumps(service_account_dict)
-#    credentials = ee.ServiceAccountCredentials(
-#        service_account_dict["client_email"],
-#        key_data=service_account_json
-#    )
-#    ee.Initialize(credentials)
-#    st.success("✅ Earth Engine Initialized")
-#except Exception as e:
-#    st.error(f"❌ Earth Engine failed to initialize: {e}")
-
-# Show Folium map
-from folium.plugins import Draw
-
-st.title("🗺️ Folium Map Test")
-
+# ✅ Step 2: Show Interactive Map with Drawing Tools
 try:
-    m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="OpenStreetMap")
-    Draw(export=True).add_to(m)
-    folium_static(m, height=600)
-    st.success("✅ If you see a map with draw tools, everything is working.")
+    Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+    Map.to_streamlit(height=600)
+    st.success("✅ Map loaded successfully.")
 except Exception as e:
-    st.error(f"❌ Map failed to render: {e}")
+    st.error(f"❌ Map render failed: {e}")
 
+# ✅ Step 3: ROI Extraction Feedback
+if Map.user_roi is not None:
+    st.info("🗂 ROI selected. Ready for processing.")
+else:
+    st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
 
 
 
