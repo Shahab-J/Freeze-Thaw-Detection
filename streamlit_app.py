@@ -20,7 +20,6 @@ from streamlit_folium import folium_static
 
 
 
-
 st.set_page_config(layout="wide")
 st.title("🧪 Startup Package Diagnostics")
 
@@ -72,37 +71,33 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
 
-
 # ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
     Map.add_basemap('SATELLITE')
 
-    # ✅ If an ROI exists in session, display it on the map first
-    if "user_roi" in st.session_state:
-        saved_roi = st.session_state.user_roi
-        Map.addLayer(ee.FeatureCollection([ee.Feature(saved_roi)]), {}, "Stored ROI")
+    # ✅ Load previous ROI if it exists
+    if "user_roi" in st.session_state and st.session_state.user_roi is not None:
+        Map.addLayer(
+            ee.FeatureCollection([ee.Feature(st.session_state.user_roi)]),
+            {}, "Stored ROI"
+        )
 
-    # ✅ Display map
     Map.to_streamlit(height=600)
 
-    # ✅ If the user draws a new ROI, store it immediately
+    # ✅ Save new ROI if drawn
     if Map.user_roi is not None:
         st.session_state.user_roi = Map.user_roi
-        st.success("🗂 ROI selected and stored.")
+        st.success("🗂 ROI selected and saved.")
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
 
-
-
 # ✅ Confirm the ROI is stored
-if "user_roi" in st.session_state:
+if "user_roi" in st.session_state and st.session_state.user_roi is not None:
     st.write("✅ ROI exists in session.")
 else:
     st.warning("✏️ ROI not yet selected.")
-
-
 
 
 # 📆 **Date Selection Widgets**
@@ -602,29 +597,19 @@ def submit_roi():
 
     st.session_state.efta_collection = efta_collection
 
-    # ✅ Train RF
-    rf_model = ee.Classifier.smileRandomForest(
-        numberOfTrees=150,
-        variablesPerSplit=1,
-        minLeafPopulation=3,
-        seed=42
-    ).train(
-        features=training_asset,
-        classProperty='label',
-        inputProperties=['EFTA']
-    )
+    # ✅ Train RF and classify
+    if "efta_collection" in st.session_state:
+        efta_collection = st.session_state.efta_collection
+        rf_model = train_rf_model()
+        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
 
-    # ✅ Classify and visualize
-    classified_collection = efta_collection.map(lambda img: img.addBands(
-        img.select('EFTA').classify(rf_model).rename('FT_State')
-    ))
+        classified_collection_visual = classified_images.filterDate(
+            user_selected_start, user_selected_end
+        )
 
-    classified_collection_visual = classified_collection.filterDate(
-        user_selected_start, user_selected_end
-    )
+        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
+        st.success("✅ All Processing Completed.")
 
-    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-    st.success("✅ All Processing Completed.")
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
