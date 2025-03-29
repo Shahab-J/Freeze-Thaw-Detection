@@ -18,6 +18,42 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+
+
+import streamlit as st
+
+st.title("🔍 Package Diagnostic Check")
+
+packages = {
+    "folium": "import folium",
+    "streamlit-folium": "from streamlit_folium import folium_static",
+    "geemap": "import geemap",
+    "earthengine-api (ee)": "import ee",
+    "Pillow": "from PIL import Image",
+    "pandas": "import pandas as pd",
+    "numpy": "import numpy as np",
+    "matplotlib": "import matplotlib.pyplot as plt",
+    "scikit-learn": "import sklearn",
+    "ipywidgets": "import ipywidgets",
+}
+
+for name, statement in packages.items():
+    try:
+        exec(statement)
+        st.success(f"✅ {name} loaded")
+    except Exception as e:
+        st.error(f"❌ {name} failed: {e}")
+
+
+
+
+
+
+
+
+
+
+
 st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
