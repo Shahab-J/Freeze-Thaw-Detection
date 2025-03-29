@@ -431,43 +431,34 @@ def compute_efta(collection, resolution):
     """
 
     def calculate_efta(img):
-        # ✅ Retrieve Required Bands
         k = img.select('K')
         thaw_ref = img.select('ThawRef')
         vh_corrected = img.select('VH_corrected')
         delta_theta = img.select('DeltaTheta')
 
-        # ✅ Compute the Exponential Component
         exp_component = (ee.Image(1)
                          .add(thaw_ref.divide(vh_corrected))
                          .multiply(k.multiply(-1))
                          .exp())
 
-        # ✅ Compute EFTA
         efta = exp_component.multiply(delta_theta).rename('EFTA')
-
-        # ✅ Ensure proper masking (Handle No Data)
         efta = efta.updateMask(vh_corrected.mask())
+        return img.addBands(efta).reproject(crs="EPSG:4326", scale=resolution)
 
-        return img.addBands(efta).reproject(crs="EPSG:4326", scale=resolution)  # ✅ Apply resolution
-
-    # Apply the EFTA calculation to each image in the collection
     updated_collection = collection.map(calculate_efta)
-
     st.success("✅ EFTA Calculation complete.")
     return updated_collection
 
 
-# ✅ Step 10: Freeze-Thaw Classification Using RF for Streamlit
 
+# ✅ Step 10: Freeze-Thaw Classification Using RF for Streamlit
 # Import training data from GEE asset
 training_asset = ee.FeatureCollection('projects/ee-shahabeddinj/assets/training_data')
 
 # Define bands and label
-bands = ['EFTA']  # Feature(s) used for classification
-label = 'label'   # Class label (0 = Frozen, 1 = Thawed)
+bands = ['EFTA']
+label = 'label'
 
-# Train the RF model in GEE
 def train_rf_model():
     rf_model = ee.Classifier.smileRandomForest(
         numberOfTrees=150,
@@ -482,26 +473,9 @@ def train_rf_model():
     st.success("✅ RF model trained successfully in GEE.")
     return rf_model
 
-# Classify images in efta_collection using the trained RF model
 def classify_image(img, rf_model, resolution):
-    """Classify image using trained RF model."""
     classified = img.select('EFTA').classify(rf_model).rename('FT_State')
-    return img.addBands(classified).reproject(crs="EPSG:4326", scale=resolution)  # Apply resolution
-
-# Call the RF model training when button is clicked
-if roi_button:
-    st.write("🚀 Training RF Model...")
-
-    rf_model = train_rf_model()
-
-    # After the model is trained, you can use it to classify the images
-    st.write("✅ RF Model trained. Now you can classify the images.")
-
-    # Assuming `efta_collection` is available, classify the images
-    classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution_widget))
-
-    # Proceed with further processing or visualization of the classified images
-    st.write("✅ Images classified successfully.")
+    return img.addBands(classified).reproject(crs="EPSG:4326", scale=resolution)
 
 
 # ✅ Step 11: ROI Selection Before Processing for Streamlit
@@ -514,10 +488,11 @@ def submit_roi():
         return
 
     user_roi = st.session_state.user_roi
-    resolution = st.session_state.get("resolution", 30)  # default resolution fallback
+    resolution = st.session_state.get("resolution", 30)  # fallback resolution
+    clip_agriculture = st.session_state.get("clip_to_agriculture", False)
 
     # ✅ Optional Cropland Clipping
-    if st.session_state.get("clip_to_agriculture", False):
+    if clip_agriculture:
         st.write("🌱 Cropland-only mode enabled. Clipping ROI to agricultural areas...")
 
         landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
@@ -557,25 +532,20 @@ def submit_roi():
 
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
-
     st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
-    # ✅ Process pipeline
+    # ✅ Sentinel-1 Processing Pipeline
     processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-    if processed_images is None:
-        return
+    if processed_images is None: return
 
     mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-    if mosaicked_images is None:
-        return
+    if mosaicked_images is None: return
 
     sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-    if sigma_diff_collection is None:
-        return
+    if sigma_diff_collection is None: return
 
     sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-    if sigma_extreme_collection is None:
-        return
+    if sigma_extreme_collection is None: return
 
     final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
     if final_k_collection is None:
@@ -583,32 +553,29 @@ def submit_roi():
         return
 
     thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-    if thaw_ref_image is None:
-        return
+    if thaw_ref_image is None: return
 
     thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
     delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-    if delta_theta_collection is None:
-        return
+    if delta_theta_collection is None: return
 
     efta_collection = compute_efta(delta_theta_collection, resolution)
-    if efta_collection is None:
-        return
+    if efta_collection is None: return
 
+    # ✅ Store in session
     st.session_state.efta_collection = efta_collection
 
-    # ✅ Train RF and classify
-    if "efta_collection" in st.session_state:
-        efta_collection = st.session_state.efta_collection
-        rf_model = train_rf_model()
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+    # ✅ RF Model Training & Classification
+    rf_model = train_rf_model()
+    classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
 
-        classified_collection_visual = classified_images.filterDate(
-            user_selected_start, user_selected_end
-        )
+    classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
-        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-        st.success("✅ All Processing Completed.")
+    # ✅ Visualization
+    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
+
+    st.success("✅ All Processing Completed.")
+
 
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
