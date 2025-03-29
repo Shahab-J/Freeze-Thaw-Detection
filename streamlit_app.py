@@ -89,12 +89,10 @@ try:
     # ✅ Now render the map
     Map.to_streamlit(height=600)
     st.success("✅ Map loaded successfully.")
+    st.write("ROI exists in session:", "user_roi" in st.session_state)
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
-
-
-
 
 
 
