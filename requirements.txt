@@ -4,3 +4,4 @@ earthengine-api
 folium
 pandas
 numpy
+setuptools
