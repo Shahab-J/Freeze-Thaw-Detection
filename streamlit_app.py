@@ -19,45 +19,43 @@ import folium
 from folium.plugins import Draw
 
 
+
+
 import streamlit as st
 
 st.subheader("✅ Package Check")
 
 required_packages = [
-    ("streamlit", "st"),
+    ("streamlit", "streamlit"),
     ("geemap", "geemap"),
     ("earthengine-api", "ee"),
     ("folium", "folium"),
-    ("streamlit_folium", "folium_static"),
-    ("pandas", "pd"),
-    ("numpy", "np"),
-    ("matplotlib", "plt"),
+    ("streamlit-folium", "streamlit_folium"),
+    ("pandas", "pandas"),
+    ("numpy", "numpy"),
+    ("matplotlib", "matplotlib"),
     ("scikit-learn", "sklearn"),
-    ("ipywidgets", "widgets"),
+    ("ipywidgets", "ipywidgets"),
     ("Pillow", "PIL"),
 ]
 
-for package, module in required_packages:
+for pkg_name, module_name in required_packages:
     try:
-        __import__(module)
-        st.success(f"✅ {package} is installed.")
+        __import__(module_name)
+        st.success(f"✅ {pkg_name} is installed.")
     except ImportError:
-        st.error(f"❌ {package} is MISSING!")
+        st.error(f"❌ {pkg_name} is MISSING!")
 
-# Optional: Show version info
-import geemap, folium, ee, pandas as pd, numpy as np, streamlit_folium
+# Show version info
+import geemap, folium, ee, pandas as pd, numpy as np
+from streamlit_folium import folium_static
 
 st.markdown("---")
 st.text(f"geemap version: {geemap.__version__}")
 st.text(f"folium version: {folium.__version__}")
-st.text(f"Earth Engine API version: {ee.__version__}")
+st.text(f"Earth Engine version: {ee.__version__}")
 st.text(f"pandas version: {pd.__version__}")
 st.text(f"numpy version: {np.__version__}")
-
-
-
-
-
 
 
 
@@ -81,6 +79,9 @@ Draw(export=True).add_to(m)  # Allow user to draw polygon or point
 
 # Display the map
 folium_static(m, height=600)
+
+
+
 
 
 
