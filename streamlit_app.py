@@ -18,6 +18,9 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+st.info(f"🧠 Python version: {sys.version}")
+st.write("🧭 Reached map rendering block")
+Draw(export=True, control=False).add_to(m)
 
 
 import streamlit as st
