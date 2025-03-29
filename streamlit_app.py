@@ -21,7 +21,6 @@ from streamlit_folium import folium_static
 
 
 
-
 st.set_page_config(layout="wide")
 st.title("🧪 Startup Package Diagnostics")
 
@@ -626,11 +625,15 @@ def submit_roi():
         st.error("❌ ERROR: DeltaTheta computation failed. Stopping execution.")
         return
 
+
     # Compute EFTA
-    efta_collection = compute_efta(delta_theta_collection)
+    efta_collection = compute_efta(delta_theta_collection, resolution_widget)
     if efta_collection is None:
         st.error("❌ ERROR: EFTA computation failed. Stopping execution.")
         return
+        
+    st.session_state.efta_collection = efta_collection
+
 
     # Train the RF model in GEE
     rf_model = ee.Classifier.smileRandomForest(
@@ -644,18 +647,21 @@ def submit_roi():
         inputProperties=['EFTA']
     )
 
-    # Classify images in efta_collection using the trained RF model
+    # ✅ Classify images using the RF model
     classified_collection = efta_collection.map(lambda img: img.addBands(
         img.select('EFTA').classify(rf_model).rename('FT_State')
     ))
 
-    # Ensure Visualization Uses Only User-Selected Date Range
-    classified_collection_visual = classified_collection.filterDate(user_selected_start, user_selected_end)
+    # ✅ Filter by user-selected date range
+    classified_collection_visual = classified_collection.filterDate(
+        st.session_state.start_date.strftime("%Y-%m-%d"),
+        st.session_state.end_date.strftime("%Y-%m-%d")
+    )   
 
     # Visualize Freeze-Thaw Classification (Only User-Selected Date Range)
     visualize_ft_classification(classified_collection_visual, user_roi, resolution_widget.value)
-
     st.success("✅ All Processing Completed.")
+
 
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
