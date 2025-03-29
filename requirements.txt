@@ -1,13 +1,6 @@
 streamlit
-folium
-streamlit-folium
 geemap
 earthengine-api
-branca
-ipywidgets
-traitlets
-Pillow
+folium
 pandas
 numpy
-matplotlib
-scikit-learn
