@@ -3,6 +3,7 @@ import sys
 import math
 import json 
 import geemap
+import folium
 import PIL.Image
 import subprocess
 import numpy as np
@@ -11,12 +12,22 @@ import streamlit as st
 from datetime import date
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
+from folium.plugins import Draw
 from google.auth import credentials
 from google.oauth2 import service_account
-
 from streamlit_folium import folium_static
-import folium
-from folium.plugins import Draw
+
+
+try:
+    import folium
+    import streamlit_folium
+    st.success(f"✅ folium version: {folium.__version__}")
+    st.success(f"✅ streamlit-folium version: {streamlit_folium.__version__}")
+except Exception as e:
+    st.error(f"❌ Error importing folium or streamlit-folium: {e}")
+
+
+
 
 # 🔍 Check installed packages
 st.subheader("✅ Package Check")
@@ -64,7 +75,7 @@ st.title("Freeze-Thaw Mapping Tool")
 st.markdown("🔹 Draw your ROI on the map below and click Submit.")
 
 # ✅ Create Folium map
-m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+m = folium.Map(location=[46.29, -72.75], zoom_start=10, tiles="OpenStreetMap")
 Draw(export=True).add_to(m)
 
 # ✅ Show map
