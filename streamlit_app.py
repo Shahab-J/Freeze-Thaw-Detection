@@ -30,31 +30,23 @@ credentials = ee.ServiceAccountCredentials(
 
 ee.Initialize(credentials)
 
+
 # Title and instructions
 st.title("Freeze-Thaw Mapping Tool")
 st.markdown("🔹 Draw your ROI on the map below and click Submit.")
 
-# Create and display map
-Map = geemap.Map()
-Map.add_draw_control()
-Map.to_streamlit()
-
-
-
-
-
-# 🌍 **Step 2: Interactive Map for ROI Selection**
+# Interactive map function
 def display_map():
-    Map = geemap.Map()
-    Map.add_basemap('SATELLITE')
-    Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
-    Map.add_draw_control()
-    return Map
+    m = geemap.Map()
+    m.add_basemap('SATELLITE')
+    m.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
+    m.add_draw_control()
+    return m
 
-# Display the interactive map
+# Show map once
 Map = display_map()
-st.write("🔹 **Draw** your ROI on the map above and click **Submit**.")
-Map.to_streamlit(height=600)  # ✅ Correct for geemap
+Map.to_streamlit(height=600)
+
 
 
 # 📆 **Date Selection Widgets**
