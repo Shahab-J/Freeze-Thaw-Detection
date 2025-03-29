@@ -14,13 +14,12 @@ import matplotlib.pyplot as plt
 from google.auth import credentials
 from google.oauth2 import service_account
 
+from streamlit_folium import folium_static
+import folium
+from folium.plugins import Draw
 
 
-import streamlit as st
-import ee
-import geemap
-import json
-
+# Authenticate Earth Engine
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
 
@@ -30,10 +29,16 @@ credentials = ee.ServiceAccountCredentials(
 )
 ee.Initialize(credentials)
 
-Map = geemap.Map()
-Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
-Map.add_draw_control()
-Map.to_streamlit(height=600)
+st.success("✅ Earth Engine Initialized")
+st.title("Freeze-Thaw Mapping Tool")
+st.markdown("🔹 Draw your ROI on the map below and click Submit.")
+
+# Create Folium map with drawing tools
+m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+Draw(export=True).add_to(m)  # Allow user to draw polygon or point
+
+# Display the map
+folium_static(m, height=600)
 
 
 
