@@ -7,6 +7,7 @@ import folium
 import PIL.Image
 import subprocess
 import numpy as np
+from PIL import Image
 import urllib.request
 import streamlit as st
 from datetime import date
