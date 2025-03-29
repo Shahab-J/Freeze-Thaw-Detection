@@ -18,9 +18,9 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+st.write("✅ Hello World")
 
-import streamlit as st
-import sys
+
 
 st.set_page_config(layout="wide")
 st.title("🧪 Startup Package Diagnostics")
