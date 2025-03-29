@@ -48,11 +48,11 @@ check("ipywidgets", "import ipywidgets")
 
 
 # ================== Actual App ==================
-
+# ================== Freeze–Thaw Mapping Tool ==================
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
 
-# ✅ Authenticate Earth Engine
+# ✅ Earth Engine Auth
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -71,73 +71,62 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
-# ✅ Initialize session_state variables if not set
-for key in ["user_roi", "start_date", "end_date", "resolution", "clip_to_agriculture"]:
-    if key not in st.session_state:
-        st.session_state[key] = None
 
-# ✅ Show Interactive Map
+# ✅ Interactive Map
 try:
-    Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
-    Map.add_basemap('SATELLITE')
+    map_container = st.container()
+    with map_container:
+        Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+        Map.add_basemap('SATELLITE')
 
-    # ✅ Re-display stored ROI if it exists
-    if st.session_state["user_roi"] is not None:
-        Map.addLayer(
-            ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
-            {}, "Stored ROI"
-        )
+        # Load existing ROI if present
+        if "user_roi" in st.session_state and st.session_state.user_roi is not None:
+            Map.addLayer(ee.FeatureCollection([ee.Feature(st.session_state.user_roi)]), {}, "Stored ROI")
 
-    Map.to_streamlit(height=600)
+        # Show map
+        Map.to_streamlit(height=600)
 
-    # ✅ Save new ROI to session_state
-    if Map.user_roi is not None:
-        st.session_state["user_roi"] = Map.user_roi
-        st.success("🗂 ROI selected and saved.")
+        # Store ROI in session if user draws one
+        if Map.user_roi is not None:
+            st.session_state.user_roi = Map.user_roi
+            st.success("🗂 ROI selected and saved.")
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
 
-# ✅ Confirm the ROI is stored
-if st.session_state["user_roi"] is not None:
+# ✅ Confirm ROI
+if "user_roi" in st.session_state and st.session_state.user_roi is not None:
     st.write("✅ ROI exists in session.")
 else:
     st.warning("✏️ ROI not yet selected.")
 
-# 📆 Date Input Widgets (Don't write directly to session_state)
-start_date_widget = st.date_input(
-    'Start Date',
-    value=st.session_state["start_date"] or date(2023, 10, 1),
-    min_value=date(2015, 1, 1),
-    max_value=date(2025, 12, 31)
-)
 
-end_date_widget = st.date_input(
-    'End Date',
-    value=st.session_state["end_date"] or date(2024, 6, 30),
-    min_value=date(2015, 1, 1),
-    max_value=date(2025, 12, 31)
+# 📆 Date Selection
+start_date = st.date_input(
+    "Start Date", value=date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31)
+)
+end_date = st.date_input(
+    "End Date", value=date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31)
 )
 
 # 🌍 Resolution Selector
-resolution_widget = st.selectbox(
-    'Resolution (m):',
-    [10, 30, 100],
-    index=[10, 30, 100].index(st.session_state["resolution"]) if st.session_state["resolution"] else 1
-)
+resolution = st.selectbox("Resolution (m):", [10, 30, 100], index=1)
 
-# ✅ Cropland Clipping Checkbox
-clip_checkbox = st.checkbox(
-    'Clip to Agricultural Lands Only',
-    value=st.session_state["clip_to_agriculture"] or False
-)
+# 🌾 Cropland Mask
+clip_to_agriculture = st.checkbox("Clip to Agricultural Lands Only")
 
-# ✅ Store widget values back to session_state
-st.session_state["start_date"] = start_date_widget
-st.session_state["end_date"] = end_date_widget
-st.session_state["resolution"] = resolution_widget
-st.session_state["clip_to_agriculture"] = clip_checkbox
+# ✅ Trigger Button (just once!)
+if st.button("🚀 Submit ROI & Start Processing"):
+    # Save widget values into session
+    st.session_state.start_date = start_date
+    st.session_state.end_date = end_date
+    st.session_state.resolution = resolution
+    st.session_state.clip_to_agriculture = clip_to_agriculture
 
+    if "user_roi" in st.session_state and st.session_state.user_roi is not None:
+        submit_roi()  # Main processing
+    else:
+        st.error("❌ No ROI selected. Please draw one on the map.")
 
 
 # 🌍 Submit Button
@@ -846,13 +835,13 @@ def visualize_ft_classification(collection, user_roi, resolution):
     st.success("✅ Visualization complete.")
 
 # 🚀 Step 14: Trigger from Submit Button
-roi_button = st.button("Submit ROI & Start Processing")
-
-if roi_button:
+if st.button("Submit ROI & Start Processing"):
     st.write("🚀 Starting Freeze–Thaw Detection...")
-    st.write("✅ ROI exists in session:", "user_roi" in st.session_state)
 
-    if "user_roi" in st.session_state and st.session_state.user_roi is not None:
-        submit_roi()  # Handles everything including visualization
+    roi = st.session_state.get("user_roi")
+    if roi:
+        st.write("✅ ROI exists in session.")
+        submit_roi()
     else:
         st.error("❌ No ROI selected. Please draw an ROI on the map.")
+
