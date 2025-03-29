@@ -15,32 +15,18 @@ from google.auth import credentials
 from google.oauth2 import service_account
 
 
-
-# List of required packages
-required_packages = [
-    'streamlit',
-    'earthengine-api',
-    'geemap',
-    'matplotlib',
-    'numpy',
-    'ipywidgets',
-    'Pillow'
-]
-
-
-
-import streamlit as st
-import ee
-
-# Use directly as a dictionary
+# DO NOT use json.loads() here
+# Secrets were added as TOML dictionary, so we read it directly
 service_account_info = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 
+# Initialize Earth Engine with service account credentials
 credentials = ee.ServiceAccountCredentials(
     service_account_info["client_email"],
     key_data=service_account_info
 )
 
 ee.Initialize(credentials)
+
 
 
 
