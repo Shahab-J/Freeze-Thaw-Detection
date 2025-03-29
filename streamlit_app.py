@@ -70,16 +70,24 @@ credentials = ee.ServiceAccountCredentials(
 ee.Initialize(credentials)
 st.success("✅ Earth Engine Initialized")
 
-# ✅ Show title and instructions
-st.title("Freeze-Thaw Mapping Tool")
-st.markdown("🔹 Draw your ROI on the map below and click Submit.")
 
-# ✅ Create Folium map
-m = folium.Map(location=[46.29, -72.75], zoom_start=10, tiles="OpenStreetMap")
+
+
+st.title("🧪 Folium Test Map in Streamlit")
+
+# Create folium map
+m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="OpenStreetMap")
 Draw(export=True).add_to(m)
 
-# ✅ Show map
+# Display map
 folium_static(m, height=600)
+
+st.success("✅ If you see a map with draw tools, everything is working.")
+
+
+
+
+
 
 
 
