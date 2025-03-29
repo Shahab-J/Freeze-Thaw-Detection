@@ -72,29 +72,35 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
 
-# ✅ Show Interactive Map and Handle ROI
+
+# ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
     Map.add_basemap('SATELLITE')
 
-    # ✅ If an ROI was saved earlier, re-add it to the map
+    # ✅ If an ROI exists in session, display it on the map first
     if "user_roi" in st.session_state:
-        Map.addLayer(ee.FeatureCollection([ee.Feature(st.session_state.user_roi)]), {}, "Stored ROI")
+        saved_roi = st.session_state.user_roi
+        Map.addLayer(ee.FeatureCollection([ee.Feature(saved_roi)]), {}, "Stored ROI")
 
-    # ✅ Show map in Streamlit
+    # ✅ Display map
     Map.to_streamlit(height=600)
 
-    # ✅ If a new ROI was drawn during this session, store it
+    # ✅ If the user draws a new ROI, store it immediately
     if Map.user_roi is not None:
         st.session_state.user_roi = Map.user_roi
-        st.success("🗂 New ROI drawn and stored in session.")
-    elif "user_roi" in st.session_state:
-        st.info("🗂 Using previously stored ROI.")
-    else:
-        st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
+        st.success("🗂 ROI selected and stored.")
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
+
+
+
+# ✅ Confirm the ROI is stored
+if "user_roi" in st.session_state:
+    st.write("✅ ROI exists in session.")
+else:
+    st.warning("✏️ ROI not yet selected.")
 
 
 
