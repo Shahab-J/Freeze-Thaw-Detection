@@ -54,7 +54,8 @@ def display_map():
 # Display the interactive map
 Map = display_map()
 st.write("🔹 **Draw** your ROI on the map above and click **Submit**.")
-st.pydeck_chart(Map)  # Display the map in Streamlit
+Map.to_streamlit(height=600)  # ✅ Correct for geemap
+
 
 # 📆 **Date Selection Widgets**
 start_date_widget = st.date_input(
