@@ -27,6 +27,12 @@ credentials = ee.ServiceAccountCredentials(
 )
 ee.Initialize(credentials)
 
+# Confirm EE init
+st.success("✅ Earth Engine Initialized")
+
+st.text(f"geemap version: {geemap.__version__}")
+with st.sidebar:
+    # ❌ Map will not show here
 
 
 # Title and instructions
