@@ -54,7 +54,6 @@ st.write("📌 Draw your ROI on the map below and click Submit.")
 
 
 
-
 # ✅ Authenticate Earth Engine
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
@@ -73,7 +72,6 @@ try:
     st.success("✅ Earth Engine initialized.")
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
-
 
 
 
