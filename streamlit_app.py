@@ -19,30 +19,32 @@ from streamlit_folium import folium_static
 
 
 
-
 import streamlit as st
+import sys
 
-st.title("🔍 Package Diagnostic Check")
+st.set_page_config(layout="wide")
+st.title("🧪 Startup Package Diagnostics")
 
-packages = {
-    "folium": "import folium",
-    "streamlit-folium": "from streamlit_folium import folium_static",
-    "geemap": "import geemap",
-    "earthengine-api (ee)": "import ee",
-    "Pillow": "from PIL import Image",
-    "pandas": "import pandas as pd",
-    "numpy": "import numpy as np",
-    "matplotlib": "import matplotlib.pyplot as plt",
-    "scikit-learn": "import sklearn",
-    "ipywidgets": "import ipywidgets",
-}
+st.write(f"🔧 Python: {sys.version}")
 
-for name, statement in packages.items():
+def check(name, code):
     try:
-        exec(statement)
-        st.success(f"✅ {name} loaded")
+        exec(code)
+        st.success(f"✅ {name} OK")
     except Exception as e:
-        st.error(f"❌ {name} failed: {e}")
+        st.error(f"❌ {name} FAILED: {e}")
+
+check("folium", "import folium")
+check("streamlit-folium", "from streamlit_folium import folium_static")
+check("geemap", "import geemap")
+check("earthengine-api (ee)", "import ee")
+check("pandas", "import pandas as pd")
+check("numpy", "import numpy as np")
+check("matplotlib", "import matplotlib.pyplot as plt")
+check("Pillow (PIL)", "from PIL import Image")
+check("scikit-learn", "import sklearn")
+check("ipywidgets", "import ipywidgets")
+
 
 
 
