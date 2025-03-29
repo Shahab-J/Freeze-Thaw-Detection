@@ -16,43 +16,24 @@ from google.oauth2 import service_account
 
 
 
+import streamlit as st
+import ee
+import geemap
+import json
 
-
-# Earth Engine Auth
 service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 service_account_json = json.dumps(service_account_dict)
+
 credentials = ee.ServiceAccountCredentials(
     service_account_dict["client_email"],
     key_data=service_account_json
 )
 ee.Initialize(credentials)
 
-# Confirm EE init
-st.success("✅ Earth Engine Initialized")
-
-st.text(f"geemap version: {geemap.__version__}")
-with st.sidebar:
-    # ❌ Map will not show here
-
-
-# Title and instructions
-st.title("Freeze-Thaw Mapping Tool")
-st.markdown("🔹 Draw your ROI on the map below and click Submit.")
-
-# Display the interactive map
-# Interactive map function
-def display_map():
-    m = geemap.Map()
-    m.add_basemap('SATELLITE')
-    m.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
-    m.add_draw_control()
-    return m
-
-m.add_marker(ee.Geometry.Point([-72.75, 46.29]), "Center Point")
-
-# Show map once
-Map = display_map()
-Map.to_streamlit(height=600)  # <-- This line must be here and outside any condition
+Map = geemap.Map()
+Map.centerObject(ee.Geometry.Point([-72.75, 46.29]), 12)
+Map.add_draw_control()
+Map.to_streamlit(height=600)
 
 
 
