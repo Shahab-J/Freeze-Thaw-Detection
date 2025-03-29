@@ -1,6 +1,9 @@
-libatlas-base-dev
-gfortran
-build-essential
-libjpeg-dev
-zlib1g-dev
-libpng-dev
+streamlit>=1.25.0
+geemap>=0.30.0
+earthengine-api>=0.1.331
+pandas>=1.5.0
+numpy
+matplotlib
+scikit-learn
+ipywidgets
+Pillow
