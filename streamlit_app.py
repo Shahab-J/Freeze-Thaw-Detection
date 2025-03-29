@@ -51,15 +51,32 @@ check("ipywidgets", "import ipywidgets")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
 
+
+
+
+
 # ✅ Authenticate Earth Engine
 try:
-    service_account = st.secrets["GEE_SERVICE_ACCOUNT_JSON"]
-    key_data = json.dumps(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
-    credentials = ee.ServiceAccountCredentials(service_account, key_data=key_data)
+    service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
+    private_key = st.secrets["GEE_PRIVATE_KEY"]
+    
+    credentials = ee.ServiceAccountCredentials(
+        service_account,
+        key_data=json.dumps({
+            "type": "service_account",
+            "client_email": service_account,
+            "private_key": private_key,
+            "token_uri": "https://oauth2.googleapis.com/token"
+        })
+    )
     ee.Initialize(credentials)
     st.success("✅ Earth Engine initialized.")
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
+
+
+
+
 
 # ✅ Show Interactive Map
 try:
