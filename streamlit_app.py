@@ -23,33 +23,16 @@ st.write("🧭 Reached map rendering block")
 Draw(export=True, control=False).add_to(m)
 
 
-import streamlit as st
-
-st.title("🔍 Package Check (Inline in Main App)")
-
-try:
-    import folium
-    st.success(f"✅ folium version: {folium.__version__}")
-except Exception as e:
-    st.error(f"❌ folium error: {e}")
+st.title("🔧 Folium Render Debug")
+st.write("Python version:", sys.version)
+st.write("folium version:", folium.__version__)
 
 try:
-    from streamlit_folium import folium_static
-    st.success("✅ streamlit-folium is working")
+    m = folium.Map(location=[0, 0], zoom_start=2)
+    folium_static(m, height=600)
+    st.success("✅ Map rendered")
 except Exception as e:
-    st.error(f"❌ streamlit-folium error: {e}")
-
-try:
-    import geemap
-    st.success(f"✅ geemap version: {geemap.__version__}")
-except Exception as e:
-    st.error(f"❌ geemap error: {e}")
-
-try:
-    import ee
-    st.success(f"✅ earthengine-api version: {ee.__version__}")
-except Exception as e:
-    st.error(f"❌ earthengine-api error: {e}")
+    st.error(f"❌ folium_static failed: {e}")
 
 
 
