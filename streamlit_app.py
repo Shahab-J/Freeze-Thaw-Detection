@@ -4,7 +4,6 @@ import math
 import json 
 import geemap
 import folium
-import PIL.Image
 import subprocess
 import numpy as np
 from PIL import Image
