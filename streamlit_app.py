@@ -21,6 +21,7 @@ from streamlit_folium import folium_static
 
 
 
+
 st.set_page_config(layout="wide")
 st.title("🧪 Startup Package Diagnostics")
 
@@ -76,9 +77,13 @@ except Exception as e:
 
 
 
+st.title("🧊 Freeze–Thaw Mapping Tool")
+st.write("📌 Draw your ROI on the map below and click Submit.")
+
 # ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+    Map.add_basemap('SATELLITE')  # Add satellite basemap
     Map.to_streamlit(height=600)
     st.success("✅ Map loaded successfully.")
 except Exception as e:
@@ -87,8 +92,11 @@ except Exception as e:
 # ✅ Handle ROI selection
 if Map.user_roi is not None:
     st.info("🗂 ROI selected. Ready for processing.")
+    # Optionally show coordinates or convert to EE Geometry
+    st.json(Map.user_roi.getInfo())
 else:
     st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
+
 
 
 
