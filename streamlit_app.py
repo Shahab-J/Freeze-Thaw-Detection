@@ -92,6 +92,15 @@ try:
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
 
+# ✅ Handle and store ROI in session_state
+if Map.user_roi is not None:
+    st.session_state.user_roi = Map.user_roi
+    st.info("🗂 ROI selected and saved.")
+elif "user_roi" in st.session_state:
+    st.info("🗂 Using stored ROI from session.")
+else:
+    st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
+
 
 
 # 📆 **Date Selection Widgets**
