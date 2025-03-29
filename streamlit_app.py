@@ -29,53 +29,35 @@ except Exception as e:
 
 import streamlit as st
 
-st.header("📦 Installed Package Check")
+st.header("📦 Installed Packages Check")
 
-# List of required packages and the import names to test
-required_packages = [
-    ("streamlit", "streamlit"),
-    ("folium", "folium"),
-    ("streamlit-folium", "streamlit_folium"),
-    ("geemap", "geemap"),
-    ("earthengine-api", "ee"),
-    ("pandas", "pandas"),
-    ("numpy", "numpy"),
-    ("matplotlib", "matplotlib"),
-    ("scikit-learn", "sklearn"),
-    ("ipywidgets", "ipywidgets"),
-    ("Pillow", "PIL"),
-]
+# Test folium
+try:
+    import folium
+    st.success(f"✅ folium is installed (version: {folium.__version__})")
+except Exception as e:
+    st.error(f"❌ folium NOT installed: {e}")
 
-# Track results
-installed = []
-missing = []
-errors = []
+# Test streamlit-folium
+try:
+    from streamlit_folium import folium_static
+    st.success("✅ streamlit-folium is installed")
+except Exception as e:
+    st.error(f"❌ streamlit-folium NOT installed: {e}")
 
-for pkg_name, module_name in required_packages:
-    try:
-        mod = __import__(module_name)
-        version = getattr(mod, '__version__', 'N/A')
-        installed.append((pkg_name, version))
-    except ImportError:
-        missing.append(pkg_name)
-    except Exception as e:
-        errors.append((pkg_name, str(e)))
+# Test geemap
+try:
+    import geemap
+    st.success(f"✅ geemap is installed (version: {geemap.__version__})")
+except Exception as e:
+    st.error(f"❌ geemap NOT installed: {e}")
 
-# Display results
-if installed:
-    st.subheader("✅ Installed Packages")
-    for name, ver in installed:
-        st.success(f"{name} — version: {ver}")
-
-if missing:
-    st.subheader("❌ Missing Packages")
-    for name in missing:
-        st.error(f"{name} is not installed")
-
-if errors:
-    st.subheader("⚠️ Errors")
-    for name, msg in errors:
-        st.warning(f"{name} – Error: {msg}")
+# Test earthengine-api
+try:
+    import ee
+    st.success(f"✅ earthengine-api is installed (version: {ee.__version__})")
+except Exception as e:
+    st.error(f"❌ earthengine-api NOT installed: {e}")
 
 
 
