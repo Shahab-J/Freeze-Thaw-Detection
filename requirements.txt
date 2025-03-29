@@ -2,11 +2,10 @@ streamlit>=1.25.0
 streamlit-folium==0.11.1
 folium==0.14.0
 geemap==0.30.1
-# ❌ REMOVE this: earthengine-api==0.1.331
-# ✅ Let geemap install the correct version of earthengine-api
 Pillow
 pandas
 numpy
 matplotlib
 scikit-learn
+
 
