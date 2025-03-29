@@ -71,25 +71,23 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
+
 # ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
-    Map.add_basemap('SATELLITE')  # Add satellite basemap
+    Map.add_basemap('SATELLITE')
 
-    # ✅ Try to retrieve the ROI before rendering the map
-    if Map.user_roi is not None:
-        # Save the user-drawn ROI before rerun clears it
-        st.session_state.user_roi = Map.user_roi
-
-    # ✅ Re-display stored ROI if available
+    # ✅ If an ROI exists from previous interaction, show it
     if "user_roi" in st.session_state:
-        stored_roi = st.session_state.user_roi
-        Map.addLayer(ee.FeatureCollection([ee.Feature(stored_roi)]), {}, "Stored ROI")
+        Map.addLayer(ee.FeatureCollection([ee.Feature(st.session_state.user_roi)]), {}, "Stored ROI")
 
-    # ✅ Now render the map
+    # ✅ Render map
     Map.to_streamlit(height=600)
-    st.success("✅ Map loaded successfully.")
-    st.write("ROI exists in session:", "user_roi" in st.session_state)
+
+    # ✅ If new ROI is drawn this time, store it
+    if Map.user_roi is not None:
+        st.session_state.user_roi = Map.user_roi
+        st.success("🗂 ROI selected and stored.")
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
@@ -123,27 +121,29 @@ st.session_state.clip_to_agriculture = st.checkbox(
     'Clip to Agricultural Lands Only'
 )
 
-# 🌍 **Submit Button**
+
+# 🌍 Submit Button
 roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
-# ✅ If button is pressed, launch processing
+# ✅ Check if button is pressed
 if roi_button:
     st.write("🚀 Starting Freeze-Thaw Detection...")
 
+    # ✅ Check if the ROI is in session state
+    st.write("✅ ROI exists in session:", "user_roi" in st.session_state)
+
     if "user_roi" in st.session_state:
-        user_roi = st.session_state.user_roi  # ✅ Use stored ROI
+        user_roi = st.session_state.user_roi  # ✅ Correct way to use stored ROI
         st.info("🗂 ROI found in session.")
 
         # ✅ Proceed with parameters and processing
-        st.write(f"Start Date: {st.session_state.start_date}, End Date: {st.session_state.end_date}")
-        st.write(f"Resolution: {st.session_state.resolution} meters")
-        st.write(f"Agricultural Clipping: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
+        st.write(f"Start Date: {start_date_widget}, End Date: {end_date_widget}")
+        st.write(f"Resolution: {resolution_widget} meters")
+        st.write(f"Agricultural Clipping: {'Yes' if clip_to_agriculture_checkbox else 'No'}")
 
-        submit_roi()  # ✅ Call processing function
+        submit_roi()  # ✅ Call the function
     else:
         st.error("❌ No ROI selected. Please draw an ROI on the map.")
-
-
 
 
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
@@ -662,7 +662,6 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 # ✅ Step 13: Visualize FT Classification for Streamlit
-# ✅ Step 13: Visualize FT Classification for Streamlit
 def visualize_ft_classification(collection, user_roi, resolution):
     """
     Visualizes Freeze-Thaw classification images with a single-row legend.
@@ -766,3 +765,6 @@ if roi_button:
         submit_roi()
     else:
         st.error("❌ No ROI selected. Please draw one on the map.")
+
+
+st.write("✅ ROI exists in session:", "user_roi" in st.session_state)
