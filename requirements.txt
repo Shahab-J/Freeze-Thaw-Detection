@@ -1,2 +1,13 @@
-geemap
 streamlit
+folium
+streamlit-folium
+geemap
+earthengine-api
+branca
+ipywidgets
+traitlets
+Pillow
+pandas
+numpy
+matplotlib
+scikit-learn
