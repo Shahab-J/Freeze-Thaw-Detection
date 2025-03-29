@@ -18,6 +18,10 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+
+
+
+# Test folium + streamlit-folium
 try:
     import folium
     import streamlit_folium
@@ -26,9 +30,7 @@ try:
 except Exception as e:
     st.error(f"❌ Error importing folium or streamlit-folium: {e}")
 
-
-import streamlit as st
-
+# Show installed packages
 st.header("📦 Installed Packages Check")
 
 # Test folium
@@ -52,51 +54,53 @@ try:
 except Exception as e:
     st.error(f"❌ geemap NOT installed: {e}")
 
-# Test earthengine-api
+# Test Earth Engine
 try:
     import ee
     st.success(f"✅ earthengine-api is installed (version: {ee.__version__})")
 except Exception as e:
     st.error(f"❌ earthengine-api NOT installed: {e}")
 
+# Optional: Test pandas & numpy
+try:
+    import pandas as pd
+    st.text(f"pandas version: {pd.__version__}")
+except:
+    st.warning("⚠️ pandas not available")
 
-
-
+try:
+    import numpy as np
+    st.text(f"numpy version: {np.__version__}")
+except:
+    st.warning("⚠️ numpy not available")
 
 st.markdown("---")
-st.text(f"geemap version: {geemap.__version__}")
-st.text(f"folium version: {folium.__version__}")
-st.text(f"Earth Engine version: {ee.__version__}")
-st.text(f"pandas version: {pd.__version__}")
-st.text(f"numpy version: {np.__version__}")
 
-# ✅ Earth Engine Auth
-service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
-service_account_json = json.dumps(service_account_dict)
-credentials = ee.ServiceAccountCredentials(
-    service_account_dict["client_email"],
-    key_data=service_account_json
-)
-ee.Initialize(credentials)
-st.success("✅ Earth Engine Initialized")
+# Authenticate Earth Engine
+try:
+    service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
+    service_account_json = json.dumps(service_account_dict)
+    credentials = ee.ServiceAccountCredentials(
+        service_account_dict["client_email"],
+        key_data=service_account_json
+    )
+    ee.Initialize(credentials)
+    st.success("✅ Earth Engine Initialized")
+except Exception as e:
+    st.error(f"❌ Earth Engine failed to initialize: {e}")
 
+# Show Folium map
+from folium.plugins import Draw
 
+st.title("🗺️ Folium Map Test")
 
-
-st.title("🧪 Folium Test Map in Streamlit")
-
-# Create folium map
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="OpenStreetMap")
-Draw(export=True).add_to(m)
-
-# Display map
-folium_static(m, height=600)
-
-st.success("✅ If you see a map with draw tools, everything is working.")
-
-
-
-
+try:
+    m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="OpenStreetMap")
+    Draw(export=True).add_to(m)
+    folium_static(m, height=600)
+    st.success("✅ If you see a map with draw tools, everything is working.")
+except Exception as e:
+    st.error(f"❌ Map failed to render: {e}")
 
 
 
