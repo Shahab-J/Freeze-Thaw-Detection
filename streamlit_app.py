@@ -27,10 +27,11 @@ except Exception as e:
     st.error(f"❌ Error importing folium or streamlit-folium: {e}")
 
 
+import streamlit as st
 
-st.header("✅ Installed Package Check")
+st.header("📦 Installed Package Check")
 
-# List of required packages and their import names
+# List of required packages and the import names to test
 required_packages = [
     ("streamlit", "streamlit"),
     ("folium", "folium"),
@@ -45,16 +46,36 @@ required_packages = [
     ("Pillow", "PIL"),
 ]
 
-# Check each package and display status
+# Track results
+installed = []
+missing = []
+errors = []
+
 for pkg_name, module_name in required_packages:
     try:
         mod = __import__(module_name)
-        version = getattr(mod, '__version__', 'No version info available')
-        st.success(f"✅ {pkg_name} (as `{module_name}`) is installed – version: {version}")
+        version = getattr(mod, '__version__', 'N/A')
+        installed.append((pkg_name, version))
     except ImportError:
-        st.error(f"❌ {pkg_name} (import name `{module_name}`) is MISSING!")
+        missing.append(pkg_name)
     except Exception as e:
-        st.warning(f"⚠️ {pkg_name}: Error while checking – {e}")
+        errors.append((pkg_name, str(e)))
+
+# Display results
+if installed:
+    st.subheader("✅ Installed Packages")
+    for name, ver in installed:
+        st.success(f"{name} — version: {ver}")
+
+if missing:
+    st.subheader("❌ Missing Packages")
+    for name in missing:
+        st.error(f"{name} is not installed")
+
+if errors:
+    st.subheader("⚠️ Errors")
+    for name, msg in errors:
+        st.warning(f"{name} – Error: {msg}")
 
 
 
