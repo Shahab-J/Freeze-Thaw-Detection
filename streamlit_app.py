@@ -1,6 +1,7 @@
 import ee
 import sys
 import math
+import json 
 import geemap
 import PIL.Image
 import subprocess
@@ -27,15 +28,18 @@ required_packages = [
 ]
 
 
-# Correct way to load service account from JSON string
+
+
+# Load service account key from Streamlit secrets (as JSON string)
 service_account_info = json.loads(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 
-# Now initialize with proper credentials object
+# Create EE credentials
 credentials = ee.ServiceAccountCredentials(
     service_account_info["client_email"],
     key_data=service_account_info
 )
 
+# Initialize Earth Engine
 ee.Initialize(credentials)
 
 
