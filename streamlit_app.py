@@ -50,22 +50,30 @@ for pkg_name, import_name in packages.items():
 
 
 
+# service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
+# service_account_json = json.dumps(service_account_dict)
+# credentials = ee.ServiceAccountCredentials(
+#     service_account_dict["client_email"],
+#     key_data=service_account_json
+# )
+# ee.Initialize(credentials)
+# st.success("✅ Earth Engine Initialized")
 
 
 
 
 # Authenticate Earth Engine
-try:
-    service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
-    service_account_json = json.dumps(service_account_dict)
-    credentials = ee.ServiceAccountCredentials(
-        service_account_dict["client_email"],
-        key_data=service_account_json
-    )
-    ee.Initialize(credentials)
-    st.success("✅ Earth Engine Initialized")
-except Exception as e:
-    st.error(f"❌ Earth Engine failed to initialize: {e}")
+#try:
+#    service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
+#    service_account_json = json.dumps(service_account_dict)
+#    credentials = ee.ServiceAccountCredentials(
+#        service_account_dict["client_email"],
+#        key_data=service_account_json
+#    )
+#    ee.Initialize(credentials)
+#    st.success("✅ Earth Engine Initialized")
+#except Exception as e:
+#    st.error(f"❌ Earth Engine failed to initialize: {e}")
 
 # Show Folium map
 from folium.plugins import Draw
