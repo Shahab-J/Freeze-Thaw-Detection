@@ -53,7 +53,6 @@ st.write("📌 Draw your ROI on the map below and click Submit.")
 
 
 
-
 # ✅ Authenticate Earth Engine
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
@@ -75,10 +74,6 @@ except Exception as e:
 
 
 
-
-st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("📌 Draw your ROI on the map below and click Submit.")
-
 # ✅ Show Interactive Map
 try:
     Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
@@ -90,13 +85,11 @@ except Exception as e:
 
 # ✅ Handle ROI selection
 if Map.user_roi is not None:
-    st.info("🗂 ROI selected. Ready for processing.")
-    # Optionally show coordinates or convert to EE Geometry
-    st.json(Map.user_roi.getInfo())
+    st.session_state.user_roi = Map.user_roi
+    st.info("🗂 ROI selected and stored.")
+    st.json(Map.user_roi.getInfo())  # 👈 Optional: show geometry
 else:
     st.warning("✏️ Please draw an ROI using the polygon tool on the map.")
-
-
 
 
 
@@ -139,22 +132,19 @@ roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 if roi_button:
     st.write("🚀 Starting Freeze-Thaw Detection...")
 
-    # Get the ROI from the map
-    if Map.user_roi is not None:
-        st.session_state.user_roi = Map.user_roi  # Save ROI persistently
-        st.info("🗂 ROI selected and stored.")
+    if "user_roi" in st.session_state:
+        user_roi = st.session_state.user_roi  # ✅ Use stored ROI
+        st.info("🗂 ROI found in session.")
 
         # ✅ Proceed with parameters and processing
         st.write(f"Start Date: {start_date_widget}, End Date: {end_date_widget}")
         st.write(f"Resolution: {resolution_widget} meters")
         st.write(f"Agricultural Clipping: {'Yes' if clip_to_agriculture_checkbox else 'No'}")
 
-        # 🔁 Optional: run full processing
-        # submit_roi()
+        submit_roi()  # ✅ Call your processing function
 
     else:
         st.error("❌ No ROI selected. Please draw an ROI on the map.")
-
 
 
 
