@@ -5,3 +5,5 @@ folium
 pandas
 numpy
 setuptools
+streamlit-folium
+
