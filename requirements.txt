@@ -1,12 +1,11 @@
-i did:streamlit>=1.25.0
+streamlit>=1.25.0
 geemap>=0.30.0
+earthengine-api>=0.1.331
+folium==0.14.0
+streamlit-folium==0.11.1
 pandas>=1.5.0
 numpy
 matplotlib
 scikit-learn
 ipywidgets
 Pillow
-earthengine-api
-pandas
-folium>=0.14.0
-streamlit-folium>=0.11.1
