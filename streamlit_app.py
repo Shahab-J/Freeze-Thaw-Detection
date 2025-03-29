@@ -15,14 +15,16 @@ from google.auth import credentials
 from google.oauth2 import service_account
 
 
-# DO NOT use json.loads() here
-# Secrets were added as TOML dictionary, so we read it directly
-service_account_info = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
+# Load as dict from Streamlit secrets
+service_account_dict = dict(st.secrets["GEE_SERVICE_ACCOUNT_JSON"])
 
-# Initialize Earth Engine with service account credentials
+# Convert dict back to JSON string
+service_account_json = json.dumps(service_account_dict)
+
+# Initialize EE credentials
 credentials = ee.ServiceAccountCredentials(
-    service_account_info["client_email"],
-    key_data=service_account_info
+    service_account_dict["client_email"],
+    key_data=service_account_json
 )
 
 ee.Initialize(credentials)
