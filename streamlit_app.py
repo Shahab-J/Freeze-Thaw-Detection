@@ -25,6 +25,10 @@ from streamlit_folium import folium_static
 st.set_page_config(page_title="Freeze–Thaw Mapping Tool", layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
+import os
+os.environ["STREAMLIT_WATCH_DIRECTORIES"] = "false"
+
+
 # ===== Earth Engine Auth (Safe for Streamlit Cloud & Local) =====
 if "ee_initialized" not in st.session_state:
     try:
