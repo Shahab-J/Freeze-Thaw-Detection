@@ -20,23 +20,17 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
-
-# ✅ Full Code for Both Issues Resolved
-# Part 1: Preserving Map Zoom, Center, and ROI
-# Part 2: Implementing the EE Freeze–Thaw Processing
-
 import streamlit as st
-from streamlit_folium import st_folium
-import folium
 import ee
 import json
 from datetime import date
+import folium
+from streamlit_folium import st_folium
 
-# ========== ✅ SETUP CONFIG ==========
+# ========== ✅ Must Be First ==========
 st.set_page_config(layout="wide")
-st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ========== ✅ AUTHENTICATE EARTH ENGINE ==========
+# ========== ✅ Authenticate Earth Engine ==========
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -54,98 +48,87 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
-# ========== ✅ INITIALIZE SESSION STATE ==========
-def_map_center = [46.29, -72.75]
-def_map_zoom = 12
-defaults = {
-    "user_roi": None,
-    "map_center": def_map_center,
-    "map_zoom": def_map_zoom,
-    "start_date": date(2023, 10, 1),
-    "end_date": date(2024, 6, 30),
-    "resolution": 30,
-    "clip_to_agriculture": False
-}
-for key, val in defaults.items():
-    if key not in st.session_state:
-        st.session_state[key] = val
+# ========== ✅ Session State Defaults ==========
+def init_state():
+    defaults = {
+        "user_roi": None,
+        "map_center": [46.29, -72.75],
+        "map_zoom": 10,
+        "start_date": date(2023, 10, 1),
+        "end_date": date(2024, 6, 30),
+        "resolution": 30,
+        "clip_to_agriculture": False
+    }
+    for key, val in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = val
 
-# ========== ✅ FOLIUM MAP ==========
-m = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"])
-draw = folium.plugins.Draw(export=True)
-draw.add_to(m)
-folium.LayerControl().add_to(m)
+init_state()
 
-# ✅ Re-add stored ROI (as GeoJSON layer)
+# ========== ✅ UI Title ==========
+st.markdown("""
+    <h1 style='text-align: center;'>🧊 Freeze–Thaw Mapping Tool</h1>
+""", unsafe_allow_html=True)
+
+# ========== ✅ Folium Map Setup ==========
+base_map = folium.Map(
+    location=st.session_state["map_center"],
+    zoom_start=st.session_state["map_zoom"],
+    tiles="Esri.WorldImagery"
+)
+
+draw_control = folium.plugins.Draw(export=True)
+draw_control.add_to(base_map)
+
+# ✅ If ROI exists, re-add it
+if st.session_state.get("user_roi"):
+    try:
+        folium.GeoJson(
+            st.session_state["user_roi"],
+            name="Saved ROI",
+            style_function=lambda x: {"color": "red", "weight": 2}
+        ).add_to(base_map)
+    except Exception as e:
+        st.warning(f"⚠️ Could not re-add saved ROI: {e}")
+
+# ✅ Show map and capture new draw
+map_data = st_folium(base_map, height=650, width=1000, returned_objects=["last_active_drawing", "center", "zoom"])
+
+# ✅ Update session state with new ROI or view state
+if map_data:
+    if map_data.get("last_active_drawing"):
+        st.session_state["user_roi"] = map_data["last_active_drawing"]
+        st.success("✅ ROI selected and saved.")
+    if map_data.get("center"):
+        st.session_state["map_center"] = map_data["center"]
+    if map_data.get("zoom"):
+        st.session_state["map_zoom"] = map_data["zoom"]
+
+# ✅ ROI status
 if st.session_state["user_roi"]:
-    folium.GeoJson(
-        st.session_state["user_roi"],
-        name="Stored ROI",
-        style_function=lambda x: {"color": "red"}
-    ).add_to(m)
-
-# ========== ✅ STREAMLIT-FOLIUM INTEGRATION ==========
-map_data = st_folium(m, key="map", height=600)
-
-# ✅ Save zoom and center after interaction
-if map_data.get("zoom"):
-    st.session_state["map_zoom"] = map_data["zoom"]
-if map_data.get("center"):
-    st.session_state["map_center"] = [map_data["center"]["lat"], map_data["center"]["lng"]]
-
-# ✅ Save ROI after draw
-if map_data.get("last_active_drawing"):
-    st.session_state["user_roi"] = map_data["last_active_drawing"]
-    st.success("✅ ROI selected and saved.")
-
-# ✅ ROI Status
-if st.session_state["user_roi"]:
-    st.info("🗂 ROI is currently selected.")
+    st.info("📍 ROI is currently selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# ========== ✅ WIDGETS ==========
-st.session_state["start_date"] = st.date_input("📅 Start Date", st.session_state["start_date"])
-st.session_state["end_date"] = st.date_input("📅 End Date", st.session_state["end_date"])
-st.session_state["resolution"] = st.selectbox("📏 Resolution (m):", [10, 30, 100], index=[10, 30, 100].index(st.session_state["resolution"]))
-st.session_state["clip_to_agriculture"] = st.checkbox("🌱 Clip to Agricultural Lands Only", value=st.session_state["clip_to_agriculture"])
+# ========== ✅ Widgets ==========
+st.session_state["start_date"] = st.date_input("📅 Start Date", value=st.session_state["start_date"])
+st.session_state["end_date"] = st.date_input("📅 End Date", value=st.session_state["end_date"])
+st.session_state["resolution"] = st.selectbox("📏 Resolution (m):", [10, 30, 100],
+                                               index=[10, 30, 100].index(st.session_state["resolution"]))
+st.session_state["clip_to_agriculture"] = st.checkbox("🌱 Clip to Agricultural Lands Only",
+                                                      value=st.session_state["clip_to_agriculture"])
 
-# ========== ✅ SUBMIT AND PROCESS ==========
-def submit_roi():
-    geojson = st.session_state["user_roi"]
-    roi = ee.Geometry(geojson["geometry"])
-
-    start = st.session_state["start_date"].isoformat()
-    end = st.session_state["end_date"].isoformat()
-
-    collection = ee.ImageCollection("COPERNICUS/S1_GRD") \
-        .filterBounds(roi) \
-        .filterDate(start, end) \
-        .filter(ee.Filter.eq("instrumentMode", "IW")) \
-        .filter(ee.Filter.listContains("transmitterReceiverPolarisation", "VH")) \
-        .select("VH")
-
-    count = collection.size().getInfo()
-    st.success(f"✅ {count} Sentinel-1 VH images found.")
-
-    if count > 0:
-        mosaic = collection.median().clip(roi)
-        vis = {"min": -25, "max": 0, "palette": ["blue", "white"]}
-        url = mosaic.getMapId(vis)["tile_fetcher"].url_format
-        st.markdown(f"🌐 [Preview Mosaic Layer]({url})")
-    else:
-        st.warning("⚠️ No images found for this selection.")
-
-# ✅ Button to trigger processing
+# ========== ✅ Submit Button ==========
 if st.button("🚀 Submit ROI & Start Processing"):
     if st.session_state.get("user_roi"):
-        st.write("🚀 Starting Freeze–Thaw Detection...")
+        st.success("🚀 Starting Freeze–Thaw Detection...")
         st.info("🗂 ROI stored and passed to processing.")
         st.write(f"📅 Start Date: {st.session_state['start_date']}")
         st.write(f"📅 End Date: {st.session_state['end_date']}")
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
         st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-        submit_roi()
+        # 🔁 Replace with actual processing logic
+        # submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
 
