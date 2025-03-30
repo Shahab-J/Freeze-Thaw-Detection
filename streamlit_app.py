@@ -68,139 +68,6 @@ output = st_folium(m, width=1100, height=650)
 
 
 
-# ========== ✅ Processing Pipeline ==========
-def submit_roi():
-    if "user_roi" not in st.session_state or st.session_state.user_roi is None:
-        st.error("❌ No ROI selected. Please draw an ROI before processing.")
-        return
-
-    user_roi = st.session_state.user_roi
-    resolution = st.session_state.get("resolution", 30)
-    clip_agriculture = st.session_state.get("clip_to_agriculture", False)
-
-    user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
-    user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
-    today = date.today().strftime("%Y-%m-%d")
-
-    if user_selected_end >= today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
-        return
-    if user_selected_start >= user_selected_end:
-        st.error("❌ Start date must be earlier than end date.")
-        return
-
-    start_year = int(user_selected_start[:4])
-    if int(user_selected_start[5:7]) < 10:
-        start_year -= 1
-    start_date = f"{start_year}-10-01"
-    end_date = f"{start_year+1}-06-30"
-
-    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
-
-    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
-
-        processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-        if processed_images is None:
-            st.warning("⚠️ Step failed: Sentinel-1 processing.")
-            return
-
-        mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-        if mosaicked_images is None:
-            st.warning("⚠️ Step failed: Mosaicking by date.")
-            return
-
-        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-        if sigma_diff_collection is None:
-            st.warning("⚠️ Step failed: SigmaDiff computation.")
-            return
-
-        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-        if sigma_extreme_collection is None:
-            st.warning("⚠️ Step failed: Sigma extremes.")
-            return
-
-        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-        if final_k_collection is None:
-            st.warning("⚠️ Step failed: K assignment.")
-            return
-
-        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-        if thaw_ref_image is None:
-            st.warning("⚠️ Step failed: ThawRef image.")
-            return
-
-        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
-        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-        if delta_theta_collection is None:
-            st.warning("⚠️ Step failed: ΔTheta computation.")
-            return
-
-        efta_collection = compute_efta(delta_theta_collection, resolution)
-        if efta_collection is None:
-            st.warning("⚠️ Step failed: EFTA calculation.")
-            return
-
-        st.session_state.efta_collection = efta_collection
-
-        rf_model = train_rf_model()
-        if rf_model is None:
-            st.warning("⚠️ RF Model training failed.")
-            return
-
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
-        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
-
-        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-
-        st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
-
-
-
-
-
-
-
-
-
-
-
-# ========== ✅ Submit Handler ==========
-if submit:
-    if output and output.get("all_drawings"):
-        last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
-        st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
-
-        st.success("✅ ROI submitted and ready for processing.")
-        with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
-            submit_roi()
-    else:
-        st.warning("⚠️ Please draw an ROI before submitting.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
 def process_sentinel1(start_date, end_date, roi, resolution):
     """Loads and processes Sentinel-1 data for the selected ROI and time range."""
@@ -790,3 +657,109 @@ def visualize_ft_classification(collection, user_roi, resolution):
             st.write(line)
 
         st.success("✅ Visualization complete.")
+
+# ========== ✅ Processing Pipeline ==========
+def submit_roi():
+    if "user_roi" not in st.session_state or st.session_state.user_roi is None:
+        st.error("❌ No ROI selected. Please draw an ROI before processing.")
+        return
+
+    user_roi = st.session_state.user_roi
+    resolution = st.session_state.get("resolution", 30)
+    clip_agriculture = st.session_state.get("clip_to_agriculture", False)
+
+    user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
+    user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
+    today = date.today().strftime("%Y-%m-%d")
+
+    if user_selected_end >= today:
+        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+        return
+    if user_selected_start >= user_selected_end:
+        st.error("❌ Start date must be earlier than end date.")
+        return
+
+    start_year = int(user_selected_start[:4])
+    if int(user_selected_start[5:7]) < 10:
+        start_year -= 1
+    start_date = f"{start_year}-10-01"
+    end_date = f"{start_year+1}-06-30"
+
+    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+
+    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
+
+        processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
+        if processed_images is None:
+            st.warning("⚠️ Step failed: Sentinel-1 processing.")
+            return
+
+        mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
+        if mosaicked_images is None:
+            st.warning("⚠️ Step failed: Mosaicking by date.")
+            return
+
+        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
+        if sigma_diff_collection is None:
+            st.warning("⚠️ Step failed: SigmaDiff computation.")
+            return
+
+        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
+        if sigma_extreme_collection is None:
+            st.warning("⚠️ Step failed: Sigma extremes.")
+            return
+
+        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
+        if final_k_collection is None:
+            st.warning("⚠️ Step failed: K assignment.")
+            return
+
+        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
+        if thaw_ref_image is None:
+            st.warning("⚠️ Step failed: ThawRef image.")
+            return
+
+        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
+        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
+        if delta_theta_collection is None:
+            st.warning("⚠️ Step failed: ΔTheta computation.")
+            return
+
+        efta_collection = compute_efta(delta_theta_collection, resolution)
+        if efta_collection is None:
+            st.warning("⚠️ Step failed: EFTA calculation.")
+            return
+
+        st.session_state.efta_collection = efta_collection
+
+        rf_model = train_rf_model()
+        if rf_model is None:
+            st.warning("⚠️ RF Model training failed.")
+            return
+
+        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
+
+        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
+
+        st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+# ========== ✅ Submit Handler ==========
+if submit:
+    if output and output.get("all_drawings"):
+        last_feature = output["all_drawings"][-1]
+        roi_geojson = last_feature["geometry"]
+        st.session_state.user_roi = ee.Geometry(roi_geojson)
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+        st.session_state.resolution = resolution
+        st.session_state.clip_to_agriculture = clip_to_agri
+
+        st.success("✅ ROI submitted and ready for processing.")
+        with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
+            submit_roi()
+    else:
+        st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
