@@ -24,6 +24,11 @@ from streamlit_folium import folium_static
 # MUST be the first Streamlit command
 st.set_page_config(layout="wide")
 
+# ✅ Confirm ROI status
+if st.session_state["user_roi"]:
+    st.info("🗂 ROI is currently selected.")
+elif not roi_drawn:
+    st.warning("✏️ Please draw an ROI on the map.")
 # ================== Initialize state ==================
 # ✅ Initialize EE
 service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
@@ -74,11 +79,6 @@ if Map.user_roi:
     st.success("✅ ROI selected and saved.")
 
 
-# ✅ Confirm ROI status
-if st.session_state["user_roi"]:
-    st.info("🗂 ROI is currently selected.")
-elif not roi_drawn:
-    st.warning("✏️ Please draw an ROI on the map.")
 
 # ✅ Date input widgets
 st.session_state["start_date"] = st.date_input(
