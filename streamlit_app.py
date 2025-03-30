@@ -680,6 +680,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
 
 
 # ========== ✅ Processing Pipeline ==========
+# ========== ✅ Processing Pipeline ==========
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -758,23 +759,51 @@ def submit_roi():
             st.warning("⚠️ RF Model training failed.")
             return
 
-
         classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
-        if clip_agriculture:
-            cropland = ee.ImageCollection("USDA/NASS/CDL") \
-                .filterDate(f"{start_year}-01-01", f"{start_year+1}-01-01") \
-                .first() \
-                .select("cropland")
 
-            classified_images = classified_images.map(
-                lambda img: img.updateMask(cropland.gt(0))
-            )
-            st.info("🟩 Classified images masked to agricultural lands.")
+        # ✅ Optional: Clip to cropland using NALCMS class 15
+        if clip_agriculture:
+            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+
+            try:
+                # Load NALCMS and mask class 15 (cropland)
+                landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+                cropland_mask = landcover.eq(15)
+
+                cropland_geometry = cropland_mask.selfMask().reduceToVectors(
+                    geometry=user_roi,
+                    geometryType='polygon',
+                    scale=30,
+                    maxPixels=1e13
+                )
+
+                intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
+
+                # Check validity
+                if intersected_roi.coordinates().size().getInfo() == 0:
+                    st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
+                    return
+
+                user_roi = intersected_roi
+                classified_images = classified_images.map(lambda img: img.clip(user_roi))
+
+                st.success("✅ ROI successfully clipped to cropland using NALCMS.")
+
+            except Exception as e:
+                st.warning(f"⚠️ Cropland masking failed: {e}")
 
         classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+
+
+
+
+
 
 # ========== ✅ Submit Handler ==========
 if submit:
