@@ -566,97 +566,112 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 
+
+
+
+
+
 # ✅ Step 13: Visualize FT Classification for Streamlit
-def visualize_ft_classification(collection, user_roi, resolution):
+def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
     """
-    Visualizes Freeze–Thaw classification images and summaries inside an expandable Streamlit frame.
+    Visualizes Freeze–Thaw classification results using thumbnails and pixel stats.
+    Shows results in a Streamlit expander.
     """
+    try:
+        image_list = collection.limit(max_images).toList(max_images)
+        num_images = max_images
 
-    if collection is None or collection.size().getInfo() == 0:
-        st.error("❌ No classification results available for visualization.")
-        return
+        with st.expander("🧊 View Freeze–Thaw Results", expanded=True):
+            st.write(f"📦 Showing up to {num_images} classified images")
+            cols = 3
+            rows = (num_images // cols) + (num_images % cols > 0)
+            total_slots = rows * cols
 
-    image_list = collection.toList(collection.size())
-    num_images = collection.size().getInfo()
+            fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
+            axes = axes.flatten()
+            summary_lines = []
 
-    with st.expander("🧊 View Freeze–Thaw Results", expanded=True):
-        st.write(f"📦 Total Classified Images: {num_images}")
-        cols = 3
-        rows = (num_images // cols) + (num_images % cols > 0)
-        total_slots = rows * cols
-        legend_needed = total_slots > num_images
-        if not legend_needed:
-            rows += 1
+            for i in range(num_images):
+                try:
+                    img = ee.Image(image_list.get(i))
+                    timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
-        fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
-        axes = axes.flatten()
-        summary_lines = []
+                    url = img.select("FT_State").clip(user_roi).getThumbURL({
+                        "min": 0,
+                        "max": 1,
+                        "dimensions": 512,
+                        "region": user_roi,
+                        "palette": ["red", "blue"]
+                    })
 
-        for i in range(num_images):
-            try:
-                img = ee.Image(image_list.get(i))
-                timestamp = img.date().format("YYYY-MM-dd").getInfo()
+                    image_array = np.array(Image.open(urllib.request.urlopen(url)))
+                    axes[i].imshow(image_array, cmap="bwr", vmin=0, vmax=1)
+                    axes[i].set_title(timestamp)
+                    axes[i].axis("off")
 
-                url = img.select("FT_State").clip(user_roi).getThumbURL({
-                    "min": 0,
-                    "max": 1,
-                    "dimensions": 512,
-                    "palette": ["red", "blue"]
-                })
+                    # Pixel stats
+                    stats = img.select("FT_State").reduceRegion(
+                        reducer=ee.Reducer.frequencyHistogram(),
+                        geometry=user_roi,
+                        scale=resolution,
+                        maxPixels=1e13
+                    ).getInfo()
 
-                image_array = np.array(PIL.Image.open(urllib.request.urlopen(url)))
-                axes[i].imshow(image_array, cmap="bwr", vmin=0, vmax=1)
-                axes[i].set_title(timestamp)
-                axes[i].axis("off")
+                    hist = stats.get("FT_State", {})
+                    thawed = int(hist.get("0", 0))
+                    frozen = int(hist.get("1", 0))
+                    total = thawed + frozen
+                    thawed_pct = thawed / total * 100 if total > 0 else 0
+                    frozen_pct = frozen / total * 100 if total > 0 else 0
 
-                # Pixel stats
-                stats = img.select("FT_State").reduceRegion(
-                    reducer=ee.Reducer.frequencyHistogram(),
-                    geometry=user_roi,
-                    scale=resolution,
-                    maxPixels=1e13
-                ).getInfo()
+                    summary_lines.append(
+                        f"🗓️ {timestamp}: ❄️ Frozen = {frozen:,} ({frozen_pct:.1f}%) | 💧 Thawed = {thawed:,} ({thawed_pct:.1f}%)"
+                    )
 
-                hist = stats.get("FT_State", {})
-                thawed = int(hist.get("0", 0))
-                frozen = int(hist.get("1", 0))
-                total = thawed + frozen
-                thawed_pct = thawed / total * 100 if total > 0 else 0
-                frozen_pct = frozen / total * 100 if total > 0 else 0
+                except Exception as e:
+                    axes[i].axis("off")
+                    axes[i].set_title("Error")
+                    st.warning(f"⚠️ Could not display image {i+1}: {e}")
 
-                summary_lines.append(
-                    f"🗓️ {timestamp}: ❄️ Frozen = {frozen:,} ({frozen_pct:.1f}%) | 💧 Thawed = {thawed:,} ({thawed_pct:.1f}%)"
-                )
+            # Add legend
+            if len(axes) > num_images:
+                legend_ax = axes[num_images]
+            else:
+                legend_ax = fig.add_subplot(rows, cols, num_images + 1)
 
-            except Exception as e:
-                axes[i].axis("off")
-                axes[i].set_title("Error")
-                st.warning(f"⚠️ Could not display image {i+1}: {e}")
+            legend_ax.axis("off")
+            legend_ax.legend(
+                labels=["Thawed", "Frozen"],
+                handles=[
+                    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10),
+                    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10)
+                ],
+                loc="center", ncol=2, frameon=False, fontsize=10
+            )
 
-        # Legend
-        if legend_needed:
-            legend_ax = axes[num_images]
-        else:
-            legend_ax = fig.add_subplot(rows, cols, num_images + 1)
+            plt.tight_layout()
+            st.pyplot(fig)
 
-        legend_ax.axis("off")
-        legend_ax.legend(
-            labels=["Thawed", "Frozen"],
-            handles=[
-                plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10),
-                plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10)
-            ],
-            loc="center", ncol=2, frameon=False, fontsize=10
-        )
+            st.markdown("### 📊 Summary of Images:")
+            for line in summary_lines:
+                st.write(line)
 
-        plt.tight_layout()
-        st.pyplot(fig)
+            st.success("✅ Visualization complete.")
 
-        st.markdown("### 📊 Summary of All Images:")
-        for line in summary_lines:
-            st.write(line)
+    except Exception as e:
+        st.error(f"❌ Visualization failed: {e}")
 
-        st.success("✅ Visualization complete.")
+
+
+
+
+
+
+
+
+
+
+
 
 # ========== ✅ Processing Pipeline ==========
 def submit_roi():
