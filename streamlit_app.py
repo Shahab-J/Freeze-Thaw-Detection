@@ -31,84 +31,77 @@ from datetime import date
 st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# Initialize state
-defaults = {
-    "user_roi": None,
-    "map_center": [46.29, -72.75],
-    "map_zoom": 10,
-    "start_date": date(2023, 10, 1),
-    "end_date": date(2024, 6, 30),
-    "resolution": 30,
-    "clip_to_agriculture": False
-}
-for key, val in defaults.items():
-    if key not in st.session_state:
-        st.session_state[key] = val
+# ========= 🌍 INITIALIZE SESSION STATE =========
+default_center = [46.29, -72.75]  # [lat, lon]
 
-# Handle zoom bug
-map_center = st.session_state["map_center"]
+if "user_roi" not in st.session_state:
+    st.session_state.user_roi = None
+if "map_center" not in st.session_state:
+    st.session_state.map_center = default_center
+if "map_zoom" not in st.session_state:
+    st.session_state.map_zoom = 10
+if "start_date" not in st.session_state:
+    st.session_state.start_date = date(2023, 10, 1)
+if "end_date" not in st.session_state:
+    st.session_state.end_date = date(2024, 6, 30)
+if "resolution" not in st.session_state:
+    st.session_state.resolution = 30
+if "clip_to_agriculture" not in st.session_state:
+    st.session_state.clip_to_agriculture = False
+
+# ========= 🗺️ SETUP FOLIUM MAP =========
+# Convert dict center (from zoom) back to list
+map_center = st.session_state.map_center
 if isinstance(map_center, dict):
     map_center = [map_center["lat"], map_center["lng"]]
 
-# 🌍 Folium map
-m = folium.Map(location=map_center, zoom_start=st.session_state["map_zoom"], tiles="Esri.WorldImagery")
-
-# Add drawing tools
+m = folium.Map(location=map_center, zoom_start=st.session_state.map_zoom, tiles="Esri.WorldImagery")
 Draw(export=True).add_to(m)
 
-# Re-add ROI
-if st.session_state["user_roi"]:
-    folium.GeoJson(st.session_state["user_roi"], name="Saved ROI").add_to(m)
+# Restore saved ROI
+if st.session_state.user_roi:
+    folium.GeoJson(st.session_state.user_roi, name="Saved ROI").add_to(m)
 
-# Show map
-map_data = st_folium(m, height=600, width=1000, returned_objects=["last_active_drawing", "center", "zoom"])
+# Show map full-width
+map_data = st_folium(m, height=600, width="100%", returned_objects=["last_active_drawing", "center", "zoom"])
 
-# Save ROI
+# ========= 💾 SAVE ROI AND VIEW STATE =========
 if map_data.get("last_active_drawing"):
-    st.session_state["user_roi"] = map_data["last_active_drawing"]
-    st.success("✅ ROI saved.")
+    st.session_state.user_roi = map_data["last_active_drawing"]
 
-# Save view
 if map_data.get("center"):
-    st.session_state["map_center"] = map_data["center"]
+    st.session_state.map_center = map_data["center"]
 if map_data.get("zoom"):
-    st.session_state["map_zoom"] = map_data["zoom"]
+    st.session_state.map_zoom = map_data["zoom"]
 
-# Show status
-if st.session_state["user_roi"]:
-    st.info("📌 ROI is selected.")
+# ========= 🧊 USER INPUT WIDGETS =========
+if st.session_state.user_roi:
+    st.info("🗂 ROI is currently selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# User inputs
-st.session_state["start_date"] = st.date_input("📅 Start Date", st.session_state["start_date"])
-st.session_state["end_date"] = st.date_input("📅 End Date", st.session_state["end_date"])
-st.session_state["resolution"] = st.selectbox("📏 Resolution (m):", [10, 30, 100], index=[10, 30, 100].index(st.session_state["resolution"]))
-st.session_state["clip_to_agriculture"] = st.checkbox("🌱 Clip to Agricultural Lands Only", value=st.session_state["clip_to_agriculture"])
+st.session_state.start_date = st.date_input("📅 Start Date", st.session_state.start_date)
+st.session_state.end_date = st.date_input("📅 End Date", st.session_state.end_date)
+st.session_state.resolution = st.selectbox("📏 Resolution (m):", [10, 30, 100], index=[10, 30, 100].index(st.session_state.resolution))
+st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural Lands Only", value=st.session_state.clip_to_agriculture)
 
-# 🚀 Submit processing
+# ========= 🚀 PROCESS BUTTON =========
 def submit_roi():
-    st.success("✅ Processing started inside submit_roi().")
-    # Replace this with real Earth Engine logic
-    # Add logic here to count images, create mosaic, visualize result
-    st.write("🛰️ (This is where image processing would happen.)")
+    st.success("✅ Processing started (placeholder).")
+    st.write("🛰️ You can now load images, apply filters, and visualize results.")
+    # Later: Earth Engine logic goes here
 
 if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state.get("user_roi"):
+    if st.session_state.user_roi:
         st.write("🚀 Starting Freeze–Thaw Detection...")
         st.info("📌 ROI stored and passed to processing.")
-        st.write(f"📅 Start Date: {st.session_state['start_date']}")
-        st.write(f"📅 End Date: {st.session_state['end_date']}")
-        st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
-        st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-
+        st.write(f"📅 Start Date: {st.session_state.start_date}")
+        st.write(f"📅 End Date: {st.session_state.end_date}")
+        st.write(f"📏 Resolution: {st.session_state.resolution} meters")
+        st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
         submit_roi()
     else:
-        st.error("❌ Please draw an ROI before submitting.")
-
-
-
-
+        st.error("❌ Please draw an ROI first.")
 
 
 
