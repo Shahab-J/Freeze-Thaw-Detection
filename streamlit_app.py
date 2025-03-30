@@ -21,94 +21,50 @@ from streamlit_folium import folium_static
 
 
 
-import streamlit as st
-import ee
-import geemap.foliumap as geemap
-from datetime import date
+# streamlit_app.py
 
-st.set_page_config(layout="wide")
+import streamlit as st
+import geemap.foliumap as geemap
+import ee
+
+# ===== 1. App Config =====
+st.set_page_config(page_title="Freeze–Thaw Mapping Tool", layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ✅ Initialize Earth Engine
+# ===== 2. Initialize Earth Engine =====
 if "ee_initialized" not in st.session_state:
     try:
         ee.Initialize()
-        st.session_state["ee_initialized"] = True
+        st.session_state.ee_initialized = True
     except Exception as e:
-        st.error(f"Earth Engine initialization failed: {e}")
+        st.error("❌ Earth Engine initialization failed.")
+        st.stop()
 
-# ✅ Default session state
-if "user_roi" not in st.session_state:
-    st.session_state.user_roi = None
+# ===== 3. Session Defaults =====
 if "map_center" not in st.session_state:
-    st.session_state.map_center = [46.29, -72.75]
+    st.session_state.map_center = [46.29, -72.75]  # [lat, lon]
 if "map_zoom" not in st.session_state:
     st.session_state.map_zoom = 8
+if "user_roi" not in st.session_state:
+    st.session_state.user_roi = None
 
-# ✅ Sidebar options
-st.sidebar.subheader("📅 Date Range")
-start_date = st.sidebar.date_input("Start Date", date(2023, 10, 1))
-end_date = st.sidebar.date_input("End Date", date(2024, 6, 30))
-resolution = st.sidebar.selectbox("📏 Resolution (meters)", [10, 30, 100], index=1)
-clip_to_agriculture = st.sidebar.checkbox("🌱 Clip to Agriculture Only", value=True)
+# ===== 4. Display Interactive Map =====
+Map = geemap.Map(center=st.session_state.map_center,
+                 zoom=st.session_state.map_zoom,
+                 basemap="SATELLITE")
 
-st.session_state.start_date = start_date
-st.session_state.end_date = end_date
-st.session_state.resolution = resolution
-st.session_state.clip_to_agriculture = clip_to_agriculture
-
-# ✅ Draw ROI on map
-st.subheader("🌍 Draw your ROI below")
-Map = geemap.Map(center=st.session_state.map_center, zoom=st.session_state.map_zoom, basemap="SATELLITE")
 Map.add_draw_control()
 Map.to_streamlit(height=600)
 
-# ✅ Submit ROI button
-if st.button("🚀 Submit ROI & Start Processing"):
-    drawn_features = Map.user_roi  # Get ROI from geemap
-    if drawn_features:
-        st.session_state.user_roi = drawn_features
-
-        try:
-            roi = ee.Geometry(st.session_state.user_roi)
-            st.success("📌 ROI saved and passed to processing.")
-
-            # Show ROI info
-            st.write("📅 Start Date:", str(start_date))
-            st.write("📅 End Date:", str(end_date))
-            st.write(f"📏 Resolution: {resolution} meters")
-            st.write(f"🌱 Clip to Agriculture: {'Yes' if clip_to_agriculture else 'No'}")
-
-            # Filter Sentinel-1
-            st.info("🔍 Filtering Sentinel-1 VH images...")
-            collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
-                          .filterBounds(roi)
-                          .filterDate(str(start_date), str(end_date))
-                          .filter(ee.Filter.listContains("transmitterReceiverPolarisation", "VH"))
-                          .filter(ee.Filter.eq("instrumentMode", "IW"))
-                          .select("VH"))
-
-            image_count = collection.size().getInfo()
-            st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
-
-            if image_count > 0:
-                first_image = collection.sort('system:time_start').first()
-                url = first_image.clip(roi).getThumbURL({
-                    'region': roi,
-                    'min': -25,
-                    'max': 0,
-                    'dimensions': 512,
-                    'format': 'png'
-                })
-                st.image(url, caption="📸 First Sentinel-1 VH image")
-            else:
-                st.warning("No images found in this time range.")
-        except Exception as e:
-            st.error(f"Error: {e}")
+# ===== 5. Submit Button =====
+st.markdown("---")
+if st.button("✅ Get ROI geometry"):
+    if Map.user_roi:
+        st.session_state.user_roi = Map.user_roi
+        st.success("📍 ROI geometry stored.")
+        st.json(Map.user_roi)
     else:
-        st.warning("❌ Please draw an ROI on the map before submitting.")
-
-
+        st.warning("✏️ Please draw an ROI first.")
 
 
 
