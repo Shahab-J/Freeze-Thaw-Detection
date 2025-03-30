@@ -21,13 +21,23 @@ from streamlit_folium import folium_static
 
 
 
+
+
+
+import streamlit as st
+import folium
+from streamlit_folium import st_folium
+import ee
+import json
+import datetime
+
 # ===== App Config =====
 st.set_page_config(page_title="Freeze–Thaw Mapping Tool", layout="wide")
-st.title("🧊 Freeze–Thaw Mapping Tool")
+st.title("🏊 Freeze–Thaw Mapping Tool")
 
+# ===== Avoid File Watcher Limits =====
 import os
 os.environ["STREAMLIT_WATCH_DIRECTORIES"] = "false"
-
 
 # ===== Earth Engine Auth (Safe for Streamlit Cloud & Local) =====
 if "ee_initialized" not in st.session_state:
@@ -52,94 +62,91 @@ if "ee_initialized" not in st.session_state:
             st.stop()
     st.session_state.ee_initialized = True
 
+# ===== Session State Defaults =====
+def init_state():
+    defaults = {
+        "user_roi": None,
+        "start_date": datetime.date(2023, 10, 1),
+        "end_date": datetime.date(2024, 6, 30),
+        "resolution": 30,
+        "clip_to_agriculture": True,
+        "map_center": [46.29, -72.75],
+        "map_zoom": 11,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
 
+init_state()
 
-# ========== 💾 Session State Initialization ==========
-def init_session_state():
-    if "user_roi" not in st.session_state:
-        st.session_state.user_roi = None
-    if "start_date" not in st.session_state:
-        st.session_state.start_date = date(2023, 10, 1)
-    if "end_date" not in st.session_state:
-        st.session_state.end_date = date(2024, 6, 30)
-    if "resolution" not in st.session_state:
-        st.session_state.resolution = 30
-    if "clip_to_agriculture" not in st.session_state:
-        st.session_state.clip_to_agriculture = True
-    if "map_center" not in st.session_state:
-        st.session_state.map_center = [46.29, -72.75]  # ✅ FIXED (was a dict)
-    if "map_zoom" not in st.session_state:
-        st.session_state.map_zoom = 8
-
-init_session_state()
-
-# ========== 🗓️ Sidebar Inputs ==========
+# ===== Sidebar Parameters =====
 st.sidebar.header("Set Parameters")
 st.session_state.start_date = st.sidebar.date_input("Start Date", st.session_state.start_date)
 st.session_state.end_date = st.sidebar.date_input("End Date", st.session_state.end_date)
-st.session_state.resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=1)
-st.session_state.clip_to_agriculture = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
+st.session_state.resolution = st.sidebar.selectbox("Resolution (meters):", [10, 30, 100], index=[10, 30, 100].index(st.session_state.resolution))
+st.session_state.clip_to_agriculture = st.sidebar.checkbox("Clip to Agricultural Land Only", value=st.session_state.clip_to_agriculture)
 
-# ========== 🗺️ Draw ROI Map ==========
-st.markdown("### 1. Select Region of Interest (ROI)")
-st.write("📌 Draw an ROI on the map. It will be saved and persist across interactions.")
+# ===== Folium Map =====
+st.markdown("""<style>.leaflet-container { height: 600px !important; }</style>""", unsafe_allow_html=True)
+base_map = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"], tiles="Esri.WorldImagery")
 
-base_map = folium.Map(location=st.session_state.map_center, zoom_start=st.session_state.map_zoom, tiles="Esri.WorldImagery")
-
-# Draw Tool
+# Add draw control
 from folium.plugins import Draw
-Draw(export=True).add_to(base_map)
+Draw(export=True, filename='roi.geojson', position='topleft').add_to(base_map)
 
-# Display Map
-output = st_folium(base_map, width=1000, height=500, returned_objects=["last_drawn_feature"])
+# Display map and capture output
+output = st_folium(base_map, height=600, width=700, returned_objects=["last_drawn_feature"])
 
-# Update session state with drawn ROI
-if output["last_drawn_feature"]:
+# Safe check to avoid KeyError
+if output and output.get("last_drawn_feature"):
     st.session_state.user_roi = output["last_drawn_feature"]["geometry"]
-    st.success("✅ ROI successfully saved.")
+    st.success("📍 ROI selected.")
 
-# ========== 🚀 PROCESSING FUNCTION ==========
+# ===== Submit Button and Processing =====
 def submit_roi():
-    st.write("📡 Processing Sentinel-1 VH data...")
     roi_geojson = st.session_state.user_roi
-    roi_ee = ee.Geometry(roi_geojson)
-
-    collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
-                  .filterBounds(roi_ee)
-                  .filterDate(str(st.session_state.start_date), str(st.session_state.end_date))
-                  .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
-                  .filter(ee.Filter.eq('instrumentMode', 'IW'))
-                  .select('VH'))
-
-    image_count = collection.size().getInfo()
-    st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
-
-    if image_count > 0:
-        first_image = collection.sort('system:time_start').first()
-        url = first_image.clip(roi_ee).getThumbURL({
-            'region': roi_ee,
-            'min': -25,
-            'max': 0,
-            'dimensions': 512,
-            'format': 'png'
-        })
-        st.image(url, caption="📸 First Sentinel-1 VH image", use_column_width=True)
-    else:
-        st.warning("⚠️ No images found for the selected region and date range.")
-
-# ========== 🔘 Submit Button ==========
-st.markdown("### 2. Run Detection")
-if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state.user_roi:
-        st.write("🚀 Starting Freeze–Thaw Detection...")
-        st.info("📌 ROI stored and passed to processing.")
-        st.write(f"📅 Start Date: {st.session_state.start_date}")
-        st.write(f"📅 End Date: {st.session_state.end_date}")
-        st.write(f"📏 Resolution: {st.session_state.resolution} meters")
-        st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
-        submit_roi()
-    else:
+    if not roi_geojson:
         st.error("❌ Please draw an ROI first.")
+        return
+
+    try:
+        roi_ee = ee.Geometry(roi_geojson)
+        st.info("Filtering Sentinel-1 VH data...")
+        collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
+                      .filterBounds(roi_ee)
+                      .filterDate(str(st.session_state.start_date), str(st.session_state.end_date))
+                      .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+                      .filter(ee.Filter.eq('instrumentMode', 'IW'))
+                      .select('VH'))
+
+        count = collection.size().getInfo()
+        st.success(f"🚁 {count} Sentinel-1 VH images found.")
+
+        if count > 0:
+            img = collection.sort("system:time_start").first().clip(roi_ee)
+            url = img.getThumbURL({
+                'region': roi_ee,
+                'min': -25,
+                'max': 0,
+                'dimensions': 512,
+                'format': 'png'
+            })
+            st.image(url, caption="First VH image", use_column_width=True)
+        else:
+            st.warning("No images found for the selected range.")
+    except Exception as e:
+        st.error(f"Processing error: {e}")
+
+if st.button("🚀 Submit ROI & Start Processing"):
+    submit_roi()
+
+
+
+
+
+
+
+
 
 
 
