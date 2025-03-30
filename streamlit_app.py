@@ -22,19 +22,17 @@ from streamlit_folium import folium_static
 
 
 
-
-
 import streamlit as st
 import geemap.foliumap as geemap
 import ee
 import json
 import datetime
 
-# ========== ✅ SETUP CONFIG ==========
+# ========== ✅ SETUP CONFIG ========== 
 st.set_page_config(layout="wide")
 st.title("🏊 Freeze–Thaw Mapping Tool")
 
-# ========== ✅ AUTHENTICATE EARTH ENGINE ==========
+# ========== ✅ AUTHENTICATE EARTH ENGINE ========== 
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -53,7 +51,7 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SESSION STATE DEFAULTS ==========
+# ========== ✅ SESSION STATE DEFAULTS ========== 
 def init_session():
     defaults = {
         "start_date": datetime.date(2023, 10, 1),
@@ -68,7 +66,7 @@ def init_session():
 
 init_session()
 
-# ========== ✅ SIDEBAR INPUTS ==========
+# ========== ✅ SIDEBAR INPUTS ========== 
 with st.sidebar:
     st.subheader("Set Parameters")
     st.session_state.start_date = st.date_input("📅 Start Date", value=st.session_state.start_date)
@@ -77,20 +75,24 @@ with st.sidebar:
     st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural Lands", value=True)
     submit = st.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAW MAP ==========
+# ========== ✅ DRAW MAP ========== 
 st.subheader("Draw your ROI below")
-m = geemap.Map(center=[46.29, -72.75], zoom=6)
+m = geemap.Map(center=[46.29, -72.75], zoom=6, height=600)  # Set the height directly in initialization
 m.add_basemap("SATELLITE")
-m.add_draw_control()
-m.to_streamlit(height=600)
+m.add_draw_control()  # This adds the drawing control to the map
+m.to_streamlit()
 
-# ========== ✅ CAPTURE ROI FROM USER ==========
-roi_output = m.user_roi_export()
+# ========== ✅ CAPTURE ROI FROM USER ========== 
+roi_output = m.user_roi_export()  # Export the user-drawn ROI
+if roi_output:
+    st.write(f"ROI Output: {roi_output}")  # Debugging line
 if roi_output and "geometry" in roi_output:
     st.session_state.user_roi = roi_output["geometry"]
     st.success("🗂 ROI is currently selected.")
+else:
+    st.warning("❗️ No ROI drawn yet.")
 
-# ========== ✅ PROCESS ROI ==========
+# ========== ✅ PROCESS ROI ========== 
 if submit:
     if st.session_state.user_roi is None:
         st.error("❌ Please draw a Region of Interest (ROI) first.")
@@ -101,7 +103,7 @@ if submit:
         st.write(f"📏 Resolution: {st.session_state.resolution} meters")
         st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
 
-        # Example EE logic to test EE + ROI
+        # Example Earth Engine logic to test EE + ROI
         try:
             roi_ee = ee.Geometry(st.session_state.user_roi)
             collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
@@ -114,6 +116,8 @@ if submit:
             st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
         except Exception as e:
             st.error(f"❌ Earth Engine processing error: {e}")
+
+
 
 
 
