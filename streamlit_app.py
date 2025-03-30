@@ -84,33 +84,38 @@ except Exception as e:
 
 
 # ✅ Interactive Map
-# ✅ Show Interactive Map with Persistent ROI
-try:
-    # Only initialize the Map once and store in session_state
-    if "Map_instance" not in st.session_state:
-        st.session_state["Map_instance"] = geemap.Map(
-            center=[46.29, -72.75], zoom=12, draw_export=True
-        )
-        st.session_state["Map_instance"].add_basemap('SATELLITE')
+for key, default in {
+    "user_roi": None,
+    "start_date": date(2023, 10, 1),
+    "end_date": date(2024, 6, 30),
+    "resolution": 30,
+    "clip_to_agriculture": False,
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-        # Restore saved ROI
-        if st.session_state["user_roi"]:
-            roi_feat = ee.Feature(st.session_state["user_roi"])
-            st.session_state["Map_instance"].addLayer(
-                ee.FeatureCollection([roi_feat]), {}, "Stored ROI"
-            )
+# ✅ Create the map only once
+if "Map_instance" not in st.session_state:
+    m = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+    m.add_basemap("SATELLITE")
+    st.session_state.Map_instance = m
+else:
+    m = st.session_state.Map_instance
 
-    # Display the map
-    Map = st.session_state["Map_instance"]
-    Map.to_streamlit(height=600)
+# ✅ Add stored ROI if it exists
+if st.session_state["user_roi"]:
+    m.addLayer(
+        ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
+        {}, "Stored ROI"
+    )
 
-    # Save new ROI if one was drawn
-    if Map.user_roi is not None:
-        st.session_state["user_roi"] = Map.user_roi
-        st.success("🗂 ROI selected and saved.")
+# ✅ Show map
+m.to_streamlit(height=600)
 
-except Exception as e:
-    st.error(f"❌ Map render failed: {e}")
+# ✅ If new ROI is drawn, store it
+if m.user_roi is not None:
+    st.session_state["user_roi"] = m.user_roi
+    st.success("✅ ROI saved.")
 
 
 # ✅ Confirm ROI
@@ -120,24 +125,36 @@ else:
     st.warning("✏️ ROI not yet selected.")
 
 
-# 📆 Date Selection
-start_date = st.date_input(
-    "Start Date", value=date(2023, 10, 1), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31)
+# ✅ Date inputs
+st.session_state["start_date"] = st.date_input(
+    "Start Date",
+    value=st.session_state["start_date"],
+    min_value=date(2015, 1, 1),
+    max_value=date(2025, 12, 31)
 )
-end_date = st.date_input(
-    "End Date", value=date(2024, 6, 30), min_value=date(2015, 1, 1), max_value=date(2025, 12, 31)
+
+st.session_state["end_date"] = st.date_input(
+    "End Date",
+    value=st.session_state["end_date"],
+    min_value=date(2015, 1, 1),
+    max_value=date(2025, 12, 31)
 )
 
-# 🌍 Resolution Selector
-resolution = st.selectbox("Resolution (m):", [10, 30, 100], index=1)
+# ✅ Resolution
+st.session_state["resolution"] = st.selectbox(
+    "Resolution (m):",
+    [10, 30, 100],
+    index=[10, 30, 100].index(st.session_state["resolution"])
+)
 
-# 🌾 Cropland Mask
-clip_to_agriculture = st.checkbox("Clip to Agricultural Lands Only")
+# ✅ Cropland clipping
+st.session_state["clip_to_agriculture"] = st.checkbox(
+    "Clip to Agricultural Lands Only",
+    value=st.session_state["clip_to_agriculture"]
+)
 
 
 
-# 🌍 Final Submit Button (only one clean version)
-roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
 if roi_button:
     st.write("🚀 Starting Freeze–Thaw Detection...")
