@@ -115,42 +115,30 @@ resolution = st.selectbox("Resolution (m):", [10, 30, 100], index=1)
 # 🌾 Cropland Mask
 clip_to_agriculture = st.checkbox("Clip to Agricultural Lands Only")
 
-# ✅ Trigger Button (just once!)
-if st.button("🚀 Submit ROI & Start Processing"):
-    # Save widget values into session
-    st.session_state.start_date = start_date
-    st.session_state.end_date = end_date
-    st.session_state.resolution = resolution
-    st.session_state.clip_to_agriculture = clip_to_agriculture
-
-    if "user_roi" in st.session_state and st.session_state.user_roi is not None:
-        submit_roi()  # Main processing
-    else:
-        st.error("❌ No ROI selected. Please draw one on the map.")
 
 
-# 🌍 Submit Button
+# 🌍 Final Submit Button (only one clean version)
 roi_button = st.button("Submit ROI & Start Processing", key="submit_roi")
 
-# ✅ Check if button is pressed
 if roi_button:
-    st.write("🚀 Starting Freeze-Thaw Detection...")
+    st.write("🚀 Starting Freeze–Thaw Detection...")
 
-    # ✅ Check if the ROI is in session state
     has_roi = "user_roi" in st.session_state and st.session_state.user_roi is not None
     st.write("✅ ROI exists in session:", has_roi)
 
     if has_roi:
+        # Optional: reassign local variable if needed
         user_roi = st.session_state["user_roi"]
+
+        # Show current settings for transparency
         st.info("🗂 ROI found in session.")
+        st.write(f"📅 Start Date: {st.session_state['start_date']}")
+        st.write(f"📅 End Date: {st.session_state['end_date']}")
+        st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
+        st.write(f"🌱 Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
 
-        st.write(f"Start Date: {st.session_state['start_date']}, End Date: {st.session_state['end_date']}")
-        st.write(f"Resolution: {st.session_state['resolution']} meters")
-        st.write(f"Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-
-        # ✅ Call the function (all params are pulled from session inside the function)
+        # 🔁 Call the full pipeline function
         submit_roi()
-
     else:
         st.error("❌ No ROI selected. Please draw an ROI on the map.")
 
@@ -833,15 +821,3 @@ def visualize_ft_classification(collection, user_roi, resolution):
         st.write(line)
 
     st.success("✅ Visualization complete.")
-
-# 🚀 Step 14: Trigger from Submit Button
-if st.button("Submit ROI & Start Processing"):
-    st.write("🚀 Starting Freeze–Thaw Detection...")
-
-    roi = st.session_state.get("user_roi")
-    if roi:
-        st.write("✅ ROI exists in session.")
-        submit_roi()
-    else:
-        st.error("❌ No ROI selected. Please draw an ROI on the map.")
-
