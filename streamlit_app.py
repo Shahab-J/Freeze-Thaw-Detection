@@ -20,7 +20,8 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 import streamlit as st
-import geemap.foliumap as geemap
+import folium
+import geemap
 import ee
 import json
 import datetime
@@ -72,24 +73,35 @@ with st.sidebar:
     st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural Lands", value=True)
     submit = st.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAW MAP ========== 
+# ========== ✅ DRAW MAP WITH FOLIUM ========== 
 st.subheader("Draw your ROI below")
-m = geemap.Map(center=[46.29, -72.75], zoom=6, height=600)  # Set the height directly in initialization
-m.add_basemap("SATELLITE")
-m.add_draw_control()  # This adds the drawing control to the map
-m.to_streamlit()
+
+# Create folium map
+m = folium.Map(location=[46.29, -72.75], zoom_start=6, control_scale=True)
+
+# Add satellite basemap
+folium.TileLayer('CartoDB positron').add_to(m)
+
+# Add drawing control to the map
+from folium.plugins import Draw
+draw = Draw(export=True)
+draw.add_to(m)
+
+# Display the map in Streamlit
+st.write("Draw your region of interest (ROI) on the map.")
+folium_static(m)
 
 # ========== ✅ CAPTURE ROI FROM USER ========== 
-# Capture the ROI only when it's drawn
-if 'user_roi' in st.session_state and st.session_state.user_roi is not None:
+# If the ROI is drawn, capture it
+roi_output = st.session_state.get('user_roi')
+if roi_output:
     st.success("🗂 ROI is currently selected.")
 else:
-    st.warning("❗️ Please draw a Region of Interest (ROI).")
+    st.warning("❗️ No ROI drawn yet.")
 
 # ========== ✅ PROCESS ROI ========== 
 if submit:
-    # Ensure that the ROI has been drawn and stored in session_state
-    if st.session_state.user_roi is None:
+    if roi_output is None:
         st.error("❌ Please draw a Region of Interest (ROI) first.")
     else:
         st.info("📌 ROI stored and passed to processing.")
@@ -111,8 +123,6 @@ if submit:
             st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
         except Exception as e:
             st.error(f"❌ Earth Engine processing error: {e}")
-
-
 
 
 
