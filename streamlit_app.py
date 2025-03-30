@@ -758,9 +758,20 @@ def submit_roi():
             st.warning("⚠️ RF Model training failed.")
             return
 
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
-        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
+        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+        if clip_agriculture:
+            cropland = ee.ImageCollection("USDA/NASS/CDL") \
+                .filterDate(f"{start_year}-01-01", f"{start_year+1}-01-01") \
+                .first() \
+                .select("cropland")
+
+            classified_images = classified_images.map(
+                lambda img: img.updateMask(cropland.gt(0))
+            )
+            st.info("🟩 Classified images masked to agricultural lands.")
+
+        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
