@@ -47,21 +47,14 @@ check("ipywidgets", "import ipywidgets")
 
 
 
-# ================== Initialize state ==================
-# Initialize state defaults if not set
-for key, default in {
-    "user_roi": None,
-    "start_date": date(2023, 10, 1),
-    "end_date": date(2024, 6, 30),
-    "resolution": 30,
-    "clip_to_agriculture": False,
-}.items():
-    if key not in st.session_state:
-        st.session_state[key] = default
 
-# ================== Freeze–Thaw Mapping Tool ==================
+# ================== Initialize state ==================
+st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
+
+# ✅ Display Python version
+st.write(f"🔧 Python: {sys.version}")
 
 # ✅ Earth Engine Auth
 try:
@@ -82,50 +75,44 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
-
-# ✅ Interactive Map
+# ✅ Initialize session state variables
 for key, default in {
     "user_roi": None,
     "start_date": date(2023, 10, 1),
     "end_date": date(2024, 6, 30),
     "resolution": 30,
-    "clip_to_agriculture": False,
+    "clip_to_agriculture": False
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
-# ✅ Create the map only once
-if "Map_instance" not in st.session_state:
+# ✅ Draw map and handle ROI selection
+roi_drawn = False
+with st.container():
     m = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
     m.add_basemap("SATELLITE")
-    st.session_state.Map_instance = m
-else:
-    m = st.session_state.Map_instance
 
-# ✅ Add stored ROI if it exists
+    # Re-display stored ROI
+    if st.session_state["user_roi"]:
+        m.addLayer(
+            ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
+            {}, "Stored ROI"
+        )
+
+    m.to_streamlit(height=600)
+
+    if m.user_roi is not None:
+        st.session_state["user_roi"] = m.user_roi
+        roi_drawn = True
+        st.success("✅ ROI drawn and saved.")
+
+# ✅ Confirm ROI status
 if st.session_state["user_roi"]:
-    m.addLayer(
-        ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
-        {}, "Stored ROI"
-    )
+    st.info("🗂 ROI is currently selected.")
+elif not roi_drawn:
+    st.warning("✏️ Please draw an ROI on the map.")
 
-# ✅ Show map
-m.to_streamlit(height=600)
-
-# ✅ If new ROI is drawn, store it
-if m.user_roi is not None:
-    st.session_state["user_roi"] = m.user_roi
-    st.success("✅ ROI saved.")
-
-
-# ✅ Confirm ROI
-if "user_roi" in st.session_state and st.session_state.user_roi is not None:
-    st.write("✅ ROI exists in session.")
-else:
-    st.warning("✏️ ROI not yet selected.")
-
-
-# ✅ Date inputs
+# ✅ Date input widgets
 st.session_state["start_date"] = st.date_input(
     "Start Date",
     value=st.session_state["start_date"],
@@ -140,43 +127,36 @@ st.session_state["end_date"] = st.date_input(
     max_value=date(2025, 12, 31)
 )
 
-# ✅ Resolution
+# ✅ Resolution dropdown
 st.session_state["resolution"] = st.selectbox(
     "Resolution (m):",
     [10, 30, 100],
     index=[10, 30, 100].index(st.session_state["resolution"])
 )
 
-# ✅ Cropland clipping
+# ✅ Cropland clipping checkbox
 st.session_state["clip_to_agriculture"] = st.checkbox(
     "Clip to Agricultural Lands Only",
     value=st.session_state["clip_to_agriculture"]
 )
 
+# ✅ Setup UI and ROI map
+setup_user_interface_and_map()
 
-
-
-if roi_button:
-    st.write("🚀 Starting Freeze–Thaw Detection...")
-
-    has_roi = "user_roi" in st.session_state and st.session_state.user_roi is not None
-    st.write("✅ ROI exists in session:", has_roi)
-
-    if has_roi:
-        # Optional: reassign local variable if needed
-        user_roi = st.session_state["user_roi"]
-
-        # Show current settings for transparency
+# ✅ Single clean Submit Button
+if st.button("🚀 Submit ROI & Start Processing"):
+    if st.session_state.get("user_roi"):
+        st.write("🚀 Starting Freeze–Thaw Detection...")
+        st.write("✅ ROI exists in session: True")
         st.info("🗂 ROI found in session.")
         st.write(f"📅 Start Date: {st.session_state['start_date']}")
         st.write(f"📅 End Date: {st.session_state['end_date']}")
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
         st.write(f"🌱 Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-
-        # 🔁 Call the full pipeline function
         submit_roi()
     else:
-        st.error("❌ No ROI selected. Please draw an ROI on the map.")
+        st.error("❌ Please draw an ROI before submitting.")
+
 
 
 
