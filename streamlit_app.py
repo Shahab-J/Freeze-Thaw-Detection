@@ -26,7 +26,7 @@ import ee
 import json
 import folium
 from streamlit_folium import st_folium
-from folium import plugins
+from folium.plugins import Draw
 
 # ========== ✅ SETUP CONFIG ==========
 st.set_page_config(layout="wide")
@@ -51,37 +51,32 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SIDEBAR PARAMETERS ==========
-st.sidebar.header("Set Parameters")
-start_date = st.sidebar.date_input("Start Date", value=None, key="start")
-end_date = st.sidebar.date_input("End Date", value=None, key="end")
-resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=1)
+# ========== ✅ SIDEBAR ==========
+st.sidebar.title("Set Parameters")
+start_date = st.sidebar.date_input("Start Date")
+end_date = st.sidebar.date_input("End Date")
+resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
 
-# ========== ✅ DRAW MAP ==========
+submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
+
+# ========== ✅ DRAWING MAP ==========
 st.subheader("Draw your ROI below")
-m = folium.Map(location=[46.29, -72.75], zoom_start=6, tiles="Esri.WorldImagery")
-plugins.Draw(export=True).add_to(m)
 
-output = st_folium(m, width=700, height=500)
+m = folium.Map(location=[46.29, -72.75], zoom_start=13, tiles="Esri.WorldImagery", control_scale=True)
+draw = Draw(export=True)
+draw.add_to(m)
 
-# ========== ✅ SUBMIT BUTTON ==========
-if st.sidebar.button("🖊️ Submit ROI & Start Processing"):
-    if output and "last_drawn_feature" in output:
-        roi_geojson = output["last_drawn_feature"]
-        roi = ee.Geometry(roi_geojson)
+output = st_folium(m, width=1100, height=650)
 
-        # Example EE logic to test ROI
-        collection = ee.ImageCollection("COPERNICUS/S2") \
-            .filterBounds(roi) \
-            .filterDate(str(start_date), str(end_date)) \
-            .select("B4")
-
-        count = collection.size().getInfo()
-        st.success(f"Images found in ROI: {count}")
+# ========== ✅ SUBMIT HANDLER ==========
+if submit:
+    if output and "last_drawn_feature" in output and output["last_drawn_feature"] is not None:
+        roi_geojson = output["last_drawn_feature"]["geometry"]
+        st.success("✅ ROI submitted successfully!")
+        st.json(roi_geojson)  # You can use it for further EE processing
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
 
 
 
