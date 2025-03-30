@@ -74,12 +74,10 @@ if submit:
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
         st.success("✅ ROI submitted and ready for processing.")
-
-        # Optional preview
-        num_points = len(roi_geojson["coordinates"][0])
-        st.info(f"📍 ROI has {num_points} points.")
+        # You can now use roi_geojson in your EE logic
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
