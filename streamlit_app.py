@@ -599,9 +599,9 @@ def classify_image(img, rf_model, resolution):
 
 #✅ Step 11: ROI Selection Before Processing for Streamlit
 def submit_roi():
-    """Handles the full pipeline from ROI selection to classification."""
+    """Runs the full Freeze–Thaw classification pipeline after ROI selection."""
 
-    # ✅ 1. Ensure ROI is in session
+    # ✅ Step 1: Retrieve input from session
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -609,22 +609,38 @@ def submit_roi():
     user_roi = st.session_state.user_roi
     resolution = st.session_state.get("resolution", 30)
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
+    user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
+    user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
+    today = date.today().strftime("%Y-%m-%d")
 
-    # ✅ 2. Optionally Clip to Agricultural Areas
+    # ✅ Step 2: Validate dates
+    if user_selected_end >= today:
+        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+        return
+    if user_selected_start >= user_selected_end:
+        st.error("❌ Start date must be earlier than end date.")
+        return
+
+    # ✅ Step 3: Adjust for Freeze–Thaw calendar year
+    start_year = int(user_selected_start[:4])
+    if int(user_selected_start[5:7]) < 10:
+        start_year -= 1
+    start_date = f"{start_year}-10-01"
+    end_date = f"{start_year + 1}-06-30"
+    st.success(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+
+    # ✅ Step 4: Optionally clip to cropland
     if clip_agriculture:
         st.write("🌱 Cropland-only mode enabled. Clipping ROI to agricultural areas...")
-
         try:
             landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
             cropland_mask = landcover.eq(15)
-
             cropland_geometry = cropland_mask.selfMask().reduceToVectors(
                 geometry=user_roi,
                 geometryType='polygon',
                 scale=30,
                 maxPixels=1e13
             )
-
             user_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
             if user_roi.coordinates().size().getInfo() == 0:
                 st.error("❌ Cropland mask removed entire ROI. Try a different area or disable cropping.")
@@ -633,68 +649,63 @@ def submit_roi():
             st.error(f"❌ Error applying cropland mask: {e}")
             return
 
-    # ✅ 3. Validate Date Inputs
-    user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
-    user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
-    today = date.today().strftime("%Y-%m-%d")
+    # ✅ Step 5: Processing pipeline
+    try:
+        processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
+        if processed_images is None: return
+        st.success("✅ Initial Sentinel-1 Collection ready.")
 
-    if user_selected_end >= today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
-        return
-    if user_selected_start >= user_selected_end:
-        st.error("❌ Start date must be earlier than end date.")
-        return
+        mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
+        if mosaicked_images is None: return
+        st.success("✅ Daily mosaics computed.")
 
-    # ✅ 4. Adjust for Freeze–Thaw Calendar Year
-    start_year = int(user_selected_start[:4])
-    if int(user_selected_start[5:7]) < 10:
-        start_year -= 1
-    start_date = f"{start_year}-10-01"
-    end_date = f"{start_year+1}-06-30"
+        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
+        if sigma_diff_collection is None: return
+        st.success("✅ SigmaDiff computed.")
 
-    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
+        if sigma_extreme_collection is None: return
+        st.success("✅ SigmaDiff extremes (min/max) computed.")
 
-    # ✅ 5. Sentinel-1 Freeze–Thaw Pipeline
-    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-    if processed_images is None: return
+        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
+        if final_k_collection is None:
+            st.error("❌ ERROR: K computation failed.")
+            return
+        st.success("✅ K band assignment completed.")
 
-    mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-    if mosaicked_images is None: return
+        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
+        if thaw_ref_image is None: return
+        st.success("✅ ThawRef computed.")
 
-    sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-    if sigma_diff_collection is None: return
+        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
+        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
+        if delta_theta_collection is None: return
+        st.success("✅ DeltaTheta computed.")
 
-    sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-    if sigma_extreme_collection is None: return
+        efta_collection = compute_efta(delta_theta_collection, resolution)
+        if efta_collection is None: return
+        st.success("✅ EFTA computation completed.")
 
-    final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-    if final_k_collection is None:
-        st.error("❌ ERROR: K computation failed. Stopping execution.")
-        return
+        # ✅ Save intermediate results
+        st.session_state.efta_collection = efta_collection
 
-    thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-    if thaw_ref_image is None: return
+        # ✅ Step 6: Train and classify
+        rf_model = train_rf_model()
+        st.success("✅ Random Forest model trained.")
 
-    thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
-    delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-    if delta_theta_collection is None: return
+        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+        st.success("✅ All images classified using RF model.")
 
-    efta_collection = compute_efta(delta_theta_collection, resolution)
-    if efta_collection is None: return
+        # ✅ Step 7: Filter and visualize
+        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
-    # ✅ 6. Store in Session State
-    st.session_state.efta_collection = efta_collection
+        with st.expander("🧊 View Freeze–Thaw Classification Results", expanded=True):
+            visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
-    # ✅ 7. Train Random Forest and Classify
-    rf_model = train_rf_model()
-    classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+        st.success("✅ Freeze–Thaw Mapping and Visualization complete.")
 
-    classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
-
-    # ✅ 8. Visualize Results
-    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-    st.success("✅ All Processing Completed.")
-
+    except Exception as e:
+        st.error(f"❌ Unexpected Error during processing: {e}")
 
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
