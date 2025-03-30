@@ -21,6 +21,8 @@ from streamlit_folium import folium_static
 
 
 
+
+
 import streamlit as st
 import ee
 import json
@@ -76,9 +78,11 @@ m = folium.Map(location=st.session_state["map_center"],
 # ✅ Add previous ROI if available
 if st.session_state["user_roi"]:
     try:
-        folium.GeoJson(st.session_state["user_roi"], name="Stored ROI", style_function=lambda x: {
-            "color": "red", "weight": 3
-        }).add_to(m)
+        folium.GeoJson(
+            st.session_state["user_roi"],
+            name="Stored ROI",
+            style_function=lambda x: {"color": "red", "weight": 3}
+        ).add_to(m)
     except Exception as e:
         st.warning(f"⚠️ Could not load stored ROI: {e}")
 
@@ -93,16 +97,17 @@ if map_data.get("last_active_drawing"):
     st.session_state["user_roi"] = map_data["last_active_drawing"]
     st.success("✅ ROI selected and saved.")
 
-# ✅ Save zoom and center
+# ✅ Save zoom and center (Convert dict to list for center)
 if map_data.get("center"):
-    st.session_state["map_center"] = map_data["center"]
+    center_dict = map_data["center"]
+    st.session_state["map_center"] = [center_dict["lat"], center_dict["lng"]]
 
 if map_data.get("zoom"):
     st.session_state["map_zoom"] = map_data["zoom"]
 
 # ========== ✅ Show ROI Status ==========
 if st.session_state["user_roi"]:
-    st.info("🗂 ROI is selected and saved.")
+    st.info("🗂 ROI is currently selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
@@ -146,8 +151,6 @@ if st.button("🚀 Submit ROI & Start Processing"):
         # submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
-
-
 
 
 
