@@ -4,7 +4,6 @@ import math
 import json 
 import geemap
 import folium
-import ee, json
 import subprocess
 import numpy as np
 from PIL import Image
@@ -23,117 +22,82 @@ from streamlit_folium import folium_static
 
 
 
-
-# ✅ MUST be the first Streamlit command
+# ✅ Streamlit + Earth Engine Freeze-Thaw Tool (Top Part)
+# ========== ✅ MUST be first ========== #
 st.set_page_config(layout="wide")
 
-# ✅ Imports (you probably already have these)
+# ========== ✅ Authenticate Earth Engine ========== #
+try:
+    service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
+    private_key = st.secrets["GEE_PRIVATE_KEY"]
+    credentials = ee.ServiceAccountCredentials(
+        service_account,
+        key_data=json.dumps({
+            "type": "service_account",
+            "client_email": service_account,
+            "private_key": private_key,
+            "token_uri": "https://oauth2.googleapis.com/token"
+        })
+    )
+    ee.Initialize(credentials)
+    st.success("✅ Earth Engine initialized.")
+except Exception as e:
+    st.error(f"❌ EE Auth failed: {e}")
 
-
-# ✅ Initialize Earth Engine
-service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
-private_key = st.secrets["GEE_PRIVATE_KEY"]
-
-credentials = ee.ServiceAccountCredentials(
-    service_account,
-    key_data=json.dumps({
-        "type": "service_account",
-        "client_email": service_account,
-        "private_key": private_key,
-        "token_uri": "https://oauth2.googleapis.com/token"
-    })
-)
-ee.Initialize(credentials)
-st.success("✅ Earth Engine initialized.")
-
-# ✅ Initialize session state variables
-for key, val in {
+# ========== ✅ Initialize Session State Defaults ========== #
+defaults = {
     "user_roi": None,
+    "map_center": [46.29, -72.75],
+    "map_zoom": 12,
     "start_date": date(2023, 10, 1),
     "end_date": date(2024, 6, 30),
     "resolution": 30,
-    "clip_to_agriculture": False,
-    "roi_drawn": False,
-    "map_center": [46.29, -72.75],  # default center (Quebec)
-    "map_zoom": 12
-}.items():
+    "clip_to_agriculture": False
+}
+for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# ✅ Interface Title
+# ========== ✅ Title ========== #
 st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("📌 Draw an ROI on the map. It will be saved for this session.")
+st.write("📌 Draw your ROI on the map. Your selection will be saved.")
 
-# ✅ Restore last map view (center and zoom)
-map_center = st.session_state["map_center"]
-map_zoom = st.session_state["map_zoom"]
+# ========== ✅ Initialize or Restore the Map ========== #
+if "map_object" not in st.session_state:
+    m = geemap.Map(center=st.session_state["map_center"], zoom=st.session_state["map_zoom"], draw_export=True)
+    m.add_basemap("SATELLITE")
+    st.session_state["map_object"] = m
+else:
+    m = st.session_state["map_object"]
 
-# ✅ Create interactive map
-m = geemap.Map(center=map_center, zoom=map_zoom, draw_export=True)
-m.add_basemap("SATELLITE")
-
-# ✅ Re-display ROI if already drawn
+# ✅ Re-add stored ROI to map (if available)
 if st.session_state["user_roi"]:
     m.addLayer(
         ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
         {}, "Stored ROI"
     )
 
-# ✅ Show the map in Streamlit
+# ✅ Show Map
 m.to_streamlit(height=600)
 
-# ✅ Save new ROI and view info if user draws one
-if m.user_roi and not st.session_state["roi_drawn"]:
+# ✅ Save new ROI if drawn
+if m.user_roi:
     st.session_state["user_roi"] = m.user_roi
-    st.session_state["roi_drawn"] = True
+    st.success("✅ ROI selected and saved.")
 
-    try:
-        bounds = m.user_roi.bounds().coordinates().getInfo()[0]
-        lon_center = sum([p[0] for p in bounds]) / len(bounds)
-        lat_center = sum([p[1] for p in bounds]) / len(bounds)
-        st.session_state["map_center"] = [lat_center, lon_center]
-        st.session_state["map_zoom"] = m.zoom
-    except:
-        pass
-
-    st.success("✅ ROI drawn and saved.")
-
-# ✅ Confirm ROI status
+# ✅ Show ROI status
 if st.session_state["user_roi"]:
-    st.info("🗂 ROI is currently selected.")
+    st.info("🗂 ROI is selected and saved.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# ✅ Widgets: Start Date
-st.session_state["start_date"] = st.date_input(
-    "Start Date",
-    value=st.session_state["start_date"],
-    min_value=date(2015, 1, 1),
-    max_value=date(2025, 12, 31)
-)
+# ========== ✅ User Inputs ========== #
+st.session_state["start_date"] = st.date_input("Start Date", value=st.session_state["start_date"])
+st.session_state["end_date"] = st.date_input("End Date", value=st.session_state["end_date"])
+st.session_state["resolution"] = st.selectbox("Resolution (m):", [10, 30, 100], index=[10, 30, 100].index(st.session_state["resolution"]))
+st.session_state["clip_to_agriculture"] = st.checkbox("Clip to Agricultural Lands Only", value=st.session_state["clip_to_agriculture"])
 
-# ✅ Widgets: End Date
-st.session_state["end_date"] = st.date_input(
-    "End Date",
-    value=st.session_state["end_date"],
-    min_value=date(2015, 1, 1),
-    max_value=date(2025, 12, 31)
-)
-
-# ✅ Widgets: Resolution
-st.session_state["resolution"] = st.selectbox(
-    "Resolution (m):",
-    [10, 30, 100],
-    index=[10, 30, 100].index(st.session_state["resolution"])
-)
-
-# ✅ Checkbox: Clip to Cropland
-st.session_state["clip_to_agriculture"] = st.checkbox(
-    "Clip to Agricultural Lands Only",
-    value=st.session_state["clip_to_agriculture"]
-)
-
-# ✅ Submit button
+# ========== ✅ Submit Button ========== #
 if st.button("🚀 Submit ROI & Start Processing"):
     if st.session_state.get("user_roi"):
         st.write("🚀 Starting Freeze–Thaw Detection...")
@@ -142,6 +106,8 @@ if st.button("🚀 Submit ROI & Start Processing"):
         st.write(f"📅 End Date: {st.session_state['end_date']}")
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
         st.write(f"🌱 Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
+
+        # 🔁 Call your full pipeline here
         submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
