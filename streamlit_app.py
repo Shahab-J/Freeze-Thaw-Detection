@@ -21,18 +21,18 @@ from streamlit_folium import folium_static
 
 
 
-
 import streamlit as st
-import geemap.foliumap as geemap
 import ee
 import json
-import datetime
+import folium
+from streamlit_folium import st_folium
+from folium import plugins
 
-# ========== ✅ SETUP CONFIG ========== 
+# ========== ✅ SETUP CONFIG ==========
 st.set_page_config(layout="wide")
-st.title("🏊 Freeze–Thaw Mapping Tool")
+st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ========== ✅ AUTHENTICATE EARTH ENGINE ========== 
+# ========== ✅ AUTHENTICATE EARTH ENGINE ==========
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -51,73 +51,36 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SESSION STATE DEFAULTS ========== 
-def init_session():
-    defaults = {
-        "start_date": datetime.date(2023, 10, 1),
-        "end_date": datetime.date(2024, 6, 30),
-        "resolution": 30,
-        "clip_to_agriculture": True,
-        "user_roi": None
-    }
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+# ========== ✅ SIDEBAR PARAMETERS ==========
+st.sidebar.header("Set Parameters")
+start_date = st.sidebar.date_input("Start Date", value=None, key="start")
+end_date = st.sidebar.date_input("End Date", value=None, key="end")
+resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=1)
+clip_to_agri = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
 
-init_session()
-
-# ========== ✅ SIDEBAR INPUTS ========== 
-with st.sidebar:
-    st.subheader("Set Parameters")
-    st.session_state.start_date = st.date_input("📅 Start Date", value=st.session_state.start_date)
-    st.session_state.end_date = st.date_input("📅 End Date", value=st.session_state.end_date)
-    st.session_state.resolution = st.selectbox("📏 Resolution (meters)", [10, 30, 100], index=1)
-    st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural Lands", value=True)
-    submit = st.button("🚀 Submit ROI & Start Processing")
-
-# ========== ✅ DRAW MAP ========== 
+# ========== ✅ DRAW MAP ==========
 st.subheader("Draw your ROI below")
-m = geemap.Map(center=[46.29, -72.75], zoom=6, height=600)  # Set the height directly in initialization
-m.add_basemap("SATELLITE")
-m.add_draw_control()  # This adds the drawing control to the map
-m.to_streamlit()
+m = folium.Map(location=[46.29, -72.75], zoom_start=6, tiles="Esri.WorldImagery")
+plugins.Draw(export=True).add_to(m)
 
-# ========== ✅ CAPTURE ROI FROM USER ========== 
-roi_output = m.user_roi_export()  # Export the user-drawn ROI
-if roi_output:
-    st.write(f"ROI Output: {roi_output}")  # Debugging line
-if roi_output and "geometry" in roi_output:
-    st.session_state.user_roi = roi_output["geometry"]
-    st.success("🗂 ROI is currently selected.")
-else:
-    st.warning("❗️ No ROI drawn yet.")
+output = st_folium(m, width=700, height=500)
 
-# ========== ✅ PROCESS ROI ========== 
-if submit:
-    if st.session_state.user_roi is None:
-        st.error("❌ Please draw a Region of Interest (ROI) first.")
+# ========== ✅ SUBMIT BUTTON ==========
+if st.sidebar.button("🖊️ Submit ROI & Start Processing"):
+    if output and "last_drawn_feature" in output:
+        roi_geojson = output["last_drawn_feature"]
+        roi = ee.Geometry(roi_geojson)
+
+        # Example EE logic to test ROI
+        collection = ee.ImageCollection("COPERNICUS/S2") \
+            .filterBounds(roi) \
+            .filterDate(str(start_date), str(end_date)) \
+            .select("B4")
+
+        count = collection.size().getInfo()
+        st.success(f"Images found in ROI: {count}")
     else:
-        st.info("📌 ROI stored and passed to processing.")
-        st.write(f"📅 Start Date: {st.session_state.start_date}")
-        st.write(f"📅 End Date: {st.session_state.end_date}")
-        st.write(f"📏 Resolution: {st.session_state.resolution} meters")
-        st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
-
-        # Example Earth Engine logic to test EE + ROI
-        try:
-            roi_ee = ee.Geometry(st.session_state.user_roi)
-            collection = (ee.ImageCollection("COPERNICUS/S1_GRD")
-                          .filterBounds(roi_ee)
-                          .filterDate(str(st.session_state.start_date), str(st.session_state.end_date))
-                          .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
-                          .filter(ee.Filter.eq('instrumentMode', 'IW'))
-                          .select('VH'))
-            image_count = collection.size().getInfo()
-            st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
-        except Exception as e:
-            st.error(f"❌ Earth Engine processing error: {e}")
-
-
+        st.warning("⚠️ Please draw an ROI before submitting.")
 
 
 
