@@ -1,3 +1,11 @@
+# ✅ Step 0: Must be FIRST
+import streamlit as st
+st.set_page_config(layout="wide")
+
+# ✅ Then do the rest
+
+
+
 import ee
 import sys
 import math
@@ -21,28 +29,9 @@ from streamlit_folium import folium_static
 
 
 
-
-
-
-
-import streamlit as st
-st.set_page_config(layout="wide")  # ✅ Must be the first Streamlit command
-
-# ========== ✅ Imports ==========  
-import ee
-import json
-import math
-from datetime import date
-import folium
-from folium.plugins import Draw
-from streamlit_folium import st_folium
-import numpy as np
-import PIL.Image
-import urllib.request
-import matplotlib.pyplot as plt
-
 # ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
+
 
 # ========== ✅ Authenticate Earth Engine ==========
 try:
