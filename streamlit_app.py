@@ -56,7 +56,7 @@ if "ee_initialized" not in st.session_state:
 
 # ===== Session Defaults =====
 if "map_center" not in st.session_state:
-    st.session_state.map_center = [46.29, -72.75]
+    st.session_state.map_center = [46.29, -72.75]  # ✅ Fix: Use a list
 if "map_zoom" not in st.session_state:
     st.session_state.map_zoom = 8
 if "user_roi" not in st.session_state:
