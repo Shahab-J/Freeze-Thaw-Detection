@@ -52,10 +52,6 @@ check("ipywidgets", "import ipywidgets")
 
 
 # ================== Initialize state ==================
-st.set_page_config(layout="wide")
-st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("📌 Draw your ROI on the map below and click Submit.")
-
 # ✅ Display Python version
 st.write(f"🔧 Python: {sys.version}")
 
