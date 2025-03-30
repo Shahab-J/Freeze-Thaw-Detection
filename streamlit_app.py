@@ -21,19 +21,18 @@ from streamlit_folium import folium_static
 
 
 
+# ✅ Streamlit + Earth Engine Freeze-Thaw Tool (Stable Top Section)
 
-
-# ✅ MUST BE FIRST
 import streamlit as st
-st.set_page_config(layout="wide")
-
-# ✅ Imports
 import ee
 import json
 from datetime import date
-import geemap
+import geemap.foliumap as geemap  # ✅ Use folium-based map for Streamlit compatibility
 
-# ✅ Authenticate Earth Engine
+# ========== ✅ MUST BE FIRST ==========
+st.set_page_config(layout="wide")
+
+# ========== ✅ Authenticate Earth Engine ==========
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -51,9 +50,11 @@ try:
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
 
-# ✅ Initialize Session State
+# ========== ✅ Initialize Session State ==========
 defaults = {
     "user_roi": None,
+    "map_center": [46.29, -72.75],
+    "map_zoom": 12,
     "start_date": date(2023, 10, 1),
     "end_date": date(2024, 6, 30),
     "resolution": 30,
@@ -63,47 +64,68 @@ for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
 
-# ✅ Title
+# ========== ✅ UI Title ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("📌 Draw your ROI on the map. It will persist across steps.")
+st.write("📌 Draw your ROI on the map. It will be saved for the session.")
 
-# ✅ Always create a fresh map (don't store map in session_state)
-Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+# ========== ✅ Create and Persist the Map ==========
+Map = geemap.Map(center=st.session_state["map_center"], zoom=st.session_state["map_zoom"], draw_export=True)
 Map.add_basemap("SATELLITE")
 
-# ✅ Restore previous ROI (if exists) to display
-if st.session_state["user_roi"] is not None:
-    Map.addLayer(
-        ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
-        {"color": "red"},
-        "Stored ROI"
-    )
+# ✅ Re-show ROI if already selected
+if st.session_state.get("user_roi"):
+    try:
+        Map.addLayer(
+            ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
+            {"color": "red"},
+            "Stored ROI"
+        )
+    except Exception as e:
+        st.warning(f"⚠️ Could not add stored ROI: {e}")
 
-# ✅ Display the map
+# ✅ Show the interactive map
 Map.to_streamlit(height=600)
 
-# ✅ Capture new ROI if drawn (only on the frame it's drawn)
-if Map.user_roi is not None:
+# ✅ Save new ROI from user drawing (overwrite only if a new one was drawn)
+if Map.user_roi:
     st.session_state["user_roi"] = Map.user_roi
-    st.success("✅ ROI drawn and saved.")
+    st.success("✅ ROI selected and saved.")
 
-# ✅ ROI confirmation
+# ✅ Show status of ROI
 if st.session_state["user_roi"]:
-    st.info("🗂 ROI is selected.")
+    st.info("🗂 ROI is currently selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# ✅ User Inputs
-st.session_state["start_date"] = st.date_input("Start Date", value=st.session_state["start_date"])
-st.session_state["end_date"] = st.date_input("End Date", value=st.session_state["end_date"])
-st.session_state["resolution"] = st.selectbox("Resolution (m):", [10, 30, 100],
-                                              index=[10, 30, 100].index(st.session_state["resolution"]))
-st.session_state["clip_to_agriculture"] = st.checkbox("Clip to Agricultural Lands Only",
-                                                      value=st.session_state["clip_to_agriculture"])
+# ========== ✅ User Input Widgets ==========
+st.session_state["start_date"] = st.date_input(
+    "📅 Start Date",
+    value=st.session_state["start_date"],
+    min_value=date(2015, 1, 1),
+    max_value=date(2025, 12, 31)
+)
 
-# ✅ Submit Button
+st.session_state["end_date"] = st.date_input(
+    "📅 End Date",
+    value=st.session_state["end_date"],
+    min_value=date(2015, 1, 1),
+    max_value=date(2025, 12, 31)
+)
+
+st.session_state["resolution"] = st.selectbox(
+    "📏 Resolution (m):",
+    [10, 30, 100],
+    index=[10, 30, 100].index(st.session_state["resolution"])
+)
+
+st.session_state["clip_to_agriculture"] = st.checkbox(
+    "🌱 Clip to Agricultural Lands Only",
+    value=st.session_state["clip_to_agriculture"]
+)
+
+# ========== ✅ Submit Button ==========
 if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state["user_roi"]:
+    if st.session_state.get("user_roi"):
         st.write("🚀 Starting Freeze–Thaw Detection...")
         st.info("🗂 ROI found in session.")
         st.write(f"📅 Start Date: {st.session_state['start_date']}")
@@ -111,13 +133,10 @@ if st.button("🚀 Submit ROI & Start Processing"):
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
         st.write(f"🌱 Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
 
-        # 🔁 Your main function
+        # 🔁 Replace with your actual function call
         submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
-
-
-
 
 
 
