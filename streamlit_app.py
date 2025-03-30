@@ -28,11 +28,11 @@ import folium
 from streamlit_folium import st_folium
 from folium.plugins import Draw
 
-# ========== ✅ SETUP CONFIG ==========
+# ========== ✅ SETUP CONFIG ========== 
 st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ========== ✅ AUTHENTICATE EARTH ENGINE ==========
+# ========== ✅ AUTHENTICATE EARTH ENGINE ========== 
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -51,7 +51,7 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SIDEBAR ==========
+# ========== ✅ SIDEBAR ========== 
 st.sidebar.title("Set Parameters")
 start_date = st.sidebar.date_input("Start Date")
 end_date = st.sidebar.date_input("End Date")
@@ -60,24 +60,45 @@ clip_to_agri = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
 
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAWING MAP ==========
+# ========== ✅ DRAWING MAP ========== 
 st.subheader("Draw your ROI below")
 
+# Initialize the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=13, tiles="Esri.WorldImagery", control_scale=True)
+
+# Initialize drawing control
 draw = Draw(export=True)
 draw.add_to(m)
 
+# Render the map and capture the drawing output
 output = st_folium(m, width=1100, height=650)
 
-# ========== ✅ SUBMIT HANDLER ==========
+# ========== ✅ HANDLING ROI SELECTION ==========
+
+# If the user submits the form, process the ROI selection
 if submit:
     if output and "last_drawn_feature" in output and output["last_drawn_feature"] is not None:
+        # Extract the drawn geometry (ROI) from the output
         roi_geojson = output["last_drawn_feature"]["geometry"]
+        
+        # Save the ROI to session state to keep it persistent across reruns
+        st.session_state["user_roi"] = roi_geojson
+        
+        # Provide feedback to the user
         st.success("✅ ROI submitted successfully!")
-        st.json(roi_geojson)  # You can use it for further EE processing
+        st.json(roi_geojson)  # Display the ROI for debugging
+        
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
+# ========== ✅ CHECKING SELECTED ROI ==========
+
+# If there's a saved ROI in session state, show a success message
+if "user_roi" in st.session_state and st.session_state["user_roi"]:
+    st.success("✅ ROI is selected and ready for processing!")
+    st.json(st.session_state["user_roi"])  # Display the saved ROI
+else:
+    st.warning("❗️ No ROI has been selected yet.")
 
 
 
