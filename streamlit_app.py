@@ -657,7 +657,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
         buf.seek(0)
 
         with st.expander("🧊 View Freeze–Thaw Classification Results", expanded=True):
-            st.image(buf, caption=f"🧊 {displayed_count} images shown", use_column_width=True)
+            st.image(buf, caption=f"🧊 {displayed_count} images shown", use_container_width=True)
             st.markdown("### 📊 Summary of Classified Images:")
             for line in summary_lines:
                 st.write(line)
