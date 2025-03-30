@@ -12,7 +12,6 @@ import subprocess
 import numpy as np
 import urllib.request
 from PIL import Image
-import streamlit as st
 from datetime import date
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
@@ -64,29 +63,6 @@ st.subheader("Draw your ROI below")
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="Esri.WorldImagery", control_scale=True)
 Draw(export=True).add_to(m)
 output = st_folium(m, width=1100, height=650)
-
-# ========== ✅ Sentinel-1 Processing Function ==========
-def process_sentinel1(start_date, end_date, roi, resolution):
-    roi = ee.Geometry(roi)
-    collection = (
-        ee.ImageCollection('COPERNICUS/S1_GRD')
-        .filterDate(start_date, end_date)
-        .filterBounds(roi)
-        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
-        .filter(ee.Filter.eq('instrumentMode', 'IW'))
-    )
-    image_count = collection.size().getInfo()
-    if image_count == 0:
-        st.error("❌ No Sentinel-1 images found in the selected date range and ROI.")
-        return None
-    st.success(f"🔍 Found {image_count} Sentinel-1 images in ROI.")
-    return collection
-
-
-
-
-
-
 
 
 # ========== ✅ Processing Pipeline ==========
@@ -184,10 +160,6 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
-
-
-
-
 
 
 # ========== ✅ Submit Handler ==========
