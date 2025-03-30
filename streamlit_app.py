@@ -451,13 +451,13 @@ def compute_efta(collection, resolution):
 
 
 # ✅ Step 10: Freeze–Thaw Classification Using RF for Streamlit
-# 🔗 Import training data from Earth Engine assets
-training_asset = ee.FeatureCollection('projects/ee-shahabeddinj/assets/training_data')
+# 🔗 Load training data from GitHub (geojson hosted in your repo _ not from Earth Engine assets)
+training_url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/training_data.geojson"
+training_asset = ee.FeatureCollection(training_url)
 
 # 🔤 Define features and label
 bands = ['EFTA']  # Input feature(s) for classification
 label = 'label'   # Class label (0 = Frozen, 1 = Thawed)
-
 
 # ✅ Train Random Forest Model in GEE
 def train_rf_model():
@@ -467,18 +467,23 @@ def train_rf_model():
     Returns:
         ee.Classifier: Trained RF classifier
     """
-    rf_model = ee.Classifier.smileRandomForest(
-        numberOfTrees=150,
-        variablesPerSplit=1,
-        minLeafPopulation=3,
-        seed=42
-    ).train(
-        features=training_asset,
-        classProperty=label,
-        inputProperties=bands
-    )
-    st.success("✅ RF model trained successfully in GEE.")
-    return rf_model
+    try:
+        rf_model = ee.Classifier.smileRandomForest(
+            numberOfTrees=150,
+            variablesPerSplit=1,
+            minLeafPopulation=3,
+            seed=42
+        ).train(
+            features=training_asset,
+            classProperty=label,
+            inputProperties=bands
+        )
+        st.success("✅ RF model trained successfully in GEE.")
+        return rf_model
+    except Exception as e:
+        st.error(f"❌ Failed to train RF model: {e}")
+        return None
+
 
 
 # ✅ Classify each image using the trained model
