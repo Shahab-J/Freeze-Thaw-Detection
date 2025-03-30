@@ -2,10 +2,6 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 
-# ✅ Then do the rest
-
-
-
 import ee
 import sys
 import math
@@ -14,8 +10,8 @@ import geemap
 import folium
 import subprocess
 import numpy as np
-from PIL import Image
 import urllib.request
+from PIL import Image
 import streamlit as st
 from datetime import date
 import ipywidgets as widgets
@@ -99,8 +95,8 @@ def submit_roi():
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
-
-    if user_selected_end >= today:
+    
+    if user_selected_end > today:
         st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
     if user_selected_start >= user_selected_end:
