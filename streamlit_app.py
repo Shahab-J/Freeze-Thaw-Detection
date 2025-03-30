@@ -47,7 +47,18 @@ check("ipywidgets", "import ipywidgets")
 
 
 
-# ================== Actual App ==================
+# ================== Initialize state ==================
+# Initialize state defaults if not set
+for key, default in {
+    "user_roi": None,
+    "start_date": date(2023, 10, 1),
+    "end_date": date(2024, 6, 30),
+    "resolution": 30,
+    "clip_to_agriculture": False,
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
+
 # ================== Freeze–Thaw Mapping Tool ==================
 st.title("🧊 Freeze–Thaw Mapping Tool")
 st.write("📌 Draw your ROI on the map below and click Submit.")
@@ -73,26 +84,34 @@ except Exception as e:
 
 
 # ✅ Interactive Map
+# ✅ Show Interactive Map with Persistent ROI
 try:
-    map_container = st.container()
-    with map_container:
-        Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
-        Map.add_basemap('SATELLITE')
+    # Only initialize the Map once and store in session_state
+    if "Map_instance" not in st.session_state:
+        st.session_state["Map_instance"] = geemap.Map(
+            center=[46.29, -72.75], zoom=12, draw_export=True
+        )
+        st.session_state["Map_instance"].add_basemap('SATELLITE')
 
-        # Load existing ROI if present
-        if "user_roi" in st.session_state and st.session_state.user_roi is not None:
-            Map.addLayer(ee.FeatureCollection([ee.Feature(st.session_state.user_roi)]), {}, "Stored ROI")
+        # Restore saved ROI
+        if st.session_state["user_roi"]:
+            roi_feat = ee.Feature(st.session_state["user_roi"])
+            st.session_state["Map_instance"].addLayer(
+                ee.FeatureCollection([roi_feat]), {}, "Stored ROI"
+            )
 
-        # Show map
-        Map.to_streamlit(height=600)
+    # Display the map
+    Map = st.session_state["Map_instance"]
+    Map.to_streamlit(height=600)
 
-        # Store ROI in session if user draws one
-        if Map.user_roi is not None:
-            st.session_state.user_roi = Map.user_roi
-            st.success("🗂 ROI selected and saved.")
+    # Save new ROI if one was drawn
+    if Map.user_roi is not None:
+        st.session_state["user_roi"] = Map.user_roi
+        st.success("🗂 ROI selected and saved.")
 
 except Exception as e:
     st.error(f"❌ Map render failed: {e}")
+
 
 # ✅ Confirm ROI
 if "user_roi" in st.session_state and st.session_state.user_roi is not None:
