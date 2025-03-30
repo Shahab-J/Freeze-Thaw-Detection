@@ -65,22 +65,11 @@ Draw(export=True).add_to(m)
 output = st_folium(m, width=1100, height=650)
 
 
+
+
+
 # ========== ✅ Processing Pipeline ==========
 def submit_roi():
-    from processing_pipeline import (
-        process_sentinel1,
-        mosaic_by_date,
-        compute_sigma_diff_pixelwise,
-        compute_sigma_diff_extremes,
-        assign_freeze_thaw_k,
-        compute_thaw_ref_pixelwise,
-        compute_delta_theta,
-        compute_efta,
-        train_rf_model,
-        classify_image,
-        visualize_ft_classification,
-    )
-
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -154,12 +143,25 @@ def submit_roi():
         st.session_state.efta_collection = efta_collection
 
         rf_model = train_rf_model()
+        if rf_model is None:
+            st.warning("⚠️ RF Model training failed.")
+            return
+
         classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
         classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+
+
+
+
+
+
 
 
 # ========== ✅ Submit Handler ==========
