@@ -21,22 +21,24 @@ from streamlit_folium import folium_static
 
 
 
-import streamlit as st
+
+
 import ee
 import json
-import folium
 import math
+import folium
+import numpy as np
+import PIL.Image
+import urllib.request
+import streamlit as st
 from datetime import date
 from streamlit_folium import st_folium
 from folium.plugins import Draw
 import matplotlib.pyplot as plt
-import numpy as np
-import PIL.Image
-import urllib.request
 
 # ========== ✅ SETUP CONFIG ==========
 st.set_page_config(layout="wide")
-st.title("🦪 Freeze–Thaw Mapping Tool")
+st.title("🧊 Freeze–Thaw Mapping Tool")
 
 # ========== ✅ AUTHENTICATE EARTH ENGINE ==========
 try:
@@ -67,13 +69,26 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ DRAWING MAP ==========
 st.subheader("Draw your ROI below")
-
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="Esri.WorldImagery", control_scale=True)
 draw = Draw(export=True)
 draw.add_to(m)
 output = st_folium(m, width=1100, height=650)
 
 # ========== ✅ PROCESSING PIPELINE ==========
+from processing_pipeline import (
+    process_sentinel1,
+    mosaic_by_date,
+    compute_sigma_diff_pixelwise,
+    compute_sigma_diff_extremes,
+    assign_freeze_thaw_k,
+    compute_thaw_ref_pixelwise,
+    compute_delta_theta,
+    compute_efta,
+    train_rf_model,
+    classify_image,
+    visualize_ft_classification,
+)
+
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -87,7 +102,7 @@ def submit_roi():
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
 
-    if user_selected_end >= today:
+    if user_selected_end > today:
         st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
     if user_selected_start >= user_selected_end:
@@ -154,6 +169,11 @@ if submit:
             submit_roi()
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
+
+
 
 
 
