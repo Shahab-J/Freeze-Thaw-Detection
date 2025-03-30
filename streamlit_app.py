@@ -19,9 +19,12 @@ from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
+
+
+
+
 import streamlit as st
-import folium
-import geemap
+import geemap.foliumap as geemap
 import ee
 import json
 import datetime
@@ -73,35 +76,35 @@ with st.sidebar:
     st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural Lands", value=True)
     submit = st.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAW MAP WITH FOLIUM ========== 
+# ========== ✅ DRAW MAP WITH geemap ========== 
 st.subheader("Draw your ROI below")
 
-# Create folium map
-m = folium.Map(location=[46.29, -72.75], zoom_start=6, control_scale=True)
+# Create geemap map
+m = geemap.Map(center=[46.29, -72.75], zoom=6, height=600)
 
-# Add satellite basemap
-folium.TileLayer('CartoDB positron').add_to(m)
+# Add basemap
+m.add_basemap("SATELLITE")
 
-# Add drawing control to the map
-from folium.plugins import Draw
-draw = Draw(export=True)
-draw.add_to(m)
+# Add drawing control
+m.add_draw_control()  # This method is specific to geemap for adding drawing controls
 
-# Display the map in Streamlit
-st.write("Draw your region of interest (ROI) on the map.")
-folium_static(m)
+# Display map
+m.to_streamlit()
 
 # ========== ✅ CAPTURE ROI FROM USER ========== 
-# If the ROI is drawn, capture it
-roi_output = st.session_state.get('user_roi')
+roi_output = m.user_roi_export()  # Export the user-drawn ROI
 if roi_output:
+    st.write(f"ROI Output: {roi_output}")  # Debugging line
+if roi_output and "geometry" in roi_output:
+    st.session_state.user_roi = roi_output["geometry"]
     st.success("🗂 ROI is currently selected.")
 else:
     st.warning("❗️ No ROI drawn yet.")
 
 # ========== ✅ PROCESS ROI ========== 
 if submit:
-    if roi_output is None:
+    # Ensure that the ROI has been drawn and stored in session_state
+    if st.session_state.user_roi is None:
         st.error("❌ Please draw a Region of Interest (ROI) first.")
     else:
         st.info("📌 ROI stored and passed to processing.")
@@ -123,6 +126,11 @@ if submit:
             st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
         except Exception as e:
             st.error(f"❌ Earth Engine processing error: {e}")
+
+
+
+
+
 
 
 
