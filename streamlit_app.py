@@ -20,13 +20,11 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
-
 import streamlit as st
 import ee
+import geemap.foliumap as geemap
 import json
-import folium
 from streamlit_folium import st_folium
-from folium.plugins import Draw
 
 # ========== ✅ SETUP CONFIG ==========
 st.set_page_config(layout="wide")
@@ -51,32 +49,43 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SIDEBAR ==========
-st.sidebar.title("Set Parameters")
-start_date = st.sidebar.date_input("Start Date")
-end_date = st.sidebar.date_input("End Date")
-resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
-clip_to_agri = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
+# ========== ✅ SIDEBAR OPTIONS ==========
+st.sidebar.header("Set Parameters")
 
+start_date = st.sidebar.date_input("Start Date", format="YYYY/MM/DD")
+end_date = st.sidebar.date_input("End Date", format="YYYY/MM/DD")
+resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
+clip_to_ag = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=False)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAWING MAP ==========
+# ========== ✅ MAP DISPLAY ==========
 st.subheader("Draw your ROI below")
 
-m = folium.Map(location=[46.29, -72.75], zoom_start=13, tiles="Esri.WorldImagery", control_scale=True)
-draw = Draw(export=True)
-draw.add_to(m)
+m = geemap.Map(center=[46.29, -72.75], zoom=7, height=650, draw_export=True)
+m.add_basemap("SATELLITE")
 
-output = st_folium(m, width=1100, height=650)
+# Display map
+output = st_folium(m, width=900, height=650)
 
-# ========== ✅ SUBMIT HANDLER ==========
+# ========== ✅ CAPTURE DRAWN ROI ==========
+roi = None
+if output and "all_drawn_features" in output:
+    features = output["all_drawn_features"]
+    if features:
+        roi = features[-1]["geometry"]
+
+# ========== ✅ HANDLE SUBMISSION ==========
 if submit:
-    if output and "last_drawn_feature" in output and output["last_drawn_feature"] is not None:
-        roi_geojson = output["last_drawn_feature"]["geometry"]
-        st.success("✅ ROI submitted successfully!")
-        st.json(roi_geojson)  # You can use it for further EE processing
-    else:
+    if roi is None:
         st.warning("⚠️ Please draw an ROI before submitting.")
+        st.stop()
+
+    # Example processing
+    st.success("✅ ROI submitted successfully!")
+    st.info(f"Start: {start_date}, End: {end_date}, Res: {resolution}m")
+    st.write("🌐 ROI Geometry:", roi)
+
+    # Further processing logic with Earth Engine would go here...
 
 
 
