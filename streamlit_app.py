@@ -20,13 +20,15 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
+
+
 import streamlit as st
 import folium
 from folium.plugins import Draw
-import geemap
 import ee
 import json
 import datetime
+from streamlit_folium import folium_static
 
 # ========== ✅ SETUP CONFIG ========== 
 st.set_page_config(layout="wide")
@@ -81,8 +83,8 @@ st.subheader("Draw your ROI below")
 # Create folium map
 m = folium.Map(location=[46.29, -72.75], zoom_start=6, control_scale=True)
 
-# Add basemap
-folium.TileLayer('CartoDB positron').add_to(m)
+# Add satellite basemap
+folium.TileLayer('CartoDB positron').add_to(m)  # Ensure the map always uses satellite basemap
 
 # Add drawing control to the map using folium
 draw = Draw(export=True)
@@ -90,10 +92,13 @@ draw.add_to(m)
 
 # Display the map in Streamlit
 st.write("Draw your region of interest (ROI) on the map.")
-from streamlit_folium import folium_static
 folium_static(m)
 
 # ========== ✅ CAPTURE ROI FROM USER ========== 
+# Check if the user has drawn an ROI, persist it in session_state
+if "user_roi" not in st.session_state:
+    st.session_state["user_roi"] = None
+
 # Capture the ROI if the user draws it
 roi_output = st.session_state.get('user_roi')
 if roi_output:
@@ -103,7 +108,7 @@ else:
 
 # ========== ✅ PROCESS ROI ========== 
 if submit:
-    if roi_output is None:
+    if st.session_state.user_roi is None:
         st.error("❌ Please draw a Region of Interest (ROI) first.")
     else:
         st.info("📌 ROI stored and passed to processing.")
@@ -125,8 +130,6 @@ if submit:
             st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
         except Exception as e:
             st.error(f"❌ Earth Engine processing error: {e}")
-
-
 
 
 
