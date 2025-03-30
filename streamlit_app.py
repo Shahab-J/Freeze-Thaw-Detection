@@ -24,16 +24,16 @@ from streamlit_folium import folium_static
 
 
 
+# ========== ✅ IMPORTS & SETUP ==========
 import streamlit as st
 import ee
+import geemap.foliumap as geemap
 import json
-import datetime
-import folium
-from streamlit_folium import st_folium
+from datetime import date
 
-# ========== ✅ SETUP CONFIG ==========
+# ========== ✅ CONFIG ==========
 st.set_page_config(layout="wide")
-st.title("🏊 Freeze–Thaw Mapping Tool")
+st.title("🧊 Freeze–Thaw Mapping Tool")
 
 # ========== ✅ AUTHENTICATE EARTH ENGINE ==========
 try:
@@ -54,83 +54,63 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SESSION STATE INIT ==========
-def init_session():
-    defaults = {
-        "start_date": "2023-10-01",
-        "end_date": "2024-06-30",
-        "resolution": 30,
-        "clip_to_agriculture": True,
-        "user_roi": None,
-        "map_center": [46.29, -72.75],
-        "map_zoom": 11
-    }
-    for key, val in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = val
-
-init_session()
-
-# ========== ✅ SIDEBAR UI ==========
+# ========== ✅ SIDEBAR WIDGETS ==========
 st.sidebar.header("Set Parameters")
-st.session_state.start_date = st.sidebar.date_input("Start Date", datetime.date.fromisoformat(st.session_state.start_date))
-st.session_state.end_date = st.sidebar.date_input("End Date", datetime.date.fromisoformat(st.session_state.end_date))
-st.session_state.resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=[10, 30, 100].index(st.session_state.resolution))
-st.session_state.clip_to_agriculture = st.sidebar.checkbox("Clip to Agricultural Land Only", value=st.session_state.clip_to_agriculture)
+st.session_state.start_date = st.sidebar.date_input("Start Date", date(2023, 10, 1))
+st.session_state.end_date = st.sidebar.date_input("End Date", date(2024, 6, 30))
+st.session_state.resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=1)
+st.session_state.clip_to_agriculture = st.sidebar.checkbox("Clip to Agricultural Land Only", value=True)
 
-# ========== ✅ FOLIUM MAP SETUP ==========
-st.write("### Draw ROI on the map")
-base_map = folium.Map(location=st.session_state.map_center, zoom_start=st.session_state.map_zoom, tiles="Esri.WorldImagery")
+# ========== ✅ DRAWING TOOLS ==========
+m = geemap.Map(center=[46.5, -72.5], zoom=7, basemap="SATELLITE")
+output = m.user_roi_bounds()
+m.add_draw_control()
+m.to_streamlit(height=600)
 
-# ========== ✅ DISPLAY MAP & GET ROI ==========
-output = st_folium(base_map, height=600, width=700, returned_objects=["last_drawn_feature"])
-
-if "last_drawn_feature" in output and output["last_drawn_feature"]:
+# ========== ✅ ROI LOGIC ==========
+if output and "last_drawn_feature" in output and output["last_drawn_feature"]:
     st.session_state.user_roi = output["last_drawn_feature"]["geometry"]
-    st.success("✅ ROI captured and saved.")
+    st.success("✅ ROI saved.")
 else:
-    st.info("ℹ️ Draw a region on the map to start.")
-
-# ========== ✅ PROCESSING ==========
-def process_roi():
-    roi = ee.Geometry(st.session_state.user_roi)
-
-    st.write("Filtering Sentinel-1 VH data...")
-    s1 = ee.ImageCollection("COPERNICUS/S1_GRD") \
-        .filterBounds(roi) \
-        .filterDate(str(st.session_state.start_date), str(st.session_state.end_date)) \
-        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH')) \
-        .filter(ee.Filter.eq('instrumentMode', 'IW')) \
-        .select('VH')
-
-    count = s1.size().getInfo()
-    st.success(f"🚁 {count} Sentinel-1 VH images found.")
-
-    if count > 0:
-        img = s1.sort("system:time_start").first().clip(roi)
-        url = img.getThumbURL({
-            'region': roi,
-            'min': -25,
-            'max': 0,
-            'dimensions': 512,
-            'format': 'png'
-        })
-        st.image(url, caption="First VH Image", use_column_width=True)
-    else:
-        st.warning("No Sentinel-1 images found for this ROI and date range.")
+    st.warning("⚠️ Draw an ROI on the map to proceed.")
 
 # ========== ✅ SUBMIT BUTTON ==========
 if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state.user_roi:
-        st.write("\n---\n")
-        st.write("Starting Freeze–Thaw Detection with:")
-        st.write(f"- Start: {st.session_state.start_date}")
-        st.write(f"- End: {st.session_state.end_date}")
-        st.write(f"- Resolution: {st.session_state.resolution} m")
-        st.write(f"- Clip to Agriculture: {st.session_state.clip_to_agriculture}")
-        process_roi()
+    if "user_roi" not in st.session_state:
+        st.error("❌ Please draw an ROI first.")
     else:
-        st.error("❌ No ROI selected. Please draw a region on the map.")
+        st.info("📌 ROI submitted.")
+        st.write(f"Start Date: {st.session_state.start_date}")
+        st.write(f"End Date: {st.session_state.end_date}")
+        st.write(f"Resolution: {st.session_state.resolution} m")
+        st.write(f"Clip to Agriculture: {'Yes' if st.session_state.clip_to_agriculture else 'No'}")
+
+        # ========== 🌐 EE Processing ========== #
+        roi = ee.Geometry(st.session_state.user_roi)
+        collection = (
+            ee.ImageCollection("COPERNICUS/S1_GRD")
+            .filterBounds(roi)
+            .filterDate(str(st.session_state.start_date), str(st.session_state.end_date))
+            .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+            .filter(ee.Filter.eq('instrumentMode', 'IW'))
+            .select('VH')
+        )
+        count = collection.size().getInfo()
+        st.success(f"🛰️ {count} Sentinel-1 images found.")
+
+        if count > 0:
+            image = collection.sort('system:time_start').first()
+            url = image.clip(roi).getThumbURL({
+                'region': roi,
+                'min': -25,
+                'max': 0,
+                'dimensions': 512,
+                'format': 'png'
+            })
+            st.image(url, caption="📸 First Sentinel-1 VH Image")
+        else:
+            st.warning("No Sentinel-1 images found in selected period.")
+
 
 
 
