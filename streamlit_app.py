@@ -452,8 +452,15 @@ def compute_efta(collection, resolution):
 
 # ✅ Step 10: Freeze–Thaw Classification Using RF for Streamlit
 # 🔗 Load training data from GitHub (geojson hosted in your repo _ not from Earth Engine assets)
-training_url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/training_data.geojson"
-training_asset = ee.FeatureCollection(training_url)
+url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/training_data.geojson"
+with urllib.request.urlopen(url) as response:
+    geojson_data = json.load(response)
+
+# ✅ Convert to Earth Engine FeatureCollection
+features = [ee.Feature(f) for f in geojson_data["features"]]
+training_asset = ee.FeatureCollection(features)
+
+
 
 # 🔤 Define features and label
 bands = ['EFTA']  # Input feature(s) for classification
