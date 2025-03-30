@@ -3,6 +3,7 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 import ee
+import io
 import sys
 import math
 import json 
@@ -575,88 +576,81 @@ def summarize_ft_classification(collection, user_roi, resolution):
 def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
     """
     Visualizes Freeze–Thaw classification results using thumbnails and pixel stats.
-    Shows results in a Streamlit expander.
+    Displays in a large expandable viewer. Saves as PNG to view at full size.
     """
     try:
         image_list = collection.limit(max_images).toList(max_images)
-        num_images = max_images
+        num_images = collection.size().getInfo()
 
-        with st.expander("🧊 View Freeze–Thaw Results", expanded=True):
-            st.write(f"📦 Showing up to {num_images} classified images")
-            cols = 3
-            rows = (num_images // cols) + (num_images % cols > 0)
-            total_slots = rows * cols
+        if num_images == 0:
+            st.error("❌ No classification images found.")
+            return
 
-            fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
-            axes = axes.flatten()
-            summary_lines = []
+        fig_rows = (max_images // 3) + (max_images % 3 > 0)
+        fig, axes = plt.subplots(fig_rows, 3, figsize=(16, 5 * fig_rows))
+        axes = axes.flatten()
+        summary_lines = []
+        displayed_count = 0
 
-            for i in range(num_images):
-                try:
-                    img = ee.Image(image_list.get(i))
-                    timestamp = img.date().format("YYYY-MM-dd").getInfo()
+        for i in range(max_images):
+            try:
+                img = ee.Image(image_list.get(i))
+                timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
-                    url = img.select("FT_State").clip(user_roi).getThumbURL({
-                        "min": 0,
-                        "max": 1,
-                        "dimensions": 512,
-                        "region": user_roi,
-                        "palette": ["red", "blue"]
-                    })
+                url = img.select("FT_State").clip(user_roi).getThumbURL({
+                    "min": 0,
+                    "max": 1,
+                    "dimensions": 512,
+                    "region": user_roi,
+                    "palette": ["red", "blue"]
+                })
 
-                    image_array = np.array(Image.open(urllib.request.urlopen(url)))
-                    axes[i].imshow(image_array, cmap="bwr", vmin=0, vmax=1)
-                    axes[i].set_title(timestamp)
-                    axes[i].axis("off")
+                image_array = np.array(Image.open(urllib.request.urlopen(url)))
+                axes[displayed_count].imshow(image_array, cmap="bwr", vmin=0, vmax=1)
+                axes[displayed_count].set_title(timestamp)
+                axes[displayed_count].axis("off")
 
-                    # Pixel stats
-                    stats = img.select("FT_State").reduceRegion(
-                        reducer=ee.Reducer.frequencyHistogram(),
-                        geometry=user_roi,
-                        scale=resolution,
-                        maxPixels=1e13
-                    ).getInfo()
+                # Stats
+                stats = img.select("FT_State").reduceRegion(
+                    reducer=ee.Reducer.frequencyHistogram(),
+                    geometry=user_roi,
+                    scale=resolution,
+                    maxPixels=1e13
+                ).getInfo()
 
-                    hist = stats.get("FT_State", {})
-                    thawed = int(hist.get("0", 0))
-                    frozen = int(hist.get("1", 0))
-                    total = thawed + frozen
-                    thawed_pct = thawed / total * 100 if total > 0 else 0
-                    frozen_pct = frozen / total * 100 if total > 0 else 0
+                hist = stats.get("FT_State", {})
+                thawed = int(hist.get("0", 0))
+                frozen = int(hist.get("1", 0))
+                total = thawed + frozen
+                thawed_pct = thawed / total * 100 if total > 0 else 0
+                frozen_pct = frozen / total * 100 if total > 0 else 0
 
-                    summary_lines.append(
-                        f"🗓️ {timestamp}: ❄️ Frozen = {frozen:,} ({frozen_pct:.1f}%) | 💧 Thawed = {thawed:,} ({thawed_pct:.1f}%)"
-                    )
+                summary_lines.append(
+                    f"🗓️ {timestamp}: ❄️ Frozen = {frozen:,} ({frozen_pct:.1f}%) | 💧 Thawed = {thawed:,} ({thawed_pct:.1f}%)"
+                )
+                displayed_count += 1
 
-                except Exception as e:
-                    axes[i].axis("off")
-                    axes[i].set_title("Error")
-                    st.warning(f"⚠️ Could not display image {i+1}: {e}")
+            except Exception as e:
+                st.warning(f"⚠️ Could not display image {i+1}: {e}")
 
-            # Add legend
-            if len(axes) > num_images:
-                legend_ax = axes[num_images]
-            else:
-                legend_ax = fig.add_subplot(rows, cols, num_images + 1)
+        # Clean unused axes
+        for j in range(displayed_count, len(axes)):
+            axes[j].axis("off")
 
-            legend_ax.axis("off")
-            legend_ax.legend(
-                labels=["Thawed", "Frozen"],
-                handles=[
-                    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10),
-                    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10)
-                ],
-                loc="center", ncol=2, frameon=False, fontsize=10
-            )
+        plt.tight_layout()
 
-            plt.tight_layout()
-            st.pyplot(fig)
+        # Save figure to buffer and display as image
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png")
+        buf.seek(0)
 
-            st.markdown("### 📊 Summary of Images:")
+        with st.expander("🧊 View Freeze–Thaw Classification Results", expanded=True):
+            st.image(buf, caption=f"🧊 {displayed_count} images shown", use_column_width=True)
+            st.markdown("### 📊 Summary of Classified Images:")
             for line in summary_lines:
                 st.write(line)
 
-            st.success("✅ Visualization complete.")
+        st.success("✅ Freeze–Thaw Classification Visualization Ready.")
 
     except Exception as e:
         st.error(f"❌ Visualization failed: {e}")
