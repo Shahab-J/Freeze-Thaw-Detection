@@ -19,91 +19,60 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
 
-# ✅ Set Streamlit page config — MUST BE FIRST Streamlit command
+
+
+# MUST be the first Streamlit command
 st.set_page_config(layout="wide")
 
-# Then your UI code
-st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("📌 Draw your ROI on the map below and click Submit.")
-
-# ✅ Display environment info
-st.write(f"🔧 Python: {sys.version}")
-
-def check(name, code):
-    try:
-        exec(code)
-        st.success(f"✅ {name} OK")
-    except Exception as e:
-        st.error(f"❌ {name} FAILED: {e}")
-
-# ✅ Dependency checks
-check("folium", "import folium")
-check("streamlit-folium", "from streamlit_folium import folium_static")
-check("geemap", "import geemap")
-check("earthengine-api (ee)", "import ee")
-check("pandas", "import pandas as pd")
-check("numpy", "import numpy as np")
-check("matplotlib", "import matplotlib.pyplot as plt")
-check("Pillow (PIL)", "from PIL import Image")
-check("scikit-learn", "import sklearn")
-check("ipywidgets", "import ipywidgets")
-
-
-
-
 # ================== Initialize state ==================
-# ✅ Display Python version
-st.write(f"🔧 Python: {sys.version}")
+# ✅ Initialize EE
+service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
+private_key = st.secrets["GEE_PRIVATE_KEY"]
 
-# ✅ Earth Engine Auth
-try:
-    service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
-    private_key = st.secrets["GEE_PRIVATE_KEY"]
+credentials = ee.ServiceAccountCredentials(
+    service_account,
+    key_data=json.dumps({
+        "type": "service_account",
+        "client_email": service_account,
+        "private_key": private_key,
+        "token_uri": "https://oauth2.googleapis.com/token"
+    })
+)
+ee.Initialize(credentials)
 
-    credentials = ee.ServiceAccountCredentials(
-        service_account,
-        key_data=json.dumps({
-            "type": "service_account",
-            "client_email": service_account,
-            "private_key": private_key,
-            "token_uri": "https://oauth2.googleapis.com/token"
-        })
-    )
-    ee.Initialize(credentials)
-    st.success("✅ Earth Engine initialized.")
-except Exception as e:
-    st.error(f"❌ EE Auth failed: {e}")
-
-# ✅ Initialize session state variables
-for key, default in {
+# ✅ Initialize session_state if not set
+defaults = {
     "user_roi": None,
     "start_date": date(2023, 10, 1),
     "end_date": date(2024, 6, 30),
     "resolution": 30,
     "clip_to_agriculture": False
-}.items():
+}
+for key, val in defaults.items():
     if key not in st.session_state:
-        st.session_state[key] = default
+        st.session_state[key] = val
 
-# ✅ Draw map and handle ROI selection
-roi_drawn = False
-with st.container():
-    m = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
-    m.add_basemap("SATELLITE")
+# ✅ Map block: only display the map, store ROI in session_state
+st.header("🧊 Freeze–Thaw Mapping Tool")
+st.write("📌 Draw an ROI on the map. It will be saved for the session.")
 
-    # Re-display stored ROI
-    if st.session_state["user_roi"]:
-        m.addLayer(
-            ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
-            {}, "Stored ROI"
-        )
+Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+Map.add_basemap("SATELLITE")
 
-    m.to_streamlit(height=600)
+# Restore previous ROI (re-display after refresh)
+if st.session_state["user_roi"]:
+    Map.addLayer(
+        ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
+        {}, "Stored ROI"
+    )
 
-    if m.user_roi is not None:
-        st.session_state["user_roi"] = m.user_roi
-        roi_drawn = True
-        st.success("✅ ROI drawn and saved.")
+Map.to_streamlit(height=600)
+
+# Save newly drawn ROI
+if Map.user_roi:
+    st.session_state["user_roi"] = Map.user_roi
+    st.success("✅ ROI selected and saved.")
+
 
 # ✅ Confirm ROI status
 if st.session_state["user_roi"]:
@@ -139,7 +108,11 @@ st.session_state["clip_to_agriculture"] = st.checkbox(
     value=st.session_state["clip_to_agriculture"]
 )
 
-# ✅ Setup UI and ROI map
+st.session_state["start_date"] = st.date_input("Start Date", value=st.session_state["start_date"])
+st.session_state["end_date"] = st.date_input("End Date", value=st.session_state["end_date"])
+st.session_state["resolution"] = st.selectbox("Resolution", [10, 30, 100], index=[10, 30, 100].index(st.session_state["resolution"]))
+st.session_state["clip_to_agriculture"] = st.checkbox("Clip to Cropland", value=st.session_state["clip_to_agriculture"])
+
 
 # ✅ Single clean Submit Button
 if st.button("🚀 Submit ROI & Start Processing"):
