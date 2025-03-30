@@ -21,16 +21,17 @@ from streamlit_folium import folium_static
 
 
 import streamlit as st
-import ee
-import geemap.foliumap as geemap
-import json
 from streamlit_folium import st_folium
+import folium
+import ee
+import json
+from datetime import date
 
-# ===== ✅ SETUP CONFIG =====
+# ========== ✅ SETUP ==========
 st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ===== ✅ EARTH ENGINE AUTH =====
+# ========== ✅ EARTH ENGINE AUTH ==========
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -49,46 +50,51 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ===== ✅ SIDEBAR =====
+# ========== ✅ SIDEBAR ==========
 st.sidebar.header("Set Parameters")
-start_date = st.sidebar.date_input("Start Date")
-end_date = st.sidebar.date_input("End Date")
+start_date = st.sidebar.date_input("Start Date", value=date(2023, 10, 1))
+end_date = st.sidebar.date_input("End Date", value=date(2024, 6, 30))
 resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
-clip_to_ag = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=False)
+clip = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=False)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ===== ✅ FOLIUM MAP SETUP =====
+# ========== ✅ FOLIUM MAP ==========
 st.subheader("🗺️ Draw your ROI below")
 
-m = geemap.Map(center=[46.29, -72.75], zoom=7, height=650)
-m.add_basemap("SATELLITE")
+m = folium.Map(location=[46.29, -72.75], zoom_start=7, control_scale=True)
 
-# Add drawing tools (polygon only)
-draw_control = m.draw_control
-draw_control.draw_polygon = True
-draw_control.draw_marker = False
-draw_control.draw_circle = False
-draw_control.draw_rectangle = False
-draw_control.draw_polyline = False
-draw_control.edit = True
-draw_control.remove = True
+# Add drawing tools
+from folium.plugins import Draw
+draw = Draw(
+    draw_options={
+        "polyline": False,
+        "rectangle": False,
+        "circle": False,
+        "circlemarker": False,
+        "marker": False,
+        "polygon": True,
+    },
+    edit_options={"edit": True}
+)
+draw.add_to(m)
 
-output = st_folium(m, width=900, height=650, returned_objects=["last_drawn_feature"])
+# Display the map
+map_data = st_folium(m, width=900, height=650, returned_objects=["last_drawn_feature"])
 
-# ===== ✅ CAPTURE ROI =====
+# ========== ✅ GET ROI ==========
 roi = None
-if output and output.get("last_drawn_feature"):
-    roi = output["last_drawn_feature"]["geometry"]
+if map_data and map_data.get("last_drawn_feature"):
+    roi = map_data["last_drawn_feature"]["geometry"]
 
-# ===== ✅ SUBMIT LOGIC =====
+# ========== ✅ SUBMIT LOGIC ==========
 if submit:
     if roi is None:
         st.warning("⚠️ Please draw an ROI before submitting.")
         st.stop()
-
-    st.success("✅ ROI submitted successfully!")
-    st.info(f"📅 Start: {start_date}, End: {end_date}, Resolution: {resolution}m")
-    st.json(roi)  # Optional: view raw geometry
+    
+    st.success("✅ ROI submitted!")
+    st.info(f"Start: {start_date}, End: {end_date}, Resolution: {resolution}m")
+    st.json(roi)
 
 
 
