@@ -19,93 +19,104 @@ from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
+import streamlit as st
+import folium
+from streamlit_folium import st_folium
+from folium.plugins import Draw
+from datetime import date
 
-# ========== ✅ MUST BE FIRST ==========
+# ✅ MUST BE FIRST
 st.set_page_config(layout="wide")
 
-# ========== ✅ Initialize Session State ==========
+# ✅ App Title
+st.title("🧊 Freeze–Thaw Mapping Tool")
+st.write("📌 Draw your ROI on the satellite map. Your selection will be preserved after interacting with widgets.")
+
+# ✅ Initialize session_state variables
 defaults = {
     "user_roi": None,
+    "map_center": [46.29, -72.75],
+    "map_zoom": 8,
     "start_date": date(2023, 10, 1),
     "end_date": date(2024, 6, 30),
     "resolution": 30,
-    "clip_to_agriculture": False,
-    "map_center": [46.29, -72.75],
-    "map_zoom": 12
+    "clip_to_agriculture": False
 }
-for key, val in defaults.items():
+for key, value in defaults.items():
     if key not in st.session_state:
-        st.session_state[key] = val
+        st.session_state[key] = value
 
-# ========== ✅ Title & Instructions ==========
-st.title("🧊 Freeze–Thaw Mapping Tool")
-st.write("Draw your ROI and interact with widgets without losing it.")
+# ✅ Create base map with satellite view
+m = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"], tiles="Esri.WorldImagery")
 
-# ========== ✅ Build the Folium Map ==========
-m = folium.Map(location=st.session_state["map_center"], zoom_start=st.session_state["map_zoom"])
-Draw(export=True).add_to(m)
-
-# ✅ Re-add saved ROI if exists
-if st.session_state.get("user_roi"):
+# ✅ Re-display stored ROI if it exists
+if st.session_state["user_roi"]:
     folium.GeoJson(
         st.session_state["user_roi"],
-        name="Saved ROI",
-        style_function=lambda x: {"color": "red"}
+        name="Stored ROI",
+        style_function=lambda x: {"color": "red", "weight": 3}
     ).add_to(m)
 
-# ========== ✅ Display Map and Capture Drawings ==========
+# ✅ Add Draw tool (polygon only)
+draw = Draw(export=True, draw_options={"polygon": True, "rectangle": False, "circle": False, "marker": False, "polyline": False})
+draw.add_to(m)
+
+# ✅ Display map in Streamlit
 map_data = st_folium(m, height=600, key="map")
 
-# ✅ Capture latest drawing if new one was added
-if map_data and map_data.get("last_active_drawing"):
+# ✅ Capture user-drawn ROI
+if map_data.get("last_active_drawing"):
     st.session_state["user_roi"] = map_data["last_active_drawing"]
-    st.success("✅ ROI drawn and saved.")
+    st.success("✅ ROI saved in session.")
 
-# ✅ Show status
-if st.session_state.get("user_roi"):
-    st.info("🗂 ROI is currently selected.")
+# ✅ Show ROI status
+if st.session_state["user_roi"]:
+    st.info("🗂 ROI is selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# ========== ✅ User Input Widgets ==========
+# ✅ Date Inputs
 st.session_state["start_date"] = st.date_input(
-    "🗓️ Start Date",
+    "📅 Start Date",
     value=st.session_state["start_date"],
     min_value=date(2015, 1, 1),
     max_value=date(2025, 12, 31)
 )
 
 st.session_state["end_date"] = st.date_input(
-    "🗓️ End Date",
+    "📅 End Date",
     value=st.session_state["end_date"],
     min_value=date(2015, 1, 1),
     max_value=date(2025, 12, 31)
 )
 
+# ✅ Resolution Dropdown
 st.session_state["resolution"] = st.selectbox(
     "📏 Resolution (m):",
     [10, 30, 100],
     index=[10, 30, 100].index(st.session_state["resolution"])
 )
 
+# ✅ Cropland Clipping Checkbox
 st.session_state["clip_to_agriculture"] = st.checkbox(
     "🌱 Clip to Agricultural Lands Only",
     value=st.session_state["clip_to_agriculture"]
 )
 
-# ========== ✅ Submit Button ==========
+# ✅ Submit Button
 if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state.get("user_roi"):
+    if st.session_state["user_roi"]:
         st.success("🚀 Starting Freeze–Thaw Detection...")
-        st.write(f"🗓️ Start Date: {st.session_state['start_date']}")
-        st.write(f"🗓️ End Date: {st.session_state['end_date']}")
+        st.info("🗂 ROI stored and passed to processing.")
+        st.write(f"📅 Start Date: {st.session_state['start_date']}")
+        st.write(f"📅 End Date: {st.session_state['end_date']}")
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
-        st.write(f"🌱 Agricultural Clipping: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-        # 🔁 Replace this with your actual processing logic
+        st.write(f"🌾 Clip to Agriculture: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
+
+        # 🔁 Here you can call your full EE pipeline
         # submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
-
 
 
 
