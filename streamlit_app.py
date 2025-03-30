@@ -601,7 +601,6 @@ def classify_image(img, rf_model, resolution):
 def submit_roi():
     """Runs the full Freeze–Thaw classification pipeline after ROI selection."""
 
-    # ✅ Step 1: Retrieve input from session
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -613,25 +612,26 @@ def submit_roi():
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
 
-    # ✅ Step 2: Validate dates
+    # ✅ Validate date range
     if user_selected_end >= today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+        st.error(f"❌ End date ({user_selected_end}) is in the future.")
         return
     if user_selected_start >= user_selected_end:
         st.error("❌ Start date must be earlier than end date.")
         return
 
-    # ✅ Step 3: Adjust for Freeze–Thaw calendar year
+    # ✅ Adjust for freeze–thaw season (Oct–June)
     start_year = int(user_selected_start[:4])
     if int(user_selected_start[5:7]) < 10:
         start_year -= 1
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year + 1}-06-30"
+
     st.success(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
-    # ✅ Step 4: Optionally clip to cropland
+    # ✅ Clip to agriculture if selected
     if clip_agriculture:
-        st.write("🌱 Cropland-only mode enabled. Clipping ROI to agricultural areas...")
+        st.write("🌱 Cropland-only mode enabled...")
         try:
             landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
             cropland_mask = landcover.eq(15)
@@ -643,69 +643,92 @@ def submit_roi():
             )
             user_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
             if user_roi.coordinates().size().getInfo() == 0:
-                st.error("❌ Cropland mask removed entire ROI. Try a different area or disable cropping.")
+                st.error("❌ Cropland mask removed entire ROI.")
                 return
         except Exception as e:
             st.error(f"❌ Error applying cropland mask: {e}")
             return
 
-    # ✅ Step 5: Processing pipeline
-    try:
-        processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-        if processed_images is None: return
-        st.success("✅ Initial Sentinel-1 Collection ready.")
+    # ✅ Run pipeline with spinner
+    with st.spinner("⏳ Processing Sentinel-1 Freeze–Thaw pipeline..."):
+        try:
+            # Step 1: Load & filter Sentinel-1
+            processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
+            if processed_images is None: return
+            st.success("✅ Step 1: Sentinel-1 collection processed.")
 
-        mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-        if mosaicked_images is None: return
-        st.success("✅ Daily mosaics computed.")
+            # Step 2: Mosaic by date
+            mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
+            if mosaicked_images is None: return
+            st.success("✅ Step 2: Mosaics created.")
 
-        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-        if sigma_diff_collection is None: return
-        st.success("✅ SigmaDiff computed.")
+            # Step 3: SigmaDiff
+            sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
+            if sigma_diff_collection is None: return
+            st.success("✅ Step 3: SigmaDiff calculated.")
 
-        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-        if sigma_extreme_collection is None: return
-        st.success("✅ SigmaDiff extremes (min/max) computed.")
+            # Step 4: Min/Max SigmaDiff
+            sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
+            if sigma_extreme_collection is None: return
+            st.success("✅ Step 4: SigmaDiff extremes found.")
 
-        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-        if final_k_collection is None:
-            st.error("❌ ERROR: K computation failed.")
-            return
-        st.success("✅ K band assignment completed.")
+            # Step 5: K assignment
+            final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
+            if final_k_collection is None:
+                st.error("❌ ERROR: K assignment failed.")
+                return
+            st.success("✅ Step 5: Freeze–Thaw K band assigned.")
 
-        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-        if thaw_ref_image is None: return
-        st.success("✅ ThawRef computed.")
+            # Step 6: ThawRef
+            thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
+            if thaw_ref_image is None: return
+            st.success("✅ Step 6: ThawRef computed.")
 
-        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
-        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-        if delta_theta_collection is None: return
-        st.success("✅ DeltaTheta computed.")
+            # Step 7: DeltaTheta
+            thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
+            delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
+            if delta_theta_collection is None: return
+            st.success("✅ Step 7: DeltaTheta added.")
 
-        efta_collection = compute_efta(delta_theta_collection, resolution)
-        if efta_collection is None: return
-        st.success("✅ EFTA computation completed.")
+            # Step 8: EFTA
+            efta_collection = compute_efta(delta_theta_collection, resolution)
+            if efta_collection is None: return
+            st.success("✅ Step 8: EFTA calculation complete.")
 
-        # ✅ Save intermediate results
-        st.session_state.efta_collection = efta_collection
+            # Save to session
+            st.session_state.efta_collection = efta_collection
 
-        # ✅ Step 6: Train and classify
-        rf_model = train_rf_model()
-        st.success("✅ Random Forest model trained.")
+            # Step 9: Train RF
+            rf_model = train_rf_model()
+            st.success("✅ Step 9: Random Forest trained.")
 
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
-        st.success("✅ All images classified using RF model.")
+            # Step 10: Classify
+            classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+            st.success("✅ Step 10: Classification done.")
 
-        # ✅ Step 7: Filter and visualize
-        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
+            # Filter for selected range
+            classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
-        with st.expander("🧊 View Freeze–Thaw Classification Results", expanded=True):
-            visualize_ft_classification(classified_collection_visual, user_roi, resolution)
+            # Final visualization
+            with st.expander("📊 Freeze–Thaw Classification Results", expanded=True):
+                visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
-        st.success("✅ Freeze–Thaw Mapping and Visualization complete.")
+            st.success("✅ ✅ All steps completed. Results shown above.")
 
-    except Exception as e:
-        st.error(f"❌ Unexpected Error during processing: {e}")
+        except Exception as e:
+            st.error(f"❌ Unexpected error during processing: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ✅ Step 12: Compute and Summarize FT Classification for Streamlit
