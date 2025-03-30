@@ -87,12 +87,54 @@ st.session_state.clip_to_agriculture = st.checkbox("🌱 Clip to Agricultural La
 
 # ========= 🚀 PROCESS BUTTON =========
 def submit_roi():
-    st.success("✅ Processing started (placeholder).")
-    st.write("🛰️ You can now load images, apply filters, and visualize results.")
-    # Later: Earth Engine logic goes here
+    import ee
 
+    # ✅ Safe initialization in case already initialized
+    try:
+        ee.Initialize()
+    except Exception as e:
+        st.warning("⚠️ Earth Engine was already initialized or encountered an error.")
+
+    # ✅ Access and convert ROI from session state
+    roi_geojson = st.session_state.user_roi
+    roi_ee = ee.Geometry(roi_geojson)
+
+    st.write("📡 Filtering Sentinel-1 VH data...")
+
+    # ✅ Filter Sentinel-1 ImageCollection
+    collection = (
+        ee.ImageCollection("COPERNICUS/S1_GRD")
+        .filterBounds(roi_ee)
+        .filterDate(str(st.session_state.start_date), str(st.session_state.end_date))
+        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+        .filter(ee.Filter.eq('instrumentMode', 'IW'))
+        .select('VH')
+    )
+
+    # ✅ Count and show results
+    image_count = collection.size().getInfo()
+    st.success(f"🛰️ {image_count} Sentinel-1 VH images found.")
+
+    if image_count > 0:
+        first_image = collection.sort('system:time_start').first()
+
+        # ✅ Clip and generate preview thumbnail
+        url = first_image.clip(roi_ee).getThumbURL({
+            'region': roi_ee,
+            'min': -25,
+            'max': 0,
+            'dimensions': 512,
+            'format': 'png'
+        })
+
+        st.image(url, caption="📸 First Sentinel-1 VH image", use_column_width=True)
+    else:
+        st.warning("⚠️ No images found for the selected region and date range.")
+
+
+# ========= 🚀 PROCESS BUTTON =========
 if st.button("🚀 Submit ROI & Start Processing"):
-    if st.session_state.user_roi:
+    if st.session_state.get("user_roi"):
         st.write("🚀 Starting Freeze–Thaw Detection...")
         st.info("📌 ROI stored and passed to processing.")
         st.write(f"📅 Start Date: {st.session_state.start_date}")
