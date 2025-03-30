@@ -23,18 +23,18 @@ from streamlit_folium import folium_static
 
 
 
+import streamlit as st
 import ee
 import json
-import math
 import folium
-import numpy as np
-import PIL.Image
-import urllib.request
-import streamlit as st
+import math
 from datetime import date
 from streamlit_folium import st_folium
 from folium.plugins import Draw
 import matplotlib.pyplot as plt
+import numpy as np
+import PIL.Image
+import urllib.request
 
 # ========== ✅ SETUP CONFIG ==========
 st.set_page_config(layout="wide")
@@ -61,8 +61,8 @@ except Exception as e:
 
 # ========== ✅ SIDEBAR ==========
 st.sidebar.title("Set Parameters")
-start_date = st.sidebar.date_input("Start Date")
-end_date = st.sidebar.date_input("End Date")
+start_date = st.sidebar.date_input("Start Date", value=date(2023, 10, 1))
+end_date = st.sidebar.date_input("End Date", value=date(2024, 6, 30))
 resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
@@ -74,22 +74,22 @@ draw = Draw(export=True)
 draw.add_to(m)
 output = st_folium(m, width=1100, height=650)
 
-# ========== ✅ PROCESSING PIPELINE ==========
-from processing_pipeline import (
-    process_sentinel1,
-    mosaic_by_date,
-    compute_sigma_diff_pixelwise,
-    compute_sigma_diff_extremes,
-    assign_freeze_thaw_k,
-    compute_thaw_ref_pixelwise,
-    compute_delta_theta,
-    compute_efta,
-    train_rf_model,
-    classify_image,
-    visualize_ft_classification,
-)
-
+# ========== ✅ PIPELINE ==========
 def submit_roi():
+    from streamlit_app import (
+        process_sentinel1,
+        mosaic_by_date,
+        compute_sigma_diff_pixelwise,
+        compute_sigma_diff_extremes,
+        assign_freeze_thaw_k,
+        compute_thaw_ref_pixelwise,
+        compute_delta_theta,
+        compute_efta,
+        train_rf_model,
+        classify_image,
+        visualize_ft_classification
+    )
+
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -97,15 +97,13 @@ def submit_roi():
     user_roi = st.session_state.user_roi
     resolution = st.session_state.get("resolution", 30)
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
-
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
-    today = date.today().strftime("%Y-%m-%d")  # Moved up here
+    today = date.today().strftime("%Y-%m-%d")
 
     if user_selected_end >= today:
-    st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
-    return
-
+        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+        return
     if user_selected_start >= user_selected_end:
         st.error("❌ Start date must be earlier than end date.")
         return
@@ -170,6 +168,8 @@ if submit:
             submit_roi()
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
 
 
 
