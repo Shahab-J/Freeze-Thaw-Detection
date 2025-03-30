@@ -75,20 +75,6 @@ output = st_folium(m, width=1100, height=650)
 
 # ========== ✅ PROCESSING PIPELINE ==========
 def submit_roi():
-    from your_pipeline_file import (
-        process_sentinel1,
-        mosaic_by_date,
-        compute_sigma_diff_pixelwise,
-        compute_sigma_diff_extremes,
-        assign_freeze_thaw_k,
-        compute_thaw_ref_pixelwise,
-        compute_delta_theta,
-        compute_efta,
-        train_rf_model,
-        classify_image,
-        visualize_ft_classification,
-    )
-
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
