@@ -585,26 +585,21 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 # ✅ Step 13: Visualize FT Classification for Streamlit
-def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
-    """
-    Visualizes Freeze–Thaw classification results using thumbnails and pixel stats.
-    Displays in a large expandable viewer. Saves as PNG to view at full size.
-    """
-    try:
-        image_list = collection.limit(max_images).toList(max_images)
-        num_images = collection.size().getInfo()
+def visualize_ft_classification(collection, user_roi, resolution):
+    import tempfile
+    import base64
 
-        if num_images == 0:
-            st.error("❌ No classification images found.")
-            return
+    if collection is None or collection.size().getInfo() == 0:
+        st.error("❌ No classification results available for visualization.")
+        return
 
-        fig_rows = (max_images // 3) + (max_images % 3 > 0)
-        fig, axes = plt.subplots(fig_rows, 3, figsize=(16, 5 * fig_rows))
-        axes = axes.flatten()
-        summary_lines = []
-        displayed_count = 0
+    image_list = collection.toList(collection.size())
+    num_images = collection.size().getInfo()
 
-        for i in range(max_images):
+    with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
+        st.write(f"🖼️ Total Images: {num_images}")
+
+        for i in range(num_images):
             try:
                 img = ee.Image(image_list.get(i))
                 timestamp = img.date().format("YYYY-MM-dd").getInfo()
@@ -612,17 +607,22 @@ def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
                 url = img.select("FT_State").clip(user_roi).getThumbURL({
                     "min": 0,
                     "max": 1,
-                    "dimensions": 512,
-                    "region": user_roi,
+                    "dimensions": 768,
                     "palette": ["red", "blue"]
                 })
 
-                image_array = np.array(Image.open(urllib.request.urlopen(url)))
-                axes[displayed_count].imshow(image_array, cmap="bwr", vmin=0, vmax=1)
-                axes[displayed_count].set_title(timestamp)
-                axes[displayed_count].axis("off")
+                image = Image.open(urllib.request.urlopen(url))
+                st.image(image, caption=f"🗓️ {timestamp}", use_container_width=True)
 
-                # Stats
+                # Save TIFF + download
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
+                    image.save(tmp.name)
+                    with open(tmp.name, "rb") as file:
+                        b64 = base64.b64encode(file.read()).decode()
+                        href = f'<a href="data:file/tif;base64,{b64}" download="FT_{timestamp}.tif">📥 Download TIFF</a>'
+                        st.markdown(href, unsafe_allow_html=True)
+
+                # Pixel stats
                 stats = img.select("FT_State").reduceRegion(
                     reducer=ee.Reducer.frequencyHistogram(),
                     geometry=user_roi,
@@ -637,35 +637,15 @@ def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
                 thawed_pct = thawed / total * 100 if total > 0 else 0
                 frozen_pct = frozen / total * 100 if total > 0 else 0
 
-                summary_lines.append(
-                    f"🗓️ {timestamp}: ❄️ Frozen = {frozen:,} ({frozen_pct:.1f}%) | 💧 Thawed = {thawed:,} ({thawed_pct:.1f}%)"
+                st.markdown(
+                    f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
+                    f"❄️ Frozen: **{frozen:,}** ({frozen_pct:.1f}%)  \n"
+                    f"💧 Thawed: **{thawed:,}** ({thawed_pct:.1f}%)"
                 )
-                displayed_count += 1
+                st.divider()
 
             except Exception as e:
-                st.warning(f"⚠️ Could not display image {i+1}: {e}")
-
-        # Clean unused axes
-        for j in range(displayed_count, len(axes)):
-            axes[j].axis("off")
-
-        plt.tight_layout()
-
-        # Save figure to buffer and display as image
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png")
-        buf.seek(0)
-
-        with st.expander("🧊 View Freeze–Thaw Classification Results", expanded=True):
-            st.image(buf, caption=f"🧊 {displayed_count} images shown", use_container_width=True)
-            st.markdown("### 📊 Summary of Classified Images:")
-            for line in summary_lines:
-                st.write(line)
-
-        st.success("✅ Freeze–Thaw Classification Visualization Ready.")
-
-    except Exception as e:
-        st.error(f"❌ Visualization failed: {e}")
+                st.warning(f"⚠️ Error displaying image {i+1}: {e}")
 
 
 
@@ -674,12 +654,6 @@ def visualize_ft_classification(collection, user_roi, resolution, max_images=6):
 
 
 
-
-
-
-
-
-# ========== ✅ Processing Pipeline ==========
 # ========== ✅ Processing Pipeline ==========
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
@@ -796,8 +770,6 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
-
-
 
 
 
