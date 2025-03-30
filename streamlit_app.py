@@ -61,22 +61,33 @@ for key, val in defaults.items():
     st.session_state.setdefault(key, val)
 
 # ✅ Display map and handle ROI
-Map = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
-Map.add_basemap("SATELLITE")
+# ✅ Create and store the map instance ONCE
+if "Map_instance" not in st.session_state:
+    m = geemap.Map(center=[46.29, -72.75], zoom=12, draw_export=True)
+    m.add_basemap("SATELLITE")
+    st.session_state.Map_instance = m
+else:
+    m = st.session_state.Map_instance
 
-# ✅ Restore previously selected ROI
+# ✅ Add previously selected ROI as a layer
 if st.session_state.get("user_roi"):
-    Map.addLayer(
-        ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
-        {}, "Stored ROI"
-    )
+    try:
+        m.layers = m.layers[:1]  # Clear custom layers (avoid duplication)
+        m.addLayer(
+            ee.FeatureCollection([ee.Feature(st.session_state["user_roi"])]),
+            {}, "Stored ROI"
+        )
+    except Exception as e:
+        st.warning(f"⚠️ Failed to re-add stored ROI: {e}")
 
-Map.to_streamlit(height=600)
+# ✅ Display the map
+m.to_streamlit(height=600)
 
-# ✅ Save newly drawn ROI
-if Map.user_roi:
-    st.session_state["user_roi"] = Map.user_roi
+# ✅ Save ROI only if user drew something new
+if m.user_roi is not None:
+    st.session_state["user_roi"] = m.user_roi
     st.success("✅ ROI selected and saved.")
+
 
 # ✅ Show current ROI status
 if st.session_state.get("user_roi"):
