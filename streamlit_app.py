@@ -44,13 +44,6 @@ ee.Initialize(credentials)
 
 
 # ✅ Initialize session_state if not set
-# ✅ Confirm ROI status
-if st.session_state["user_roi"]:
-    st.info("🗂 ROI is currently selected.")
-elif not roi_drawn:
-    st.warning("✏️ Please draw an ROI on the map.")
-
-
 defaults = {
     "user_roi": None,
     "start_date": date(2023, 10, 1),
@@ -61,6 +54,12 @@ defaults = {
 for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
+
+# ✅ Confirm ROI status
+if st.session_state.get("user_roi"):
+    st.info("🗂 ROI is currently selected.")
+elif not roi_drawn:
+    st.warning("✏️ Please draw an ROI on the map.")
 
 # ✅ Map block: only display the map, store ROI in session_state
 st.header("🧊 Freeze–Thaw Mapping Tool")
