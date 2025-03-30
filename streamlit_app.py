@@ -43,7 +43,7 @@ try:
         })
     )
     ee.Initialize(credentials)
-    st.success("✅ Earth Engine initialized.")
+#    st.success("✅ Earth Engine initialized.")
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
@@ -174,7 +174,7 @@ def mosaic_by_date(collection, roi, start_date, end_date):
         st.error("❌ ERROR: No mosaicked images generated.")
         return None
 
-    st.success(f"✅ SUCCESS: Mosaicked {mosaicked_count} daily images.")
+    st.success(f"✅ Mosaicked {mosaicked_count} daily images.")
     return mosaicked_collection
 
 
@@ -216,7 +216,7 @@ def compute_sigma_diff_pixelwise(collection):
         history = current_vh  # Update history for next iteration
 
     result_collection = ee.ImageCollection.fromImages(updated_images)
-    st.success("✅ SigmaDiff computation complete.")
+#   st.success("✅ SigmaDiff computation complete.")
     return result_collection
 
 
@@ -258,7 +258,7 @@ def compute_sigma_diff_extremes(collection, start_year, user_roi):
 
     updated_collection = collection.map(attach_min_max)
 
-    st.success("✅ SigmaDiff Min/Max computation complete.")
+#   st.success("✅ SigmaDiff Min/Max computation complete.")
     return updated_collection
 
 
@@ -311,7 +311,7 @@ def assign_freeze_thaw_k(collection):
         updated_images.append(updated_img)
 
     final_collection = ee.ImageCollection.fromImages(updated_images)
-    st.success("✅ Freeze–Thaw K Assignment complete.")
+#   st.success("✅ Freeze–Thaw K Assignment complete.")
     return final_collection
 
 
@@ -359,7 +359,7 @@ def compute_thaw_ref_pixelwise(collection, start_year, user_roi):
     top3 = sorted_by_vh.limit(3)
     thaw_ref = top3.mean().select('VH_corrected').rename('ThawRef')
 
-    st.success("✅ ThawRef Calculation complete.")
+#   st.success("✅ ThawRef Calculation complete.")
     return thaw_ref
 
 
@@ -398,7 +398,7 @@ def compute_delta_theta(collection, thaw_ref_image):
     # Map the function over the image collection
     updated_collection = collection.map(add_delta_theta)
 
-    st.success("✅ DeltaTheta Calculation complete.")
+ #  st.success("✅ DeltaTheta Calculation complete.")
     return updated_collection
 
 
@@ -445,7 +445,7 @@ def compute_efta(collection, resolution):
     # Apply calculation to each image
     updated_collection = collection.map(calculate_efta)
 
-    st.success("✅ EFTA Calculation complete.")
+#   st.success("✅ EFTA Calculation complete.")
     return updated_collection
 
 
@@ -737,7 +737,7 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+#           st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
                 # Load NALCMS and mask class 15 (cropland)
@@ -761,7 +761,7 @@ def submit_roi():
                 user_roi = intersected_roi
                 classified_images = classified_images.map(lambda img: img.clip(user_roi))
 
-                st.success("✅ ROI successfully clipped to cropland using NALCMS.")
+                st.success("🌾 ROI successfully clipped to cropland using NALCMS.")
 
             except Exception as e:
                 st.warning(f"⚠️ Cropland masking failed: {e}")
