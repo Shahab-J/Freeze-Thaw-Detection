@@ -22,19 +22,16 @@ from streamlit_folium import folium_static
 
 
 
-
-
 import streamlit as st
 from streamlit_folium import st_folium
 import folium
 from folium.plugins import Draw
 from datetime import date
 
-# ---------- Config ----------
 st.set_page_config(layout="wide")
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ---------- Default State ----------
+# Initialize state
 defaults = {
     "user_roi": None,
     "map_center": [46.29, -72.75],
@@ -44,72 +41,77 @@ defaults = {
     "resolution": 30,
     "clip_to_agriculture": False
 }
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+for key, val in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
 
-# ---------- 🌍 Map ----------
-# Handle dict-to-list for folium
+# Handle zoom bug
 map_center = st.session_state["map_center"]
 if isinstance(map_center, dict):
     map_center = [map_center["lat"], map_center["lng"]]
 
-base_map = folium.Map(
-    location=map_center,
-    zoom_start=st.session_state["map_zoom"],
-    tiles="Esri.WorldImagery"
-)
+# 🌍 Folium map
+m = folium.Map(location=map_center, zoom_start=st.session_state["map_zoom"], tiles="Esri.WorldImagery")
 
-# Add Draw controls
-draw = Draw(export=True)
-draw.add_to(base_map)
+# Add drawing tools
+Draw(export=True).add_to(m)
 
-# Restore ROI if exists
+# Re-add ROI
 if st.session_state["user_roi"]:
-    folium.GeoJson(st.session_state["user_roi"], name="Saved ROI").add_to(base_map)
+    folium.GeoJson(st.session_state["user_roi"], name="Saved ROI").add_to(m)
 
-# Display map
-st.markdown("### 🗺️ Draw your ROI below:")
-map_data = st_folium(base_map, height=650, width=1100, returned_objects=["last_active_drawing", "center", "zoom"])
+# Show map
+map_data = st_folium(m, height=600, width=1000, returned_objects=["last_active_drawing", "center", "zoom"])
 
-# Save ROI if drawn
-if map_data and map_data.get("last_active_drawing"):
+# Save ROI
+if map_data.get("last_active_drawing"):
     st.session_state["user_roi"] = map_data["last_active_drawing"]
-    st.success("✅ ROI selected and saved.")
+    st.success("✅ ROI saved.")
 
-# Save zoom/center
-if map_data.get("center") and isinstance(map_data["center"], dict):
+# Save view
+if map_data.get("center"):
     st.session_state["map_center"] = map_data["center"]
 if map_data.get("zoom"):
     st.session_state["map_zoom"] = map_data["zoom"]
 
-# ROI Status
+# Show status
 if st.session_state["user_roi"]:
     st.info("📌 ROI is selected.")
 else:
     st.warning("✏️ Please draw an ROI on the map.")
 
-# ---------- 🔧 User Options ----------
+# User inputs
 st.session_state["start_date"] = st.date_input("📅 Start Date", st.session_state["start_date"])
 st.session_state["end_date"] = st.date_input("📅 End Date", st.session_state["end_date"])
 st.session_state["resolution"] = st.selectbox("📏 Resolution (m):", [10, 30, 100], index=[10, 30, 100].index(st.session_state["resolution"]))
 st.session_state["clip_to_agriculture"] = st.checkbox("🌱 Clip to Agricultural Lands Only", value=st.session_state["clip_to_agriculture"])
 
-# ---------- 🚀 Submit ----------
+# 🚀 Submit processing
+def submit_roi():
+    st.success("✅ Processing started inside submit_roi().")
+    # Replace this with real Earth Engine logic
+    # Add logic here to count images, create mosaic, visualize result
+    st.write("🛰️ (This is where image processing would happen.)")
+
 if st.button("🚀 Submit ROI & Start Processing"):
     if st.session_state.get("user_roi"):
-        st.success("🚀 Starting Freeze–Thaw Detection...")
+        st.write("🚀 Starting Freeze–Thaw Detection...")
         st.info("📌 ROI stored and passed to processing.")
         st.write(f"📅 Start Date: {st.session_state['start_date']}")
         st.write(f"📅 End Date: {st.session_state['end_date']}")
         st.write(f"📏 Resolution: {st.session_state['resolution']} meters")
         st.write(f"🌱 Clip to Agriculture: {'Yes' if st.session_state['clip_to_agriculture'] else 'No'}")
-        
-        # 🔁 Call your actual detection function
-        # submit_roi()
 
+        submit_roi()
     else:
         st.error("❌ Please draw an ROI before submitting.")
+
+
+
+
+
+
+
 
 
 
