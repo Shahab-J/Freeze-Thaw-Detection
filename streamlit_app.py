@@ -141,7 +141,6 @@ st.session_state["clip_to_agriculture"] = st.checkbox(
 )
 
 # ✅ Setup UI and ROI map
-setup_user_interface_and_map()
 
 # ✅ Single clean Submit Button
 if st.button("🚀 Submit ROI & Start Processing"):
