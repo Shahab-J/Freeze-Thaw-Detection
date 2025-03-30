@@ -46,7 +46,12 @@ check("scikit-learn", "import sklearn")
 check("ipywidgets", "import ipywidgets")
 
 
+# ✅ Set Streamlit page config — MUST BE FIRST Streamlit command
+st.set_page_config(layout="wide")
 
+# Then your UI code
+st.title("🧊 Freeze–Thaw Mapping Tool")
+st.write("📌 Draw your ROI on the map below and click Submit.")
 
 # ================== Initialize state ==================
 st.set_page_config(layout="wide")
