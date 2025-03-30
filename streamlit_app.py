@@ -23,24 +23,28 @@ from streamlit_folium import folium_static
 
 
 
+
+
 import streamlit as st
+st.set_page_config(layout="wide")  # ✅ Must be the first Streamlit command
+
+# ========== ✅ Imports ==========  
 import ee
 import json
-import folium
 import math
 from datetime import date
-from streamlit_folium import st_folium
+import folium
 from folium.plugins import Draw
-import matplotlib.pyplot as plt
+from streamlit_folium import st_folium
 import numpy as np
 import PIL.Image
 import urllib.request
+import matplotlib.pyplot as plt
 
-# ========== ✅ SETUP CONFIG ==========
-st.set_page_config(layout="wide")
+# ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
-# ========== ✅ AUTHENTICATE EARTH ENGINE ==========
+# ========== ✅ Authenticate Earth Engine ==========
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
@@ -59,37 +63,42 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-# ========== ✅ SIDEBAR ==========
+# ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
-start_date = st.sidebar.date_input("Start Date", value=date(2023, 10, 1))
-end_date = st.sidebar.date_input("End Date", value=date(2024, 6, 30))
+def_start = date(2023, 10, 1)
+def_end = date(2024, 6, 30)
+
+start_date = st.sidebar.date_input("Start Date", value=def_start)
+end_date = st.sidebar.date_input("End Date", value=def_end)
 resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ DRAWING MAP ==========
+# ========== ✅ Draw Map ==========
 st.subheader("Draw your ROI below")
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="Esri.WorldImagery", control_scale=True)
-draw = Draw(export=True)
-draw.add_to(m)
+Draw(export=True).add_to(m)
 output = st_folium(m, width=1100, height=650)
 
-# ========== ✅ PIPELINE ==========
-def submit_roi():
-    from streamlit_app import (
-        process_sentinel1,
-        mosaic_by_date,
-        compute_sigma_diff_pixelwise,
-        compute_sigma_diff_extremes,
-        assign_freeze_thaw_k,
-        compute_thaw_ref_pixelwise,
-        compute_delta_theta,
-        compute_efta,
-        train_rf_model,
-        classify_image,
-        visualize_ft_classification
+# ========== ✅ Sentinel-1 Processing Function ==========
+def process_sentinel1(start_date, end_date, roi, resolution):
+    roi = ee.Geometry(roi)
+    collection = (
+        ee.ImageCollection('COPERNICUS/S1_GRD')
+        .filterDate(start_date, end_date)
+        .filterBounds(roi)
+        .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH'))
+        .filter(ee.Filter.eq('instrumentMode', 'IW'))
     )
+    image_count = collection.size().getInfo()
+    if image_count == 0:
+        st.error("❌ No Sentinel-1 images found in the selected date range and ROI.")
+        return None
+    st.success(f"🔍 Found {image_count} Sentinel-1 images in ROI.")
+    return collection
 
+# ========== ✅ Processing Pipeline ==========
+def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -97,6 +106,7 @@ def submit_roi():
     user_roi = st.session_state.user_roi
     resolution = st.session_state.get("resolution", 30)
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
+
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
@@ -111,47 +121,17 @@ def submit_roi():
     start_year = int(user_selected_start[:4])
     if int(user_selected_start[5:7]) < 10:
         start_year -= 1
-    start_date = f"{start_year}-10-01"
-    end_date = f"{start_year+1}-06-30"
+    adjusted_start = f"{start_year}-10-01"
+    adjusted_end = f"{start_year+1}-06-30"
 
-    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+    st.write(f"✅ Adjusted Processing Range: {adjusted_start} to {adjusted_end}")
 
-    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-    if processed_images is None: return
-
-    mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-    if mosaicked_images is None: return
-
-    sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-    if sigma_diff_collection is None: return
-
-    sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-    if sigma_extreme_collection is None: return
-
-    final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-    if final_k_collection is None:
-        st.error("❌ ERROR: K computation failed. Stopping execution.")
+    collection = process_sentinel1(adjusted_start, adjusted_end, user_roi, resolution)
+    if collection is None:
         return
+    st.success("✅ Initial Sentinel-1 Collection ready.")
 
-    thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-    if thaw_ref_image is None: return
-
-    thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
-    delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-    if delta_theta_collection is None: return
-
-    efta_collection = compute_efta(delta_theta_collection, resolution)
-    if efta_collection is None: return
-
-    st.session_state.efta_collection = efta_collection
-    rf_model = train_rf_model()
-    classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
-    classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
-
-    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-    st.success("✅ All Processing Completed.")
-
-# ========== ✅ SUBMIT HANDLER ==========
+# ========== ✅ Submit Handler ==========
 if submit:
     if output and output.get("all_drawings"):
         last_feature = output["all_drawings"][-1]
@@ -163,11 +143,13 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri
 
         st.success("✅ ROI submitted and ready for processing.")
-
         with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
             submit_roi()
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
 
 
 
