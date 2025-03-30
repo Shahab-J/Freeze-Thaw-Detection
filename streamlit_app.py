@@ -100,11 +100,12 @@ def submit_roi():
 
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
-    today = date.today().strftime("%Y-%m-%d")
+    today = date.today().strftime("%Y-%m-%d")  # Moved up here
 
-    if user_selected_end > today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
-        return
+    if user_selected_end >= today:
+    st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+    return
+
     if user_selected_start >= user_selected_end:
         st.error("❌ Start date must be earlier than end date.")
         return
