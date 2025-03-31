@@ -65,11 +65,6 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 
-# ========== Initialize Session State ==========
-if 'roi_selected' not in st.session_state:
-    st.session_state['roi_selected'] = False  # Initially, ROI is not selected
-    st.session_state['map_interaction_disabled'] = False  # Initially, interaction is allowed
-
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
@@ -96,16 +91,21 @@ if submit:
             last_feature = output["all_drawings"][-1]
             roi_geojson = last_feature["geometry"]
             st.session_state.user_roi = roi_geojson
-            st.session_state['roi_selected'] = True  # Set to True when ROI is selected
-            st.session_state['map_interaction_disabled'] = True  # Disable map interaction immediately after ROI selection
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
             
             # Immediately freeze the map (disable zoom and pan)
-            m.options['zoomControl'] = False
-            m.options['dragging'] = False
-            m.options['scrollWheelZoom'] = False
+            # Disable map interactions using JavaScript injection
+            st.markdown(
+                """
+                <style>
+                    .folium-map {
+                        pointer-events: none !important;
+                    }
+                </style>
+                """, unsafe_allow_html=True
+            )
 
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
