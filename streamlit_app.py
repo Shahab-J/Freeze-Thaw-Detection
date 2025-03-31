@@ -63,16 +63,12 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-
-
-
-
-# Initialize session state to track if ROI is selected and map state
+# Initialize session state for ROI and map interaction
 if 'roi_selected' not in st.session_state:
-    st.session_state['roi_selected'] = False
+    st.session_state['roi_selected'] = False  # Initially, ROI is not selected
 
 if 'map_interaction_enabled' not in st.session_state:
-    st.session_state['map_interaction_enabled'] = True  # Initially allow map interactions
+    st.session_state['map_interaction_enabled'] = True  # Initially, map interaction is enabled
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
@@ -91,7 +87,7 @@ draw = Draw(export=False)
 draw.add_to(m)
 
 # Dynamically control zoom and pan based on ROI selection
-if not st.session_state['map_interaction_enabled']:  # If map interaction is disabled
+if st.session_state['roi_selected']:  # If ROI is selected, disable map interaction
     m.options['zoomControl'] = False  # Disable zoom controls
     m.options['dragging'] = False  # Disable dragging (panning)
     m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
