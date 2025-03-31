@@ -844,9 +844,12 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri
 
         # st.success("✅ ROI submitted and ready for processing.")
-        
+      
         # Running Freeze–Thaw processing pipeline without the spinner
-        submit_roi()  # Ensure this function is defined elsewhere in your code
+        submit_roi()  
+
+        # Display an alert to warn users not to interact with the map
+        st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
