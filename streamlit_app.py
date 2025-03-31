@@ -83,18 +83,21 @@ draw.add_to(m)
 # Render the map
 output = st_folium(m, width=1300, height=600)
 
-
 # ========== ✅ Handle drawing output ==========
-if output and output.get("all_drawings"):
-    if len(output["all_drawings"]) > 0:
-        last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
-        st.session_state.user_roi = roi_geojson
-        st.success("✅ ROI submitted and ready for processing.")
+# Handle drawing output and display messages immediately after the map
+if submit:
+    if output and "all_drawings" in output:
+        if len(output["all_drawings"]) > 0:
+            last_feature = output["all_drawings"][-1]
+            roi_geojson = last_feature["geometry"]
+            st.session_state.user_roi = roi_geojson
+
+            # Display the ROI submitted message immediately after the map
+            st.success("✅ ROI submitted and ready for processing.")
+        else:
+            st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
-        st.warning("⚠️ No drawings detected, please draw an ROI.")
-else:
-    st.warning("⚠️ Please draw an ROI before submitting.")
+        st.warning("⚠️ Please draw an ROI before submitting.")
 
 
 
