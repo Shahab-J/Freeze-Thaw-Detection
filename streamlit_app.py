@@ -612,7 +612,25 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 
+# Footer Section (on the left side below the Submit ROI button)
+with st.sidebar:
+    # Create collapsible section for contact info
+    with st.expander("📩 Contact Us", expanded=False):
+        st.write("If you have any questions, please feel free to reach out!")
+        contact_message = st.text_area("Send us a message", "", height=100)
 
+    # Footer information
+    st.markdown(
+        """
+        ---
+        🧑‍💻 **Developed by**: Shahabeddin Taghipourjavi  
+        📧 **Email**: [Shahabeddin.taghipourjavi@uqtr.ca](mailto:Shahabeddin.taghipourjavi@uqtr.ca)  
+        👨‍🏫 **Supervised by**: Prof. Christophe Kinnard ([Christophe.Kinnard@uqtr.ca](mailto:Christophe.Kinnard@uqtr.ca)) and Prof. Alexandre Roy ([Alexandre.roy@uqtr.ca](mailto:Alexandre.roy@uqtr.ca))  
+        🏫 **Institution**: Université du Québec à Trois-Rivières  
+        📍 **Address**: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3  
+        🔒 **All rights reserved** © 2025  
+        """
+    )
 
 
 
