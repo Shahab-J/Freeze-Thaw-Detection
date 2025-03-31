@@ -26,8 +26,6 @@ from streamlit_folium import folium_static
 
 
 
-
-
 # ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
@@ -51,7 +49,6 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
-
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
@@ -62,6 +59,8 @@ end_date = st.sidebar.date_input("End Date", value=def_end)
 resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
+
+
 
 
 
@@ -97,10 +96,9 @@ if submit:
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-            
-            # Disable zoom, scroll, and pan after ROI submission
+
+            # Store a flag to indicate ROI has been selected
             st.session_state['roi_selected'] = True
-             
 
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
@@ -119,6 +117,15 @@ if 'roi_selected' in st.session_state and st.session_state['roi_selected']:
         </style>
         """, unsafe_allow_html=True
     )
+
+
+
+
+
+
+
+
+
 
 
 
