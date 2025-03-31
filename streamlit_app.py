@@ -105,10 +105,6 @@ if submit:
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-            
-            # Get the start and end dates from the user input
-            start_date_str = start_date.strftime("%Y-%m-%d")
-            end_date_str = end_date.strftime("%Y-%m-%d")
 
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
