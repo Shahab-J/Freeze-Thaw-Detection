@@ -50,7 +50,7 @@ try:
     
     # Initialize Earth Engine
     ee.Initialize(credentials)
-    st.success("✅ Earth Engine initialized successfully.")  # Success message
+#   st.success("✅ Earth Engine initialized successfully.")  # Success message
     
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
