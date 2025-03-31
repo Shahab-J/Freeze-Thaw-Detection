@@ -616,15 +616,16 @@ with st.sidebar:
         </style>
         <div class="footer-text">
         ---
-        **Developed by**: Shahabeddin Taghipourjavi <br>
-        **Supervised by**: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
-        **Institution**: Université du Québec à Trois-Rivières (UQTR) <br>
-        **Address**: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
-        🔒 **All rights reserved** © 2025
+        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
+        <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
+        <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
+        <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
+        🔒 <strong>All rights reserved</strong> © 2025
         </div>
         """,
         unsafe_allow_html=True
     )
+
 
 
     # Create collapsible section for Contact Us at the end of the sidebar
