@@ -615,12 +615,12 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
-        <br><br>
+        <br><br><br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
         <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
-        🔒 <strong>All rights reserved</strong> © 2025
+        🔒 <strong>All rights reserved</strong> © 2025 <br><br>
         </div>
         """,
         unsafe_allow_html=True
