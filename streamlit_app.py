@@ -66,6 +66,12 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
+st.markdown(
+    "<small>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</small>", 
+    unsafe_allow_html=True
+)
+
+
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
 # Add Satellite basemap (default)
@@ -734,10 +740,6 @@ def submit_roi():
     end_date = f"{start_year+1}-06-30"
 
 #   st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
-
-
-
-
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         st.warning("""
             ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed, as this may cause the process to collapse. 
