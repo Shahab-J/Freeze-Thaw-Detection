@@ -71,6 +71,15 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
+
+# ========== ✅ Set up map with default satellite view ==========
+st.subheader("Draw your ROI below")
+st.markdown(
+    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
+    unsafe_allow_html=True
+)
+
+
 # ========== ✅ Session State Initialization ==========
 if 'start_date' not in st.session_state:
     st.session_state.start_date = start_date
@@ -698,14 +707,22 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
     # Display the total number of images for the selected date range
-    with st.expander("🧊 <u>View All Freeze–Thaw Results</u> --- Please scroll down until all images are visualized with statistical information", expanded=False):
-        st.markdown(
-            f"🖼️ Total Images for visualization during the selected date range from "
-            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
-            unsafe_allow_html=True
-        )
+    # ========== ✅ Visualizing Results (Only show after ROI submission) ==========
+    if 'user_roi' in st.session_state:
+        # Display the warning only after ROI is selected
+        st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
+    
+        # Show the results section
+        st.subheader("🧊 View All Freeze–Thaw Results --- Please scroll down to see the classified FT images.")
+        with st.expander("🧊 View All Freeze–Thaw Results --- Please scroll down until all images are visualized with statistical information", expanded=False):
+            st.markdown(
+                f"🖼️ Total Images for visualization during the selected date range from "
+                f"<u>{st.session_state.start_date}</u> to <u>{st.session_state.end_date}</u>: <b><span style='font-size: 30px'>{100}</span></b> FT classified images.",
+                unsafe_allow_html=True
+            )
 
-                     
+
+        
     # Continue with the rest of the logic (image processing, visualization, etc.)
         # Loop through the images and display results
         for i in range(num_images):
