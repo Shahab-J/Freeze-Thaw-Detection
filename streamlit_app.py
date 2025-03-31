@@ -631,9 +631,13 @@ def visualize_ft_classification(collection, user_roi, resolution):
     image_list = collection.toList(collection.size())
     num_images = collection.size().getInfo()
 
+    # Get start and end dates from user input
+    start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
+    end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
+
     # Display the total number of images for the selected date range
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
-        st.write(f"🖼️ Total Images for visualization during the selected date range: {num_images}")
+        st.write(f"🖼️ Total Images for visualization during the selected date range from {start_date_str} to {end_date_str}: {num_images}")
 
         # Loop through the images and display results
         for i in range(num_images):
@@ -677,17 +681,17 @@ def visualize_ft_classification(collection, user_roi, resolution):
                 thawed_pct = (thawed / total) * 100 if total > 0 else 0
                 frozen_pct = (frozen / total) * 100 if total > 0 else 0
 
-                # Display updated stats with colored squares for Frozen and Thawed
+                # Display updated stats with colored squares for Frozen and Thawed and Resolution
                 st.markdown(
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
                     f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
-                    f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%"
+                    f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%  \n"
+                    f"📏 Resolution: **{resolution} meters**"
                 )
                 st.divider()
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
-
 
 
 
