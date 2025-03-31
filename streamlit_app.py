@@ -621,6 +621,8 @@ def summarize_ft_classification(collection, user_roi, resolution):
 def visualize_ft_classification(collection, user_roi, resolution):
     import tempfile
     import base64
+    from PIL import Image
+    import urllib.request
 
     if collection is None or collection.size().getInfo() == 0:
         st.error("❌ No classification results available for visualization.")
@@ -629,14 +631,17 @@ def visualize_ft_classification(collection, user_roi, resolution):
     image_list = collection.toList(collection.size())
     num_images = collection.size().getInfo()
 
+    # Display the total number of images for the selected date range
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
-        st.write(f"🖼️ Total Images: {num_images}")
+        st.write(f"🖼️ Total Images for visualization during the selected date range: {num_images}")
 
+        # Loop through the images and display results
         for i in range(num_images):
             try:
                 img = ee.Image(image_list.get(i))
                 timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
+                # Generate the image URL for display
                 url = img.select("FT_State").clip(user_roi).getThumbURL({
                     "min": 0,
                     "max": 1,
@@ -644,10 +649,11 @@ def visualize_ft_classification(collection, user_roi, resolution):
                     "palette": ["red", "blue"]
                 })
 
+                # Load the image into Streamlit
                 image = Image.open(urllib.request.urlopen(url))
                 st.image(image, caption=f"🗓️ {timestamp}", use_container_width=True)
 
-                # Save TIFF + download
+                # Save TIFF file and provide a download link
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
                     image.save(tmp.name)
                     with open(tmp.name, "rb") as file:
@@ -655,7 +661,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
                         href = f'<a href="data:file/tif;base64,{b64}" download="FT_{timestamp}.tif">📥 Download TIFF</a>'
                         st.markdown(href, unsafe_allow_html=True)
 
-                # Pixel stats
+                # Compute Pixel Stats
                 stats = img.select("FT_State").reduceRegion(
                     reducer=ee.Reducer.frequencyHistogram(),
                     geometry=user_roi,
@@ -663,17 +669,19 @@ def visualize_ft_classification(collection, user_roi, resolution):
                     maxPixels=1e13
                 ).getInfo()
 
+                # Extract histogram data
                 hist = stats.get("FT_State", {})
-                thawed = int(hist.get("0", 0))
-                frozen = int(hist.get("1", 0))
+                thawed = int(hist.get("0", 0))  # Thawed pixels
+                frozen = int(hist.get("1", 0))  # Frozen pixels
                 total = thawed + frozen
-                thawed_pct = thawed / total * 100 if total > 0 else 0
-                frozen_pct = frozen / total * 100 if total > 0 else 0
+                thawed_pct = (thawed / total) * 100 if total > 0 else 0
+                frozen_pct = (frozen / total) * 100 if total > 0 else 0
 
+                # Display updated stats with pixels and percentages
                 st.markdown(
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
-                    f"❄️ Frozen: **{frozen:,}** ({frozen_pct:.1f}%)  \n"
-                    f"💧 Thawed: **{thawed:,}** ({thawed_pct:.1f}%)"
+                    f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
+                    f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%"
                 )
                 st.divider()
 
