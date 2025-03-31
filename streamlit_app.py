@@ -82,45 +82,6 @@ draw.add_to(m)
 # Render the map
 output = st_folium(m, width=1300, height=600)
 
-# ========== ✅ Handle drawing output ==========
-if submit:
-    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-        last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
-        
-        # Store the drawn ROI in session state
-        st.session_state.user_roi = roi_geojson
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
-
-        # Display the ROI submitted message immediately after the map
-        st.success("✅ ROI submitted and ready for processing.")
-        
-        # Lock the map immediately after submission to prevent zooming or panning
-        st.markdown(
-            """
-            <style>
-                .folium-map {
-                    pointer-events: none;  /* Disable all map interactions */
-                }
-            </style>
-            """, unsafe_allow_html=True
-        )
-
-        # Running the processing function (ensure submit_roi is defined elsewhere)
-        submit_roi()
-
-    else:
-        st.warning("⚠️ Please draw an ROI before submitting.")
-
-
-
-
-
-
-
 
 
 
@@ -863,3 +824,39 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+# ========== ✅ Handle drawing output ==========
+if submit:
+    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+        last_feature = output["all_drawings"][-1]
+        roi_geojson = last_feature["geometry"]
+        
+        # Store the drawn ROI in session state
+        st.session_state.user_roi = roi_geojson
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+        st.session_state.resolution = resolution
+        st.session_state.clip_to_agriculture = clip_to_agri
+
+        # Display the ROI submitted message immediately after the map
+        st.success("✅ ROI submitted and ready for processing.")
+        
+        # Lock the map immediately after submission to prevent zooming or panning
+        st.markdown(
+            """
+            <style>
+                .folium-map {
+                    pointer-events: none;  /* Disable all map interactions */
+                }
+            </style>
+            """, unsafe_allow_html=True
+        )
+
+        # Running the processing function (ensure submit_roi is defined elsewhere)
+        submit_roi()
+
+    else:
+        st.warning("⚠️ Please draw an ROI before submitting.")
+
