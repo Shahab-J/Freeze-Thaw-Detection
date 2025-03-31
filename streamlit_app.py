@@ -735,13 +735,14 @@ def submit_roi():
 
     st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
+
+
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
-    st.warning("""
-        ⚠️ Do not zoom or tap on the map after submitting the ROI, as this may cause the process to collapse. 
-        Please wait until completion. Scroll down to see the classified FT images.
-    """)
-
-
+       st.warning("""
+           ⚠️ Do not zoom or tap on the map after submitting the ROI, as this may cause the process to collapse. 
+           Please wait until completion. Scroll down to see the classified FT images.
+        """)
+        
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
             st.warning("⚠️ Step failed: Sentinel-1 processing.")
