@@ -192,7 +192,7 @@ def mosaic_by_date(collection, roi, start_date, end_date):
         st.error("❌ ERROR: No mosaicked images generated.")
         return None
 
-    st.success(f"✅ Mosaicked {mosaicked_count} daily images.")
+#   st.success(f"✅ Mosaicked {mosaicked_count} daily images.")
     return mosaicked_collection
 
 
@@ -741,8 +741,8 @@ def submit_roi():
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         st.warning("""
             ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed, as this may cause the process to collapse. 
-            Scroll down without tapping or zooming the selected ROI to see the classified FT images.
-
+            Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
+        
         """)
 
        
