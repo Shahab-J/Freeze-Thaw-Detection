@@ -81,6 +81,15 @@ folium.LayerControl(position="topright").add_to(m)
 draw = Draw(export=False)
 draw.add_to(m)
 
+# Dynamically control zoom and pan based on ROI selection
+if st.session_state['roi_selected']:
+    m.options['zoomControl'] = False  # Disable zoom controls
+    m.options['dragging'] = False  # Disable dragging (panning)
+    m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
+else:
+    m.options['zoomControl'] = True  # Enable zoom controls
+    m.options['dragging'] = True  # Enable dragging (panning)
+    m.options['scrollWheelZoom'] = True  # Enable zoom with scroll wheel
 
 # Render the map
 output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
@@ -94,23 +103,17 @@ if submit:
             st.session_state.user_roi = roi_geojson
             st.session_state['roi_selected'] = True  # Set to True when ROI is selected
 
-            # Disable zoom and pan after ROI selection (during processing)
-            if st.session_state['roi_selected']:
-                m.options['zoomControl'] = False  # Disable zoom controls
-                m.options['dragging'] = False  # Disable dragging (panning)
-                m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
-
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-         
-            # Add your existing processing logic here (e.g., image fetching, display results)
             
+            # Get the start and end dates from the user input
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
+
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-
 
 
 
