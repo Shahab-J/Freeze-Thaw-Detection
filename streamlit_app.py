@@ -32,10 +32,12 @@ from geopy.geocoders import Nominatim
 # ========== ✅ Title and Setup ===================
 st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
-# ========== ✅ Authenticate Earth Engine ==========
+# ========== ✅ Authenticate Earth Engine ========== 
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
     private_key = st.secrets["GEE_PRIVATE_KEY"]
+    
+    # Creating the credentials for Earth Engine
     credentials = ee.ServiceAccountCredentials(
         service_account,
         key_data=json.dumps({
@@ -45,11 +47,15 @@ try:
             "token_uri": "https://oauth2.googleapis.com/token"
         })
     )
+    
+    # Initialize Earth Engine
     ee.Initialize(credentials)
-#    st.success("✅ Earth Engine initialized.")
+    st.success("✅ Earth Engine initialized successfully.")  # Success message
+    
 except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
-    st.stop()
+    st.stop()  # Stop execution if authentication fails
+
 
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
@@ -71,35 +77,24 @@ st.markdown(
 
 
 
-
 import streamlit as st
 import folium
-import googlemaps
+from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
 
-# Initialize the Google Maps client with your API key
-gmaps = googlemaps.Client(key='YOUR_GOOGLE_MAPS_API_KEY')
+# Create a geocoder
+geolocator = Nominatim(user_agent="streamlit_app")
 
 # Create a function to add a search bar to the map
 def add_search_bar(map_object):
-    # Search function to get coordinates from the place name using Google Maps API
+    # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
-        try:
-            # Geocode the place using Google Maps
-            geocode_result = gmaps.geocode(place)
-            if geocode_result:
-                lat = geocode_result[0]['geometry']['location']['lat']
-                lng = geocode_result[0]['geometry']['location']['lng']
-                return [lat, lng]
-            else:
-                st.warning("Location not found.")
-                return None
-        except googlemaps.exceptions.ApiError as e:
-            st.error(f"API Error: {e}")
-            return None
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+        location = geolocator.geocode(place)
+        if location:
+            return [location.latitude, location.longitude]
+        else:
+            st.warning("Location not found.")
             return None
 
     # Add a search box in the sidebar for easy input
@@ -138,6 +133,9 @@ add_search_bar(m)
 
 # Display the map
 st.subheader("Search for a city or place below")
+
+
+
 
 
 
