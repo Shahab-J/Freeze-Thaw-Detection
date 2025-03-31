@@ -65,23 +65,42 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 # ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below")
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+import streamlit as st
+import folium
+from streamlit_folium import st_folium
 
-# Add Satellite basemap (default)
+# Add JavaScript to lock map interaction (zoom, pan, etc.)
+def lock_map(m):
+    m.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
+        </script>
+    """))
+    return m
+
+# ========== ✅ Map Setup ==========
+
+# Create a Folium map centered at a location
+m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+
+# Add Satellite basemap
 satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
-folium.LayerControl(position="topright").add_to(m)
-
 # Add drawing control to the map
+from folium.plugins import Draw
 draw = Draw(export=False)
 draw.add_to(m)
 
-# Render the map
-output = st_folium(m, width=1300, height=600)
+# Lock the map interactions after ROI submission (disables pan, zoom, click, etc.)
+if 'roi_submitted' in st.session_state and st.session_state.roi_submitted:
+    m = lock_map(m)  # Lock interactions after submission
+
+# Render map
+st_folium(m, width=700, height=500)
+
 
 
 
@@ -828,15 +847,6 @@ def submit_roi():
 
 
 
-# Function to disable drawing tool after submitting ROI
-def disable_drawing(draw):
-    """Disables the drawing tool after submitting ROI."""
-    try:
-        # Remove the draw control entirely from the map after ROI submission
-        draw.remove_from(m)  # Remove the drawing tool so users can't draw further
-    except Exception as e:
-        st.warning(f"⚠️ Failed to disable drawing: {e}")
-
 # ========== ✅ Submit Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -846,14 +856,14 @@ if submit:
             roi_geojson = last_feature["geometry"]
             
             # Store the drawn ROI in session state
-            if 'user_roi' not in st.session_state:
-                st.session_state.user_roi = None  # Initialize user_roi if not present
-
             st.session_state.user_roi = ee.Geometry(roi_geojson)
             st.session_state.start_date = start_date
             st.session_state.end_date = end_date
             st.session_state.resolution = resolution
             st.session_state.clip_to_agriculture = clip_to_agri
+
+            # Mark ROI as submitted (disable further interactions)
+            st.session_state.roi_submitted = True
 
             # Remove drawing control after the ROI is submitted
             disable_drawing(draw)
@@ -868,6 +878,7 @@ if submit:
             st.warning(f"⚠️ Failed to process ROI: {e}")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
