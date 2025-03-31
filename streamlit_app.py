@@ -80,6 +80,8 @@ folium.LayerControl(position="topright").add_to(m)
 draw = Draw(export=False)
 draw.add_to(m)
 
+m.options['zoomControl'] = False  # Disable zoom controls
+
 # Render the map
 output = st_folium(m, width=1300, height=600)
 
