@@ -73,7 +73,10 @@ if 'resolution' not in st.session_state:
 # Sidebar inputs for start date, end date, resolution, and clipping option
 start_date = st.sidebar.date_input("Start Date", value=def_start)
 end_date = st.sidebar.date_input("End Date", value=def_end)
-resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=[30, 10, 100].index(st.session_state.resolution))  # Use session state for default resolution
+
+# Ensure the resolution is set based on the session state value
+resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=[10, 30, 100].index(st.session_state.resolution))
+
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
