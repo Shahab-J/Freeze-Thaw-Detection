@@ -77,7 +77,7 @@ satellite_tile = folium.TileLayer(
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
-draw = Draw(export=True)
+draw = Draw(export=False)
 draw.add_to(m)
 
 # Render the map
