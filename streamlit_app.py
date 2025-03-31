@@ -26,6 +26,8 @@ from streamlit_folium import folium_static
 
 
 
+
+
 # ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
 
@@ -61,6 +63,25 @@ clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
+
+# ========== ✅ Set up map with default satellite view ==========
+st.subheader("Draw your ROI below")
+m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+
+# Add Satellite basemap (default)
+satellite_tile = folium.TileLayer(
+    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+).add_to(m)
+
+# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
+folium.LayerControl(position="topright").add_to(m)
+
+# Add drawing control to the map
+draw = Draw(export=False)
+draw.add_to(m)
+
+# Render the map
+output = st_folium(m, width=1300, height=600)
 
 
 
@@ -687,44 +708,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
 # ========== ✅ Processing Pipeline ==========
-# ========== ✅ Import libraries and setup ==========
-
-import folium
-import streamlit as st
-from datetime import date
-from streamlit_folium import st_folium
-# other imports...
-
-# ========== ✅ Lock Map Function (Place at the top) ==========
-def lock_map(map_obj):
-    """Locks map interactions to prevent zooming and panning."""
-    map_obj.options['zoomControl'] = False
-    map_obj.options['dragging'] = False
-    map_obj.options['scrollWheelZoom'] = False
-    map_obj.options['doubleClickZoom'] = False
-
-
-# ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below")
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
-
-# Add Satellite basemap (default)
-satellite_tile = folium.TileLayer(
-    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
-).add_to(m)
-
-# Add Layer control to switch between Satellite and OpenStreetMap
-folium.LayerControl(position="topright").add_to(m)
-
-# Add drawing control to the map
-draw = Draw(export=False)
-draw.add_to(m)
-
-# Render the map
-output = st_folium(m, width=1300, height=600)
-
-# ========== ✅ Main Processing Functions ==========
-# Define the ROI submission process
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -807,40 +790,70 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-            # (same cropland clipping code as before)
-            pass
+#           st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+
+            try:
+                # Load NALCMS and mask class 15 (cropland)
+                landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+                cropland_mask = landcover.eq(15)
+
+                cropland_geometry = cropland_mask.selfMask().reduceToVectors(
+                    geometry=user_roi,
+                    geometryType='polygon',
+                    scale=30,
+                    maxPixels=1e13
+                )
+
+                intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
+
+                # Check validity
+                if intersected_roi.coordinates().size().getInfo() == 0:
+                    st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
+                    return
+
+                user_roi = intersected_roi
+                classified_images = classified_images.map(lambda img: img.clip(user_roi))
+
+                st.success("🌾 ROI successfully clipped to cropland using NALCMS.")
+
+            except Exception as e:
+                st.warning(f"⚠️ Cropland masking failed: {e}")
 
         classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
-        # Lock the map after processing starts to prevent interactions
-        lock_map(st.session_state.map)
 
-# Initialize Streamlit components and map
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
-st.session_state.map = m  # Store the map in session state
 
-# ROI drawing logic
-roi_drawn = False  # Variable to track if ROI has been drawn
-user_roi = None     # Variable to store user ROI (if any)
+# ========== ✅ Submit Handler ==========
+if submit:
+    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+        # Get the last drawn feature (ROI)
+        last_feature = output["all_drawings"][-1]
+        roi_geojson = last_feature["geometry"]
+        
+        # Store the drawn ROI in session state
+        st.session_state.user_roi = ee.Geometry(roi_geojson)
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+        st.session_state.resolution = resolution
+        st.session_state.clip_to_agriculture = clip_to_agri
 
-# Button for submitting ROI and starting processing
-if st.button('Submit ROI & Start Processing'):
-    submit_roi()
+        # Lock map interactions after ROI is submitted
+        lock_map(m)  # Call lock_map to disable zoom/pan/tap/etc.
 
-# Display map
-with st.expander('Draw ROI'):
-    roi = st_folium(m, width=1300, height=600)
+        # Disable drawing control after the ROI is submitted
+        draw.remove_from(m)  # Remove drawing tool so users can't draw further
 
-    if roi:
-        user_roi = roi
-        roi_drawn = True
+        # Display success message
+        st.success("✅ ROI submitted and ready for processing.")
+        
+        # Running Freeze–Thaw processing pipeline without the spinner
+        submit_roi()  # Ensure this function is defined elsewhere in your code
 
-# Display selected ROI
-if roi_drawn and user_roi:
-    st.write(f"Selected ROI: {user_roi}")
+    else:
+        st.warning("⚠️ Please draw an ROI before submitting.")
 
 
 
