@@ -73,12 +73,7 @@ satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add OpenStreetMap basemap (or Street view, since they are the same)
-openstreetmap_tile = folium.TileLayer(
-    tiles="OpenStreetMap", attr="OpenStreetMap", name="Street", overlay=False, control=True
-).add_to(m)
-
-# Add Layer control to switch between Satellite and OpenStreetMap
+# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
@@ -86,7 +81,8 @@ draw = Draw(export=True)
 draw.add_to(m)
 
 # Render the map
-output = st_folium(m, width=1100, height=650)
+output = st_folium(m, width=1300, height=600)
+
 
 # ========== ✅ Handle drawing output ==========
 if output and output.get("all_drawings"):
