@@ -64,47 +64,6 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 
-# ========== ✅ Set up map with default satellite view ==========
-import streamlit as st
-import folium
-from streamlit_folium import st_folium
-
-# Add JavaScript to lock map interaction (zoom, pan, etc.)
-def lock_map(m):
-    m.get_root().html.add_child(folium.Element("""
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
-        </script>
-    """))
-    return m
-
-# ========== ✅ Map Setup ==========
-
-# Create a Folium map centered at a location
-m = folium.Map(location=[46.29, -72.75], zoom_start=12)
-
-# Add Satellite basemap
-satellite_tile = folium.TileLayer(
-    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
-).add_to(m)
-
-# Add drawing control to the map
-from folium.plugins import Draw
-draw = Draw(export=False)
-draw.add_to(m)
-
-# Lock the map interactions after ROI submission (disables pan, zoom, click, etc.)
-if 'roi_submitted' in st.session_state and st.session_state.roi_submitted:
-    m = lock_map(m)  # Lock interactions after submission
-
-# Render map
-st_folium(m, width=700, height=500)
-
-
-
-
-
 
 
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
@@ -847,37 +806,69 @@ def submit_roi():
 
 
 
+
+
+# Add JavaScript to lock map interaction (zoom, pan, etc.)
+def lock_map(m):
+    m.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
+        </script>
+    """))
+    return m
+
+# ========== ✅ Set up map with default satellite view ==========
+# Create a Folium map centered at a location
+m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+
+# Add Satellite basemap
+satellite_tile = folium.TileLayer(
+    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+).add_to(m)
+
+# Add drawing control to the map
+draw = Draw(export=False)
+draw.add_to(m)
+
+# ========== ✅ Lock the map interactions after ROI submission ==========
+if 'roi_submitted' in st.session_state and st.session_state.roi_submitted:
+    m = lock_map(m)  # Lock interactions after submission
+
+# Render map and get output
+output = st_folium(m, width=1300, height=600)
+
+# ========== ✅ Disable Drawing After ROI Submission ==========
+def disable_drawing(draw):
+    """Disables the drawing tool."""
+    # This will make the draw controls unresponsive by removing them
+    draw.remove_from(m)  # Remove drawing tool
+    return draw
+
+# Disable drawing if ROI has been submitted
+if 'roi_submitted' in st.session_state and st.session_state.roi_submitted:
+    draw = disable_drawing(draw)
+
 # ========== ✅ Submit Handler ==========
+submit = st.button("Submit ROI")
+
 if submit:
-    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-        try:
+    if output and "all_drawings" in output:
+        if len(output["all_drawings"]) > 0:
             # Get the last drawn feature (ROI)
             last_feature = output["all_drawings"][-1]
             roi_geojson = last_feature["geometry"]
-            
+
             # Store the drawn ROI in session state
-            st.session_state.user_roi = ee.Geometry(roi_geojson)
-            st.session_state.start_date = start_date
-            st.session_state.end_date = end_date
-            st.session_state.resolution = resolution
-            st.session_state.clip_to_agriculture = clip_to_agri
+            st.session_state.user_roi = roi_geojson
+            st.session_state.roi_submitted = True  # Mark ROI as submitted
 
-            # Mark ROI as submitted (disable further interactions)
-            st.session_state.roi_submitted = True
-
-            # Remove drawing control after the ROI is submitted
-            disable_drawing(draw)
-
-            # Display success message
             st.success("✅ ROI submitted and ready for processing.")
-            
-            # Running Freeze–Thaw processing pipeline without the spinner
-            submit_roi()  # Ensure this function is defined elsewhere in your code
-
-        except Exception as e:
-            st.warning(f"⚠️ Failed to process ROI: {e}")
+        else:
+            st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
