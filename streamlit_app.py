@@ -85,6 +85,9 @@ from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
 
+# Display the map
+st.subheader("Search for a city or place below")
+
 # Create a geocoder
 geolocator = Nominatim(user_agent="streamlit_app")
 
@@ -133,8 +136,7 @@ draw.add_to(m)
 # Add the search bar (the user input field)
 add_search_bar(m)
 
-# Display the map
-st.subheader("Search for a city or place below")
+
 
 
 
