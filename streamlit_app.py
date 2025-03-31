@@ -52,6 +52,7 @@ except Exception as e:
     st.stop()
 
 # ========== ✅ Sidebar UI ==========
+# Sidebar UI for parameters
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
 def_end = date(2024, 6, 30)
@@ -62,8 +63,9 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-
-
+# Initialize session state to track if ROI is selected
+if 'roi_selected' not in st.session_state:
+    st.session_state['roi_selected'] = False
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
@@ -74,7 +76,7 @@ satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
+# Add Layer control to switch between Satellite and OpenStreetMap
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
@@ -106,16 +108,14 @@ if submit:
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
             
-            # Additional dynamic message can go here, or further processing steps
-            
+            # Get the start and end dates from the user input
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
+
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-
-
-
 
 
 
