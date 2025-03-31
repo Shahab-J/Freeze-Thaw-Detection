@@ -831,34 +831,44 @@ def submit_roi():
 # Function to disable drawing tool after submitting ROI
 def disable_drawing(draw):
     """Disables the drawing tool after submitting ROI."""
-    # Remove the draw control entirely from the map after ROI submission
-    draw.remove_from(m)  # Remove the drawing tool so users can't draw further
+    try:
+        # Remove the draw control entirely from the map after ROI submission
+        draw.remove_from(m)  # Remove the drawing tool so users can't draw further
+    except Exception as e:
+        st.warning(f"⚠️ Failed to disable drawing: {e}")
 
 # ========== ✅ Submit Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-        # Get the last drawn feature (ROI)
-        last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
-        
-        # Store the drawn ROI in session state
-        st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
+        try:
+            # Get the last drawn feature (ROI)
+            last_feature = output["all_drawings"][-1]
+            roi_geojson = last_feature["geometry"]
+            
+            # Store the drawn ROI in session state
+            if 'user_roi' not in st.session_state:
+                st.session_state.user_roi = None  # Initialize user_roi if not present
 
-        # Remove drawing control after the ROI is submitted
-        disable_drawing(draw)
+            st.session_state.user_roi = ee.Geometry(roi_geojson)
+            st.session_state.start_date = start_date
+            st.session_state.end_date = end_date
+            st.session_state.resolution = resolution
+            st.session_state.clip_to_agriculture = clip_to_agri
 
-        # Display success message
-        st.success("✅ ROI submitted and ready for processing.")
-        
-        # Running Freeze–Thaw processing pipeline without the spinner
-        submit_roi()  # Ensure this function is defined elsewhere in your code
+            # Remove drawing control after the ROI is submitted
+            disable_drawing(draw)
 
+            # Display success message
+            st.success("✅ ROI submitted and ready for processing.")
+            
+            # Running Freeze–Thaw processing pipeline without the spinner
+            submit_roi()  # Ensure this function is defined elsewhere in your code
+
+        except Exception as e:
+            st.warning(f"⚠️ Failed to process ROI: {e}")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
