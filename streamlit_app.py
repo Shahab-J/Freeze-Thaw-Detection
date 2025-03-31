@@ -945,12 +945,5 @@ def disable_drawing(draw):
     draw.options['edit'] = False  # Disable editing of existing shapes
     return draw
 
-# ========== ✅ Visualizing Results (For Example) ==========
-st.subheader("🧊 View All Freeze–Thaw Results --- Please scroll down to see the classified FT images.")
-with st.expander("🧊 <u>View All Freeze–Thaw Results</u> --- Please scroll down until all images are visualized with statistical information", expanded=False):
-    st.markdown(
-        f"🖼️ Total Images for visualization during the selected date range from "
-        f"<u>{st.session_state.start_date}</u> to <u>{st.session_state.end_date}</u>: <b><span style='font-size: 30px'>{100}</span></b> FT classified images.",
-        unsafe_allow_html=True
-    )
+
 
