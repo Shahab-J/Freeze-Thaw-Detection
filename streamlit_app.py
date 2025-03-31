@@ -67,11 +67,7 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 st.markdown(
-    "<p style='font-size: 12px;'>"
-    "(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map "
-    "<img src='data:image/png;base64,{}' style='width:15px;height:15px;'>)</p>".format(
-        base64.b64encode(open("/mnt/data/file-1NLWbysFRmP4eM4gb7HvgZ", "rb").read()).decode()
-    ), 
+    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
     unsafe_allow_html=True
 )
 
