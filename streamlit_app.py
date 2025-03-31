@@ -69,7 +69,7 @@ clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below")
+st.subheader("Draw your ROI below (Search for a city or place below)")
 st.markdown(
     "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
     unsafe_allow_html=True
@@ -85,8 +85,6 @@ from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
 
-# Display the map
-st.subheader("Search for a city or place below")
 
 # Create a geocoder
 geolocator = Nominatim(user_agent="streamlit_app")
