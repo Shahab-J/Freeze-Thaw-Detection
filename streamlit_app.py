@@ -66,10 +66,19 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
+
+# Display the image
+st.image("/mnt/data/file-1NLWbysFRmP4eM4gb7HvgZ", width=30)  # You can adjust the width of the image
+
+# Add markdown with a description
 st.markdown(
-    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
-    unsafe_allow_html=True
+    """
+    (choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)
+    """
 )
+
+
+
 
 
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
