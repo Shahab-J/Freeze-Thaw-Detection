@@ -32,6 +32,7 @@ import time
 
 
 
+
 # ✅ Step 1: Setup
 # ========== ✅ Title and Setup ===================
 st.title("🧊 Soil Freeze–Thaw Mapping Tool")
@@ -60,8 +61,6 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()  # Stop execution if authentication fails
 
-
-
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
@@ -73,14 +72,12 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 st.markdown(
     "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
     unsafe_allow_html=True
 )
-
 
 # ========== ✅ Session State Initialization ==========
 if 'start_date' not in st.session_state:
@@ -146,16 +143,9 @@ add_search_bar(m)
 output = st_folium(m, width=1300, height=600)  # Display map with updated location
 
 
-
-
-
-
-
-
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
 def process_sentinel1(start_date, end_date, roi, resolution):
     """Loads and processes Sentinel-1 data for the selected ROI and time range."""
-
     if roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return None
@@ -179,8 +169,6 @@ def process_sentinel1(start_date, end_date, roi, resolution):
     if image_count_val == 0:
         st.error("❌ No Sentinel-1 images found in the selected date range and ROI.")
         return None
-
-#   st.success(f"🔍 Found {image_count_val} Sentinel-1 images in ROI.")
 
     # ✅ Refined Lee Filter Function
     def RefinedLee(img):
@@ -215,11 +203,7 @@ def process_sentinel1(start_date, end_date, roi, resolution):
 
 # ✅ Step 3: Mosaicking by Date for Streamlit
 def mosaic_by_date(collection, roi, start_date, end_date):
-    """
-    Mosaics Sentinel-1 images captured on the same date to avoid duplicate acquisitions.
-    Returns an ImageCollection of daily mosaics clipped to ROI.
-    """
-
+    """Mosaics Sentinel-1 images captured on the same date to avoid duplicate acquisitions."""
     if collection is None:
         st.error("❌ ERROR: No processed images available for mosaicking.")
         return None
@@ -256,16 +240,12 @@ def mosaic_by_date(collection, roi, start_date, end_date):
         st.error("❌ ERROR: No mosaicked images generated.")
         return None
 
-#   st.success(f"✅ Mosaicked {mosaicked_count} daily images.")
     return mosaicked_collection
 
 
 # ✅ Step 4: SigmaDiff Computation for Streamlit
 def compute_sigma_diff_pixelwise(collection):
-    """
-    Computes SigmaDiff as the pixel-wise difference in VH_corrected between consecutive images.
-    Returns an ImageCollection with a new band 'SigmaDiff' added to each image.
-    """
+    """Computes SigmaDiff as the pixel-wise difference in VH_corrected between consecutive images."""
     if collection is None:
         st.error("❌ ERROR: No mosaicked images available for SigmaDiff computation.")
         return None
@@ -296,7 +276,6 @@ def compute_sigma_diff_pixelwise(collection):
         history = current_vh  # Update history for next iteration
 
     result_collection = ee.ImageCollection.fromImages(updated_images)
-#   st.success("✅ SigmaDiff computation complete.")
     return result_collection
 
 
