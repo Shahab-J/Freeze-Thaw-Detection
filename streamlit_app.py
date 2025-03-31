@@ -67,6 +67,8 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
+
+# Create a folium map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
 # Add Satellite basemap (default)
@@ -85,6 +87,7 @@ draw.add_to(m)
 output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
 
 # ========== ✅ Handle drawing output ==========
+# Handle drawing output and display messages immediately after the map
 if submit:
     if output and "all_drawings" in output:
         if len(output["all_drawings"]) > 0:
@@ -95,24 +98,27 @@ if submit:
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
             
-            # Immediately freeze the map (disable zoom and pan)
-            # Disable map interactions using JavaScript injection
-            st.markdown(
-                """
-                <style>
-                    .folium-map {
-                        pointer-events: none !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True
-            )
+            # Disable zoom, scroll, and pan after ROI submission
+            st.session_state['roi_selected'] = True
+             
 
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
-
+# ===================== Disable Map Interaction =====================
+# After ROI selection, disable zoom, pan, and dragging
+if 'roi_selected' in st.session_state and st.session_state['roi_selected']:
+    st.markdown(
+        """
+        <style>
+            .folium-map {
+                pointer-events: none;
+            }
+        </style>
+        """, unsafe_allow_html=True
+    )
 
 
 
