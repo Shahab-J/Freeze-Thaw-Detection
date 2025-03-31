@@ -64,6 +64,7 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 
+
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
@@ -80,16 +81,10 @@ folium.LayerControl(position="topright").add_to(m)
 draw = Draw(export=False)
 draw.add_to(m)
 
-# Disable zoom and drag functionality
-m.options['zoomControl'] = False  # Disable zoom controls
-m.options['dragging'] = False  # Disable dragging (panning)
-m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
-
 # Render the map
-output = st_folium(m, width=1300, height=600)
+output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
 
 # ========== ✅ Handle drawing output ==========
-# Handle drawing output and display messages immediately after the map
 if submit:
     if output and "all_drawings" in output:
         if len(output["all_drawings"]) > 0:
@@ -97,13 +92,20 @@ if submit:
             roi_geojson = last_feature["geometry"]
             st.session_state.user_roi = roi_geojson
 
+            # Disable zoom and pan after ROI selection (during processing)
+            m.options['zoomControl'] = False  # Disable zoom controls
+            m.options['dragging'] = False  # Disable dragging (panning)
+            m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
+
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
+            
+            # Add your existing processing logic here (e.g., image fetching, display results)
+            
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
 
 
 
