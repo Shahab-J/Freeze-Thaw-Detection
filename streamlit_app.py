@@ -964,7 +964,7 @@ def submit_roi():
 
 
 
-# ========== ✅ Submit Handler ==========
+# ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
@@ -973,17 +973,17 @@ if submit:
         
         # Store the drawn ROI in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
+        st.session_state.start_date = start_date  # Store start date
+        st.session_state.end_date = end_date  # Store end date
 
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
         # Lock map and disable drawing after submission
         m = lock_map(m)  # Lock interactions after ROI submission
-        draw = disable_drawing(draw)  # Disable the drawing tool after submission
+        
+        # Disable the drawing tool by reinitializing it
+        draw = disable_drawing(draw)
         
         # Display an alert to warn users not to interact with the map
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
