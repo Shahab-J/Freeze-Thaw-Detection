@@ -832,7 +832,6 @@ def lock_map(map_obj):
     map_obj.options['dragging'] = False
     map_obj.options['scrollWheelZoom'] = False
     map_obj.options['doubleClickZoom'] = False
-
 # ========== ✅ Submit Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -861,6 +860,7 @@ if submit:
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
