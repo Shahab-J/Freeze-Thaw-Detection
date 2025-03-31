@@ -51,8 +51,37 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
+# ========== ✅ Sidebar UI ==========
+st.sidebar.title("Set Parameters")
+def_start = date(2023, 10, 1)
+def_end = date(2024, 6, 30)
+
+start_date = st.sidebar.date_input("Start Date", value=def_start)
+end_date = st.sidebar.date_input("End Date", value=def_end)
+resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
+clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
+submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
+
+# ========== ✅ Set up map with default satellite view ==========
+st.subheader("Draw your ROI below")
+m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+
+# Add Satellite basemap (default)
+satellite_tile = folium.TileLayer(
+    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+).add_to(m)
+
+# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
+folium.LayerControl(position="topright").add_to(m)
+
+# Add drawing control to the map
+draw = Draw(export=False)
+draw.add_to(m)
+
+# Render the map
+output = st_folium(m, width=1300, height=600)
 
 
 
@@ -799,78 +828,25 @@ def submit_roi():
 
 
 
-# ========== ✅ Sidebar UI ==========
-st.sidebar.title("Set Parameters")
-def_start = date(2023, 10, 1)
-def_end = date(2024, 6, 30)
 
-start_date = st.sidebar.date_input("Start Date", value=def_start)
-end_date = st.sidebar.date_input("End Date", value=def_end)
-resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
-clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
-submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
-
-# ========== ✅ Map Setup ==========
-# Create a Folium map centered at a location
-m = folium.Map(location=[46.29, -72.75], zoom_start=12)
-
-# Add Satellite basemap
-satellite_tile = folium.TileLayer(
-    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
-).add_to(m)
-
-# Add drawing control to the map
-from folium.plugins import Draw
-draw = Draw(export=False)
-draw.add_to(m)
-
-# ========== ✅ Submit ROI ==========
+# ========== ✅ Submit Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
-
+        
         # Store the drawn ROI in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
         st.session_state.start_date = start_date
         st.session_state.end_date = end_date
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
-        st.session_state['roi_submitted'] = True  # Mark that the ROI is submitted
 
-        st.success("✅ ROI submitted and ready for processing.")
-
-        # Disable drawing tool and lock map after submission
-        m = lock_map(m)  # Lock interactions after ROI submission
-        draw = disable_drawing(draw)  # Disable the drawing tool after submission
+        # st.success("✅ ROI submitted and ready for processing.")
         
-        # Run the processing pipeline
+        # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
-        
+
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-# ========== ✅ Lock Map Interactions (Post-ROI) ==========
-def lock_map(m):
-    m.get_root().html.add_child(folium.Element("""
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
-        </script>
-    """))
-    return m
-
-# ========== ✅ Disable Drawing Tool (Post-ROI) ==========
-def disable_drawing(draw):
-    """Disables the drawing tool."""
-    draw.options['draw'] = False  # Disable the drawing control
-    draw.options['edit'] = False  # Disable the editing of existing shapes
-    return draw
-
-# ========== ✅ Map Rendering ==========
-# This part ensures the map is displayed correctly, even when interactions are disabled
-output = st_folium(m, width=1300, height=600)
-
-
-
