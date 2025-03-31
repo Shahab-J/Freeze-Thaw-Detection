@@ -51,8 +51,8 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()
 
+
 # ========== ✅ Sidebar UI ==========
-# Sidebar UI for parameters
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
 def_end = date(2024, 6, 30)
@@ -63,9 +63,7 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# Initialize session state to track if ROI is selected
-if 'roi_selected' not in st.session_state:
-    st.session_state['roi_selected'] = False
+
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
@@ -76,46 +74,34 @@ satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add Layer control to switch between Satellite and OpenStreetMap
+# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
 draw = Draw(export=False)
 draw.add_to(m)
 
-# Dynamically control zoom and pan based on ROI selection
-if st.session_state['roi_selected']:
-    m.options['zoomControl'] = False  # Disable zoom controls
-    m.options['dragging'] = False  # Disable dragging (panning)
-    m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
-else:
-    m.options['zoomControl'] = True  # Enable zoom controls
-    m.options['dragging'] = True  # Enable dragging (panning)
-    m.options['scrollWheelZoom'] = True  # Enable zoom with scroll wheel
-
 # Render the map
-output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
+output = st_folium(m, width=1300, height=600)
 
 # ========== ✅ Handle drawing output ==========
+# Handle drawing output and display messages immediately after the map
 if submit:
     if output and "all_drawings" in output:
         if len(output["all_drawings"]) > 0:
             last_feature = output["all_drawings"][-1]
             roi_geojson = last_feature["geometry"]
             st.session_state.user_roi = roi_geojson
-            st.session_state['roi_selected'] = True  # Set to True when ROI is selected
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-            
-            # Get the start and end dates from the user input
-            start_date_str = start_date.strftime("%Y-%m-%d")
-            end_date_str = end_date.strftime("%Y-%m-%d")
-
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
 
 
 
