@@ -84,20 +84,27 @@ import folium
 from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
+import time
 
-
-# Create a geocoder
+# Create a geocoder using Nominatim
 geolocator = Nominatim(user_agent="streamlit_app")
 
 # Create a function to add a search bar to the map
 def add_search_bar(map_object):
     # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
-        location = geolocator.geocode(place)
-        if location:
-            return [location.latitude, location.longitude]
-        else:
-            st.warning("Location not found.")
+        try:
+            location = geolocator.geocode(place)
+            if location:
+                return [location.latitude, location.longitude]
+            else:
+                st.warning("Location not found.")
+                return None
+        except geopy.exc.GeocoderUnavailable as e:
+            st.error("Geocoding service is currently unavailable. Please try again later.")
+            return None
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
             return None
 
     # Add a search box in the sidebar for easy input
@@ -112,6 +119,17 @@ def add_search_bar(map_object):
 
             # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
+
+            # Optionally, allow the user to draw an ROI after searching
+            st.write("Now you can draw your ROI on the map!")
+
+            # Add the drawing control again, allowing the user to draw the ROI
+            draw = Draw(export=False)
+            draw.add_to(map_object)
+
+            # You can further customize here to allow users to draw a ROI after the location is found
+        else:
+            time.sleep(2)  # Optional: add a small delay before allowing another request
 
     # Render the map with the updated location
     st_folium(map_object, width=1300, height=500)
@@ -133,7 +151,6 @@ draw.add_to(m)
 
 # Add the search bar (the user input field)
 add_search_bar(m)
-
 
 
 
