@@ -64,6 +64,9 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 
+
+
+
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 
@@ -87,6 +90,9 @@ output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
 
 # ========== ✅ Handle drawing output ==========
 # Handle drawing output and display messages immediately after the map
+if 'roi_selected' not in st.session_state:
+    st.session_state['roi_selected'] = False
+
 if submit:
     if output and "all_drawings" in output:
         if len(output["all_drawings"]) > 0:
@@ -97,9 +103,8 @@ if submit:
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
 
-            # Store a flag to indicate ROI has been selected
+            # Set the flag in session state to indicate ROI has been selected
             st.session_state['roi_selected'] = True
-
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
@@ -107,7 +112,7 @@ if submit:
 
 # ===================== Disable Map Interaction =====================
 # After ROI selection, disable zoom, pan, and dragging
-if 'roi_selected' in st.session_state and st.session_state['roi_selected']:
+if st.session_state['roi_selected']:
     st.markdown(
         """
         <style>
@@ -117,8 +122,6 @@ if 'roi_selected' in st.session_state and st.session_state['roi_selected']:
         </style>
         """, unsafe_allow_html=True
     )
-
-
 
 
 
