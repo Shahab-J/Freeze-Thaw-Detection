@@ -62,8 +62,8 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 # ========== ✅ Draw Map ==========
 st.subheader("Draw your ROI below")
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="Esri.WorldImagery", control_scale=True)
-Draw(export=True).add_to(m)
-output = st_folium(m, width=1100, height=650)
+Draw(export=False).add_to(m)
+output = st_folium(m, width=1300, height=650)
 
 
 
