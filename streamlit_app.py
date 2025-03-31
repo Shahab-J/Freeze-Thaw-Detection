@@ -23,10 +23,10 @@ from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
-import streamlit as st
-import folium
-from folium.plugins import Draw
-from streamlit_folium import st_folium
+
+
+
+
 
 # ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
@@ -73,29 +73,33 @@ satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add Street basemap
-street_tile = folium.TileLayer(
+# Add OpenStreetMap basemap (or Street view, since they are the same)
+openstreetmap_tile = folium.TileLayer(
     tiles="OpenStreetMap", attr="OpenStreetMap", name="Street", overlay=False, control=True
 ).add_to(m)
+
+# Add Layer control to switch between Satellite and OpenStreetMap
+folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
 draw = Draw(export=True)
 draw.add_to(m)
 
-# Add Layer control to switch between Satellite and Street view
-folium.LayerControl(position="topright").add_to(m)
-
 # Render the map
 output = st_folium(m, width=1100, height=650)
 
 # ========== ✅ Handle drawing output ==========
-if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-    last_feature = output["all_drawings"][-1]
-    roi_geojson = last_feature["geometry"]
-    st.session_state.user_roi = roi_geojson
-    st.success("✅ ROI submitted and ready for processing.")
+if output and output.get("all_drawings"):
+    if len(output["all_drawings"]) > 0:
+        last_feature = output["all_drawings"][-1]
+        roi_geojson = last_feature["geometry"]
+        st.session_state.user_roi = roi_geojson
+        st.success("✅ ROI submitted and ready for processing.")
+    else:
+        st.warning("⚠️ No drawings detected, please draw an ROI.")
 else:
     st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
