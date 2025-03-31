@@ -105,11 +105,19 @@ if submit:
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-
+            
+            # Additional dynamic message can go here, or further processing steps
+            
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
+
+
+
 
 
 
