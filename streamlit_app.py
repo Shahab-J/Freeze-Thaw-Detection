@@ -69,20 +69,47 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+
+import streamlit as st
+import folium
+from geopy.geocoders import Nominatim
+from folium.plugins import Search
+from streamlit_folium import st_folium
+
 # Create a function to add a search bar to the map
 def add_search_bar(map_object):
     # Create a geocoder
     geolocator = Nominatim(user_agent="geoapiExercises")
 
-    # Add a search bar using the search control in folium
-    search_control = folium.plugins.Search(
-        layer=map_object,
-        search_box_only=True,  # Only show the search box
-        geom_type='Point',
-        placeholder="Search for a place...",
-    ).add_to(map_object)
+    # Search function to get coordinates from the place name
+    def search_location(place):
+        location = geolocator.geocode(place)
+        if location:
+            return [location.latitude, location.longitude]
+        else:
+            st.warning("Location not found.")
+            return None
 
+    # Add a search box in the sidebar for easy input
+    place = st.text_input("Enter place (city, landmark, etc.):")
+    
+    if place:
+        location = search_location(place)
+        if location:
+            # Move the map to the found location
+            map_object.location = location
+            map_object.zoom_start = 12  # Zoom level
+
+            # Add a marker on the map for the location
+            folium.Marker(location, popup=place).add_to(map_object)
+
+    # Render the map with the updated location
+    st_folium(map_object, width=700, height=500)
+
+# Create the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+
 # Add Satellite basemap (default)
 satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
@@ -92,11 +119,16 @@ satellite_tile = folium.TileLayer(
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
-draw = Draw(export=False)
+draw = folium.plugins.Draw(export=False)
 draw.add_to(m)
 
-# Render the map
-output = st_folium(m, width=1300, height=600)
+# Add the search bar (the user input field)
+add_search_bar(m)
+
+# Display the map
+st.subheader("Search for a city or place below")
+
+
 
 
 
