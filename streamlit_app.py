@@ -740,8 +740,9 @@ def submit_roi():
 
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         st.warning("""
-            ⚠️ Do not zoom or tap on the map after submitting the ROI, as this may cause the process to collapse. 
-            Please wait until completion. Scroll down to see the classified FT images.
+            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed, as this may cause the process to collapse. 
+            Scroll down without tapping or zooming the selected ROI to see the classified FT images.
+
         """)
 
        
