@@ -606,27 +606,25 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 # Footer Section (on the left side below the Submit ROI button)
 with st.sidebar:
-    # Footer information with a smaller font size
+    # Footer information with a smaller font size and line breaks
     st.markdown(
         """
         <style>
         .footer-text {
-            font-size: 13px;  /* Smaller font size */
+            font-size: 12px;  /* Adjust the font size */
         }
         </style>
         <div class="footer-text">
         ---
-        **Developed by**: Shahabeddin Taghipourjavi   
-        **Supervised by**: Prof. Christophe Kinnard and Prof. Alexandre Roy  
-        **Institution**: Université du Québec à Trois-Rivières (UQTR)  
-        **Address**: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3  
+        **Developed by**: Shahabeddin Taghipourjavi <br>
+        **Supervised by**: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
+        **Institution**: Université du Québec à Trois-Rivières (UQTR) <br>
+        **Address**: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
         🔒 **All rights reserved** © 2025
         </div>
         """,
         unsafe_allow_html=True
     )
-
-
 
 
     # Create collapsible section for Contact Us at the end of the sidebar
