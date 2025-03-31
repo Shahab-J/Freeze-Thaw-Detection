@@ -797,10 +797,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
 
-
-
-
-
 # ========== ✅ Processing Pipeline ==========
 # ✅ Step 12: Submit ROI and Processing Pipeline
 def submit_roi():
@@ -889,13 +885,24 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-          # st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+            # Debug: Print that Cropland-only mode is enabled
+            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
                 # Load NALCMS and mask class 15 (cropland)
                 landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
                 cropland_mask = landcover.eq(15)
 
+                # Debug: Check how many cropland pixels exist
+                cropland_area = cropland_mask.reduceRegion(
+                    reducer=ee.Reducer.count(),
+                    geometry=user_roi,
+                    scale=30,
+                    maxPixels=1e13
+                ).getInfo()
+                st.write(f"Debug: Cropland pixels in ROI = {cropland_area}")
+
+                # If there is no cropland, the cropland mask might remove the ROI
                 cropland_geometry = cropland_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType='polygon',
@@ -905,9 +912,13 @@ def submit_roi():
 
                 intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
 
+                # Debug: Check if intersection results in a valid geometry
+                intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
+                st.write(f"Debug: Intersected ROI size = {intersected_roi_valid}")
+
                 # Check validity
-                if intersected_roi.coordinates().size().getInfo() == 0:
-                    st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
+                if intersected_roi_valid == 0:
+                    st.error("❌ Cropland mask removed the entire ROI. Please select a different area or disable cropland-only mode.")
                     return
 
                 user_roi = intersected_roi
@@ -922,6 +933,11 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+
+
 
 
 
