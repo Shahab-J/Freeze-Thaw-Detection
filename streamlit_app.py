@@ -72,11 +72,11 @@ st.markdown(
 
 
 
-
+import streamlit as st
+import folium
 import googlemaps
 from folium.plugins import Draw
 from streamlit_folium import st_folium
-import time
 
 # Initialize the Google Maps client with your API key
 gmaps = googlemaps.Client(key='YOUR_GOOGLE_MAPS_API_KEY')
