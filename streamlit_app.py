@@ -22,8 +22,10 @@ from google.auth import credentials
 from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
-from geopy.geocoders import Nominatim
 
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
+import time
 # ==================================================
 
 
@@ -82,7 +84,17 @@ import folium
 from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
-from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
+import time
+
+# Initialize session state for dates if not set already
+if 'start_date' not in st.session_state:
+    st.session_state.start_date = "2023-10-01"  # Default start date
+if 'end_date' not in st.session_state:
+    st.session_state.end_date = "2024-06-30"  # Default end date
+
+# Display start and end date
+start_date_str = st.session_state.start_date
+end_date_str = st.session_state.end_date
 
 # Create a geocoder using Nominatim for place search
 geolocator = Nominatim(user_agent="streamlit_app")
@@ -117,9 +129,8 @@ def add_search_bar(map_object):
 
             # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
-
-    # Render the map with the updated location
-    st_folium(map_object, width=1300, height=500)
+        else:
+            time.sleep(2)  # Optional: add a small delay before allowing another request
 
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
@@ -140,7 +151,8 @@ draw.add_to(m)
 # Add the search bar (the user input field for place search)
 add_search_bar(m)
 
-
+# ========== ✅ Render the map once with the updated location ==========
+output = st_folium(m, width=1300, height=600)
 
 
 
