@@ -77,8 +77,6 @@ st.markdown(
 
 
 
-
-
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
@@ -151,6 +149,30 @@ draw.add_to(m)
 
 # Add the search bar (the user input field)
 add_search_bar(m)
+
+# Display the map
+st.subheader("Search for a city or place below")
+
+# Capture the output from the map interactions
+output = st_folium(m, width=1300, height=500)
+
+# Submit handler code (using output, assuming it's from the map interaction)
+if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+    # Get the last drawn feature (ROI)
+    last_feature = output["all_drawings"][-1]
+    roi_geojson = last_feature["geometry"]
+
+    # Store the drawn ROI in session state
+    st.session_state.user_roi = roi_geojson
+    st.session_state['roi_submitted'] = True  # Mark that the ROI is submitted
+
+    st.success("✅ ROI submitted and ready for processing.")
+    
+    # Lock map and disable drawing if ROI is submitted
+    m = lock_map(m)  # Lock interactions after ROI submission
+    draw = disable_drawing(draw)  # Disable the drawing tool after submission
+else:
+    st.warning("⚠️ Please draw an ROI before submitting.")
 
 
 
