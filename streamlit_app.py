@@ -711,14 +711,16 @@ def visualize_ft_classification(collection, user_roi, resolution):
     start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
 
+
     # Display the total number of images for the selected date range
-    with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
+    with st.expander("🧊 <u>View All Freeze–Thaw Results</u> --- Please scroll down until all images are visualized with statistical information", expanded=False):
         st.markdown(
             f"🖼️ Total Images for visualization during the selected date range from "
             f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
             unsafe_allow_html=True
         )
 
+                     
     # Continue with the rest of the logic (image processing, visualization, etc.)
         # Loop through the images and display results
         for i in range(num_images):
