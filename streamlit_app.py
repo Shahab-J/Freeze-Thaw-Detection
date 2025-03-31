@@ -76,7 +76,6 @@ st.markdown(
 )
 
 
-
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
@@ -129,9 +128,6 @@ def add_search_bar(map_object):
         else:
             time.sleep(2)  # Optional: add a small delay before allowing another request
 
-    # Render the map with the updated location
-    st_folium(map_object, width=1300, height=500)
-
 # Create the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
@@ -150,7 +146,7 @@ draw.add_to(m)
 # Add the search bar (the user input field)
 add_search_bar(m)
 
-# Display the map
+# Display the map once (after all components are added)
 st.subheader("Search for a city or place below")
 
 # Capture the output from the map interactions
