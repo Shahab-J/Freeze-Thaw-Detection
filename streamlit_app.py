@@ -659,7 +659,10 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
     # Display the total number of images for the selected date range
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
-        st.write(f"🖼️ Total Images for visualization during the selected date range from {start_date_str} to {end_date_str}: {num_images}")
+        st.write(
+            f"🖼️ Total Images for visualization during the selected date range from "
+            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b>{num_images}</b> FT classified images."
+        )
 
         # Loop through the images and display results
         for i in range(num_images):
