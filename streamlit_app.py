@@ -811,8 +811,10 @@ clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # ========== ✅ Map Setup ==========
-# Render map and get output
+# Create a Folium map centered at a location
 m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+
+# Add Satellite basemap
 satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
@@ -865,6 +867,10 @@ def disable_drawing(draw):
     draw.options['draw'] = False  # Disable the drawing control
     draw.options['edit'] = False  # Disable the editing of existing shapes
     return draw
+
+# ========== ✅ Map Rendering ==========
+# This part ensures the map is displayed correctly, even when interactions are disabled
+output = st_folium(m, width=1300, height=600)
 
 
 
