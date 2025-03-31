@@ -24,7 +24,7 @@ from google.oauth2 import service_account
 from streamlit_folium import folium_static
 from geopy.geocoders import Nominatim
 
-==================================================
+# ==================================================
 
 
 
@@ -71,14 +71,14 @@ st.markdown(
 
 
 
-
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
 from folium.plugins import Search
 from streamlit_folium import st_folium
 
-# Create a function to add a search bar to the map
+# ==================================================
+# Function to add a search bar to the map
 def add_search_bar(map_object):
     # Create a geocoder
     geolocator = Nominatim(user_agent="geoapiExercises")
@@ -108,6 +108,7 @@ def add_search_bar(map_object):
     # Render the map with the updated location
     st_folium(map_object, width=700, height=500)
 
+# ==================================================
 # Create the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
@@ -126,6 +127,7 @@ draw.add_to(m)
 # Add the search bar (the user input field)
 add_search_bar(m)
 
+# ==================================================
 # Display the map
 st.subheader("Search for a city or place below")
 
