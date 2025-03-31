@@ -661,7 +661,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
             f"🖼️ Total Images for visualization during the selected date range from "
-            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b>{num_images}</b> FT classified images.",
+            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
             unsafe_allow_html=True
         )
 
