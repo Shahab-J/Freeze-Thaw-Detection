@@ -114,7 +114,7 @@ if 'end_date' not in st.session_state:
     st.session_state.end_date = end_date
 
 # ========== ✅ Add Search Bar ==========
-geolocator = Nominatim(user_agent="streamlit_app")
+from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 def add_search_bar(map_object):
     # Search function to get coordinates from the place name using Nominatim
@@ -126,8 +126,11 @@ def add_search_bar(map_object):
             else:
                 st.warning("Location not found.")
                 return None
-        except geopy.exc.GeocoderUnavailable as e:
+        except GeocoderUnavailable as e:
             st.error("Geocoding service is currently unavailable. Please try again later.")
+            return None
+        except GeocoderTimedOut as e:
+            st.error("Geocoding service timed out. Please try again.")
             return None
         except Exception as e:
             st.error(f"An error occurred: {e}")
@@ -147,6 +150,8 @@ def add_search_bar(map_object):
             folium.Marker(location, popup=place).add_to(map_object)
         else:
             time.sleep(2)  # Optional: add a small delay before allowing another request
+
+
 
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
