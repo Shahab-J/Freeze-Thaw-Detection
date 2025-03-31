@@ -84,57 +84,6 @@ draw.add_to(m)
 # Render the map
 output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
 
-# ========== ✅ Submit Handler ==========
-if submit:
-    if output and "all_drawings" in output:
-        if len(output["all_drawings"]) > 0:
-            last_feature = output["all_drawings"][-1]
-            roi_geojson = last_feature["geometry"]
-            
-            # Store the drawn ROI in session state
-            st.session_state.user_roi = roi_geojson
-            st.session_state.start_date = start_date
-            st.session_state.end_date = end_date
-            st.session_state.resolution = resolution
-            st.session_state.clip_to_agriculture = clip_to_agri
-
-            # Display the "Submit ROI" message immediately after the map
-            st.success("✅ ROI submitted and ready for processing.")
-
-            # Lock the map immediately after submission to prevent zooming or panning
-            st.markdown(
-                """
-                <style>
-                    .folium-map {
-                        pointer-events: none;  /* Disable all map interactions */
-                    }
-                </style>
-                """, unsafe_allow_html=True
-            )
-
-            # Call the processing function after disabling map interaction
-            submit_roi()  # Ensure this function is defined elsewhere in your code
-
-        else:
-            st.warning("⚠️ Please draw an ROI before submitting.")
-    else:
-        st.warning("⚠️ Please draw an ROI before submitting.")
-
-# ===================== Resume Normal Map Behavior =====================
-# If you want to enable map interaction again after the process is done, you can reset the behavior here
-# (e.g., after the process completes or user wants to reset the map)
-
-# If the process is completed or the app is reset, re-enable map interaction
-if 'roi_selected' in st.session_state and not st.session_state['roi_selected']:
-    st.markdown(
-        """
-        <style>
-            .folium-map {
-                pointer-events: auto;  /* Enable all mouse interactions */
-            }
-        </style>
-        """, unsafe_allow_html=True
-    )
 
 
 
@@ -891,32 +840,41 @@ def submit_roi():
 
 
 
-
-
-
-
 # ========== ✅ Submit Handler ==========
 if submit:
-    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-        # Get the last drawn feature (ROI)
-        last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
-        
-        # Store the drawn ROI in session state
-        st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
+    if output and "all_drawings" in output:
+        if len(output["all_drawings"]) > 0:
+            last_feature = output["all_drawings"][-1]
+            roi_geojson = last_feature["geometry"]
+            
+            # Store the drawn ROI in session state
+            st.session_state.user_roi = roi_geojson
+            st.session_state.start_date = start_date
+            st.session_state.end_date = end_date
+            st.session_state.resolution = resolution
+            st.session_state.clip_to_agriculture = clip_to_agri
 
-        # st.success("✅ ROI submitted and ready for processing.")
-        
-        # Running Freeze–Thaw processing pipeline without the spinner
-        submit_roi()  # Ensure this function is defined elsewhere in your code
+            # Display the ROI submitted message immediately after the map
+            st.success("✅ ROI submitted and ready for processing.")
 
+            # Lock the map immediately after submission to prevent zooming or panning
+            st.markdown(
+                """
+                <style>
+                    .folium-map {
+                        pointer-events: none;  /* Disable all map interactions */
+                    }
+                </style>
+                """, unsafe_allow_html=True
+            )
+
+            # Running the processing function (assumed to be defined elsewhere in the code)
+            submit_roi()  # Ensure this function is defined elsewhere in your code
+
+        else:
+            st.warning("⚠️ Please draw an ROI before submitting.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
 
 
 
