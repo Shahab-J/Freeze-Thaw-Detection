@@ -606,16 +606,16 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 # Footer Section (on the left side below the Submit ROI button)
 with st.sidebar:
-    # Footer information with a smaller font size and line breaks
+    # Footer information with extra space before "Submit ROI" button
     st.markdown(
         """
         <style>
         .footer-text {
-            font-size: 14px;  /* Adjust the font size */
+            font-size: 12px;  /* Adjust the font size */
         }
         </style>
         <div class="footer-text">
-        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
+        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br><br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
         <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
@@ -624,6 +624,7 @@ with st.sidebar:
         """,
         unsafe_allow_html=True
     )
+
 
 
 
