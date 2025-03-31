@@ -796,60 +796,10 @@ def submit_roi():
 
 
 
-import streamlit as st
-import folium
-from folium.plugins import Draw
-from streamlit_folium import st_folium
 
-# ========== Map Setup Function ==========
-def setup_map():
-    """
-    Initializes the Folium map and adds the necessary layers and controls.
-    """
-    # Create a Folium map centered at a location
-    m = folium.Map(location=[46.29, -72.75], zoom_start=12)
 
-    # Add Satellite basemap
-    folium.TileLayer(
-        tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
-    ).add_to(m)
 
-    # Add drawing control to the map
-    draw = Draw(export=False)
-    draw.add_to(m)
-
-    return m, draw
-
-# ========== Lock Map Interaction Function ==========
-def lock_map(m):
-    """
-    Locks the map by disabling pan, zoom, and other interactions.
-    """
-    m.get_root().html.add_child(folium.Element("""
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
-        </script>
-    """))
-    return m
-
-# ========== Disable Drawing Function ==========
-def disable_drawing(draw):
-    """
-    Disables the drawing tool after ROI is submitted.
-    """
-    draw.remove_from(m)  # Remove the drawing tool from the map
-    return draw
-
-# ========== Streamlit App Logic ==========
-# Initialize session state if not already initialized
-if 'roi_submitted' not in st.session_state:
-    st.session_state['roi_submitted'] = False
-
-# Setup the map
-m, draw = setup_map()
-
-# ========== Sidebar UI ==========
+# ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
 def_end = date(2024, 6, 30)
@@ -860,10 +810,19 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# Render the map
-output = st_folium(m, width=1300, height=600)
+# ========== ✅ Map Setup ==========
+# Render map and get output
+m = folium.Map(location=[46.29, -72.75], zoom_start=12)
+satellite_tile = folium.TileLayer(
+    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+).add_to(m)
 
-# ========== Handle Submission ==========
+# Add drawing control to the map
+from folium.plugins import Draw
+draw = Draw(export=False)
+draw.add_to(m)
+
+# ========== ✅ Submit ROI ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
@@ -879,17 +838,33 @@ if submit:
         st.session_state['roi_submitted'] = True  # Mark that the ROI is submitted
 
         st.success("✅ ROI submitted and ready for processing.")
-        
-        # Lock map and disable drawing if ROI is submitted
+
+        # Disable drawing tool and lock map after submission
         m = lock_map(m)  # Lock interactions after ROI submission
         draw = disable_drawing(draw)  # Disable the drawing tool after submission
-
-        # Running Freeze–Thaw processing pipeline without the spinner
+        
+        # Run the processing pipeline
         submit_roi()  # Ensure this function is defined elsewhere in your code
         
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
+# ========== ✅ Lock Map Interactions (Post-ROI) ==========
+def lock_map(m):
+    m.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
+        </script>
+    """))
+    return m
+
+# ========== ✅ Disable Drawing Tool (Post-ROI) ==========
+def disable_drawing(draw):
+    """Disables the drawing tool."""
+    draw.options['draw'] = False  # Disable the drawing control
+    draw.options['edit'] = False  # Disable the editing of existing shapes
+    return draw
 
 
 
