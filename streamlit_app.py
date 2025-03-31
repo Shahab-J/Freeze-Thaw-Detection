@@ -77,6 +77,8 @@ st.markdown(
 
 
 
+
+
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
@@ -125,7 +127,6 @@ def add_search_bar(map_object):
             draw = Draw(export=False)
             draw.add_to(map_object)
 
-            # You can further customize here to allow users to draw a ROI after the location is found
         else:
             time.sleep(2)  # Optional: add a small delay before allowing another request
 
@@ -147,12 +148,8 @@ draw.add_to(m)
 # Add the search bar (the user input field)
 add_search_bar(m)
 
-# Display the map
-st.subheader("Search for a city or place below")
-
 # Capture the output from the map interactions
 output = st_folium(m, width=1300, height=600)
-
 
 
 
