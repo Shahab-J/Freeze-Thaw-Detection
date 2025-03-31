@@ -677,7 +677,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
                 thawed_pct = (thawed / total) * 100 if total > 0 else 0
                 frozen_pct = (frozen / total) * 100 if total > 0 else 0
 
-                # Display updated stats with pixels and percentages
+                # Display updated stats with colored squares for Frozen and Thawed
                 st.markdown(
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
                     f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
@@ -687,8 +687,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
-
-
 
 
 
