@@ -23,7 +23,10 @@ from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 
-
+import streamlit as st
+import folium
+from folium.plugins import Draw
+from streamlit_folium import st_folium
 
 # ========== ✅ Title and Setup ==========
 st.title("🧊 Freeze–Thaw Mapping Tool")
@@ -59,11 +62,41 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ Draw Map ==========
+
+
+# ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, tiles="Esri.WorldImagery", control_scale=True)
-Draw(export=False).add_to(m)
-output = st_folium(m, width=1400, height=600)
+m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+
+# Add Satellite basemap (default)
+satellite_tile = folium.TileLayer(
+    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+).add_to(m)
+
+# Add Street basemap
+street_tile = folium.TileLayer(
+    tiles="OpenStreetMap", attr="OpenStreetMap", name="Street", overlay=False, control=True
+).add_to(m)
+
+# Add drawing control to the map
+draw = Draw(export=True)
+draw.add_to(m)
+
+# Add Layer control to switch between Satellite and Street view
+folium.LayerControl(position="topright").add_to(m)
+
+# Render the map
+output = st_folium(m, width=1100, height=650)
+
+# ========== ✅ Handle drawing output ==========
+if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+    last_feature = output["all_drawings"][-1]
+    roi_geojson = last_feature["geometry"]
+    st.session_state.user_roi = roi_geojson
+    st.success("✅ ROI submitted and ready for processing.")
+else:
+    st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
