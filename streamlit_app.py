@@ -559,7 +559,7 @@ def train_rf_model():
             classProperty=label,
             inputProperties=bands
         )
-        st.success("✅ RF model trained successfully in GEE.")
+        st.success("✅ Optimized FT model trained successfully in GEE.")
         return rf_model
     except Exception as e:
         st.error(f"❌ Failed to train RF model: {e}")
@@ -706,23 +706,16 @@ def visualize_ft_classification(collection, user_roi, resolution):
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
 
 
-    # Display the total number of images for the selected date range
-    # ========== ✅ Visualizing Results (Only show after ROI submission) ==========
-    if 'user_roi' in st.session_state:
-        # Display the warning only after ROI is selected
-        st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
-    
-        # Show the results section
-        st.subheader("🧊 View All Freeze–Thaw Results --- Please scroll down to see the classified FT images.")
-        with st.expander("🧊 View All Freeze–Thaw Results --- Please scroll down until all images are visualized with statistical information", expanded=False):
-            st.markdown(
-                f"🖼️ Total Images for visualization during the selected date range from "
-                f"<u>{st.session_state.start_date}</u> to <u>{st.session_state.end_date}</u>: <b><span style='font-size: 30px'>{100}</span></b> FT classified images.",
-                unsafe_allow_html=True
-            )
 
 
-        
+# Display the total number of images for the selected date range
+    with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
+        st.markdown(
+            f"🖼️ Total Images for visualization during the selected date range from "
+            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
+            unsafe_allow_html=True
+        )
+
     # Continue with the rest of the logic (image processing, visualization, etc.)
         # Loop through the images and display results
         for i in range(num_images):
@@ -777,6 +770,9 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
+
+
+
 
 
 
