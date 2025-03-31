@@ -778,6 +778,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 # ========== ✅ Processing Pipeline ==========
 # ✅ Step 12: Submit ROI and Processing Pipeline
+# ✅ Step 12: Submit ROI and Processing Pipeline
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -790,7 +791,7 @@ def submit_roi():
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
-
+   
     if user_selected_end >= today:
         st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
@@ -804,15 +805,13 @@ def submit_roi():
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-#   st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         st.warning("""
             ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed, as this may cause the process to collapse. 
             Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-        
         """)
 
-       
+        # Processing Sentinel-1 Images
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
             st.warning("⚠️ Step failed: Sentinel-1 processing.")
@@ -856,6 +855,7 @@ def submit_roi():
 
         st.session_state.efta_collection = efta_collection
 
+        # Train Random Forest Model
         rf_model = train_rf_model()
         if rf_model is None:
             st.warning("⚠️ RF Model training failed.")
@@ -865,13 +865,14 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-#           st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
                 # Load NALCMS and mask class 15 (cropland)
                 landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
-                cropland_mask = landcover.eq(15)
+                cropland_mask = landcover.eq(15)  # Cropland class (15)
 
+                # Apply mask to cropland data
                 cropland_geometry = cropland_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType='polygon',
@@ -879,15 +880,16 @@ def submit_roi():
                     maxPixels=1e13
                 )
 
+                # Perform intersection between user's ROI and the cropland geometry
                 intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
 
-                # Check validity
+                # Check if the intersection is valid (non-empty)
                 if intersected_roi.coordinates().size().getInfo() == 0:
                     st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
                     return
 
-                user_roi = intersected_roi
-                classified_images = classified_images.map(lambda img: img.clip(user_roi))
+                user_roi = intersected_roi  # Update the ROI to the intersection with agricultural land
+                classified_images = classified_images.map(lambda img: img.clip(user_roi))  # Clip images
 
                 st.success("🌾 ROI successfully clipped to cropland using NALCMS.")
 
@@ -898,6 +900,13 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+
+
+
+
 
 
 
