@@ -22,15 +22,15 @@ from google.auth import credentials
 from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
+from geopy.geocoders import Nominatim
+
+==================================================
 
 
 
-
-
-
-# ========== ✅ Title and Setup ==========
+# ✅ Step 1: Setup
+# ========== ✅ Title and Setup ===================
 st.title("🧊 Soil Freeze–Thaw Mapping Tool")
-
 
 # ========== ✅ Authenticate Earth Engine ==========
 try:
@@ -62,8 +62,6 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-
-
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 st.markdown(
@@ -71,10 +69,20 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Create a function to add a search bar to the map
+def add_search_bar(map_object):
+    # Create a geocoder
+    geolocator = Nominatim(user_agent="geoapiExercises")
 
+    # Add a search bar using the search control in folium
+    search_control = folium.plugins.Search(
+        layer=map_object,
+        search_box_only=True,  # Only show the search box
+        geom_type='Point',
+        placeholder="Search for a place...",
+    ).add_to(map_object)
 
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
-
 # Add Satellite basemap (default)
 satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
@@ -89,8 +97,6 @@ draw.add_to(m)
 
 # Render the map
 output = st_folium(m, width=1300, height=600)
-
-
 
 
 
@@ -155,7 +161,6 @@ def process_sentinel1(start_date, end_date, roi, resolution):
     return processed_collection
 
 
-
 # ✅ Step 3: Mosaicking by Date for Streamlit
 def mosaic_by_date(collection, roi, start_date, end_date):
     """
@@ -203,14 +208,12 @@ def mosaic_by_date(collection, roi, start_date, end_date):
     return mosaicked_collection
 
 
-
 # ✅ Step 4: SigmaDiff Computation for Streamlit
 def compute_sigma_diff_pixelwise(collection):
     """
     Computes SigmaDiff as the pixel-wise difference in VH_corrected between consecutive images.
     Returns an ImageCollection with a new band 'SigmaDiff' added to each image.
     """
-
     if collection is None:
         st.error("❌ ERROR: No mosaicked images available for SigmaDiff computation.")
         return None
@@ -243,8 +246,6 @@ def compute_sigma_diff_pixelwise(collection):
     result_collection = ee.ImageCollection.fromImages(updated_images)
 #   st.success("✅ SigmaDiff computation complete.")
     return result_collection
-
-
 
 
 # ✅ Step 5: SigmaDiff Min/Max Computation for Streamlit
@@ -285,8 +286,6 @@ def compute_sigma_diff_extremes(collection, start_year, user_roi):
 
 #   st.success("✅ SigmaDiff Min/Max computation complete.")
     return updated_collection
-
-
 
 
 # ✅ Step 6: Freeze–Thaw K Assignment for Streamlit
