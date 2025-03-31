@@ -59,6 +59,7 @@ except Exception as e:
     st.stop()  # Stop execution if authentication fails
 
 
+
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
@@ -70,36 +71,15 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-# ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below (Search for a city or place below)")
-st.markdown(
-    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
-    unsafe_allow_html=True
-)
-
-
-
-import streamlit as st
-import folium
-from geopy.geocoders import Nominatim
-from folium.plugins import Draw
-from streamlit_folium import st_folium
-import time
-
-# Initialize session state for dates if not set already
+# ========== ✅ Session State Initialization ==========
 if 'start_date' not in st.session_state:
-    st.session_state.start_date = "2023-10-01"  # Default start date
+    st.session_state.start_date = start_date
 if 'end_date' not in st.session_state:
-    st.session_state.end_date = "2024-06-30"  # Default end date
-
-# Display start and end date
-start_date_str = st.session_state.start_date
-end_date_str = st.session_state.end_date
-
-# Create a geocoder using Nominatim for place search
-geolocator = Nominatim(user_agent="streamlit_app")
+    st.session_state.end_date = end_date
 
 # ========== ✅ Add Search Bar ==========
+geolocator = Nominatim(user_agent="streamlit_app")
+
 def add_search_bar(map_object):
     # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
@@ -152,8 +132,7 @@ draw.add_to(m)
 add_search_bar(m)
 
 # ========== ✅ Render the map once with the updated location ==========
-output = st_folium(m, width=1300, height=600)
-
+output = st_folium(m, width=1300, height=600)  # Display map with updated location
 
 
 
@@ -913,11 +892,8 @@ def submit_roi():
 
 
 
-
 # ========== ✅ Submit Handler ==========
-# ========== ✅ Submit Handler ==========
-if st.button("Submit ROI"):
-    output = st_folium(m, width=1300, height=500)
+if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
@@ -925,11 +901,9 @@ if st.button("Submit ROI"):
         
         # Store the drawn ROI in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = "2023-10-01"  # Example start date
-        st.session_state.end_date = "2024-06-30"  # Example end date
-        st.session_state.resolution = 30  # Example resolution
-        st.session_state.clip_to_agriculture = True  # Example flag
-        
+        st.session_state.start_date = start_date  # Store start date
+        st.session_state.end_date = end_date  # Store end date
+
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
@@ -944,7 +918,7 @@ if st.button("Submit ROI"):
 
 # ========== ✅ Functions to Lock Map and Disable Drawing ==========
 def lock_map(map_object):
-    map_object.get_root().html.add_child(folium.Element("""
+    map_object.get_root().html.add_child(folium.Element(""" 
         <script>
             var map = document.querySelector('div.leaflet-container');
             map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
@@ -966,3 +940,4 @@ with st.expander("🧊 <u>View All Freeze–Thaw Results</u> --- Please scroll d
         f"<u>{st.session_state.start_date}</u> to <u>{st.session_state.end_date}</u>: <b><span style='font-size: 30px'>{100}</span></b> FT classified images.",
         unsafe_allow_html=True
     )
+
