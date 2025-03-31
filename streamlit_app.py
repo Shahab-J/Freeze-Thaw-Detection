@@ -29,7 +29,7 @@ from streamlit_folium import folium_static
 
 
 # ========== ✅ Title and Setup ==========
-st.title("🧊 Freeze–Thaw Mapping Tool")
+st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 
 # ========== ✅ Authenticate Earth Engine ==========
