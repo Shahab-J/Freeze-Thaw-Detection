@@ -611,11 +611,10 @@ with st.sidebar:
         """
         <style>
         .footer-text {
-            font-size: 12px;  /* Adjust the font size */
+            font-size: 14px;  /* Adjust the font size */
         }
         </style>
         <div class="footer-text">
-        ---
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
