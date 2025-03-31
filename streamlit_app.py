@@ -77,19 +77,21 @@ st.markdown(
 
 
 
-
-
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
 import time
+import json
+import ee
 
-# Create a geocoder using Nominatim
+
+
+# Create a geocoder using Nominatim for place search
 geolocator = Nominatim(user_agent="streamlit_app")
 
-# Create a function to add a search bar to the map
+# ========== ✅ Add Search Bar ==========
 def add_search_bar(map_object):
     # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
@@ -119,18 +121,14 @@ def add_search_bar(map_object):
 
             # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
-
-            # Optionally, allow the user to draw an ROI after searching
-            st.write("Now you can draw your ROI on the map!")
-
-            # Add the drawing control again, allowing the user to draw the ROI
-            draw = Draw(export=False)
-            draw.add_to(map_object)
-
         else:
             time.sleep(2)  # Optional: add a small delay before allowing another request
 
-# Create the map
+    # Render the map with the updated location
+    st_folium(map_object, width=1300, height=500)
+
+# ========== ✅ Map Setup ==========
+# Create the map centered at a location
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
 # Add Satellite basemap (default)
@@ -138,18 +136,23 @@ satellite_tile = folium.TileLayer(
     tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
 ).add_to(m)
 
-# Add Layer control to switch between Satellite and OpenStreetMap (without Street)
+# Add Layer control to switch between Satellite and OpenStreetMap
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
 draw = Draw(export=False)
 draw.add_to(m)
 
-# Add the search bar (the user input field)
+# Add the search bar (the user input field for place search)
 add_search_bar(m)
 
-# Capture the output from the map interactions
-output = st_folium(m, width=1300, height=600)
+
+
+
+
+
+
+
 
 
 
@@ -909,7 +912,9 @@ def submit_roi():
 
 
 # ========== ✅ Submit Handler ==========
-if submit:
+# ========== ✅ Submit Handler ==========
+if st.button("Submit ROI"):
+    output = st_folium(m, width=1300, height=500)
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
@@ -917,18 +922,44 @@ if submit:
         
         # Store the drawn ROI in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
-
-        # st.success("✅ ROI submitted and ready for processing.")
-      
+        st.session_state.start_date = "2023-10-01"  # Example start date
+        st.session_state.end_date = "2024-06-30"  # Example end date
+        st.session_state.resolution = 30  # Example resolution
+        st.session_state.clip_to_agriculture = True  # Example flag
+        
         # Running Freeze–Thaw processing pipeline without the spinner
-        submit_roi()  
+        submit_roi()  # Ensure this function is defined elsewhere in your code
 
+        # Lock map and disable drawing after submission
+        m = lock_map(m)  # Lock interactions after ROI submission
+        draw = disable_drawing(draw)  # Disable the drawing tool after submission
+        
         # Display an alert to warn users not to interact with the map
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
-
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+# ========== ✅ Functions to Lock Map and Disable Drawing ==========
+def lock_map(map_object):
+    map_object.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
+        </script>
+    """))
+    return map_object
+
+def disable_drawing(draw):
+    """Disables the drawing tool."""
+    draw.options['draw'] = False  # Disable drawing control
+    draw.options['edit'] = False  # Disable editing of existing shapes
+    return draw
+
+# ========== ✅ Visualizing Results (For Example) ==========
+st.subheader("🧊 View All Freeze–Thaw Results --- Please scroll down to see the classified FT images.")
+with st.expander("🧊 <u>View All Freeze–Thaw Results</u> --- Please scroll down until all images are visualized with statistical information", expanded=False):
+    st.markdown(
+        f"🖼️ Total Images for visualization during the selected date range from "
+        f"<u>{st.session_state.start_date}</u> to <u>{st.session_state.end_date}</u>: <b><span style='font-size: 30px'>{100}</span></b> FT classified images.",
+        unsafe_allow_html=True
+    )
