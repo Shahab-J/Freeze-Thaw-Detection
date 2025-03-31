@@ -937,23 +937,21 @@ def submit_roi():
 
 
 
-
-
-
-
-
-
 # ========== ✅ Functions to Lock Map and Disable Drawing ==========
-
 def lock_map(map_object):
-    """Disables all interactions (zoom, pan, etc.) on the map."""
-    map_object.get_root().html.add_child(folium.Element("""
+    map_object.get_root().html.add_child(folium.Element(""" 
         <script>
             var map = document.querySelector('div.leaflet-container');
             map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
         </script>
     """))
     return map_object
+
+def disable_drawing(draw):
+    """Disables the drawing tool."""
+    draw.options['draw'] = False  # Disable drawing control
+    draw.options['edit'] = False  # Disable editing of existing shapes
+    return draw
 
 # ========== ✅ Submit Handler ==========
 if submit:
@@ -980,22 +978,6 @@ if submit:
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-# ========== ✅ Functions to Lock Map and Disable Drawing ==========
-def lock_map(map_object):
-    map_object.get_root().html.add_child(folium.Element(""" 
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
-        </script>
-    """))
-    return map_object
-
-def disable_drawing(draw):
-    """Disables the drawing tool."""
-    draw.options['draw'] = False  # Disable drawing control
-    draw.options['edit'] = False  # Disable editing of existing shapes
-    return draw
 
 
 
