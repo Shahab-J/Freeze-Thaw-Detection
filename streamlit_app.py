@@ -827,6 +827,8 @@ def submit_roi():
 
 
 
+
+
 # Function to disable drawing tool after submitting ROI
 def disable_drawing(draw):
     """Disables drawing tool after submitting ROI."""
@@ -843,6 +845,7 @@ def lock_map(map_obj):
     map_obj.options['dragging'] = False
     map_obj.options['scrollWheelZoom'] = False
     map_obj.options['doubleClickZoom'] = False
+    map_obj._map.options['touchZoom'] = False  # Disable touch zoom (for mobile)
 
 # ========== ✅ Submit Handler ==========
 if submit:
@@ -858,7 +861,7 @@ if submit:
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
 
-        # Lock map interactions after ROI is submitted
+        # Lock map interactions after ROI is submitted to prevent zoom, pan, or tap
         lock_map(m)  # Call lock_map to disable zoom/pan/tap/etc.
 
         # Disable the drawing tool after the ROI is submitted
