@@ -65,9 +65,10 @@ submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 
 
-# Initialize session state for ROI and map interaction
+# ========== Initialize Session State ==========
 if 'roi_selected' not in st.session_state:
     st.session_state['roi_selected'] = False  # Initially, ROI is not selected
+    st.session_state['map_interaction_disabled'] = False  # Initially, interaction is allowed
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
@@ -85,8 +86,8 @@ folium.LayerControl(position="topright").add_to(m)
 draw = Draw(export=False)
 draw.add_to(m)
 
-# Dynamically control zoom and pan based on ROI selection
-if st.session_state['roi_selected']:  # If ROI is selected, disable map interaction
+# Disable map zoom and pan if ROI is selected
+if st.session_state['roi_selected']:
     m.options['zoomControl'] = False  # Disable zoom controls
     m.options['dragging'] = False  # Disable dragging (panning)
     m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
@@ -106,7 +107,7 @@ if submit:
             roi_geojson = last_feature["geometry"]
             st.session_state.user_roi = roi_geojson
             st.session_state['roi_selected'] = True  # Set to True when ROI is selected
-            st.session_state['map_interaction_enabled'] = False  # Disable map interaction once ROI is selected
+            st.session_state['map_interaction_disabled'] = True  # Disable map interaction after ROI selection
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
