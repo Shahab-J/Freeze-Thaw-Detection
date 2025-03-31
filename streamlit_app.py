@@ -683,7 +683,7 @@ def submit_roi():
 
     st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
-%   with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
+    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
 
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
@@ -789,7 +789,7 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri
 
         st.success("✅ ROI submitted and ready for processing.")
-        with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
+#       with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
             submit_roi()
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
