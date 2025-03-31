@@ -766,13 +766,17 @@ def submit_roi():
         return
 
     user_roi = st.session_state.user_roi
-    resolution = st.session_state.get("resolution", 30)
+    
+    # Fetch resolution from session state directly (this will be the value from the sidebar)
+    resolution = st.session_state.resolution  # This now refers to the value from the sidebar
+
+    # Fetch other parameters from session state
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
 
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
-
+   
     if user_selected_end >= today:
         st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
