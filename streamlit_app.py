@@ -81,12 +81,6 @@ folium.LayerControl(position="topright").add_to(m)
 draw = Draw(export=False)
 draw.add_to(m)
 
-# If the ROI is selected, disable zoom and panning
-if st.session_state['roi_selected']:
-    m.options['zoomControl'] = False  # Disable zoom controls
-    m.options['dragging'] = False  # Disable dragging (panning)
-    m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
-
 
 # Render the map
 output = st_folium(m, width=1300, height=600)  # Adjusted height for the map
@@ -98,16 +92,24 @@ if submit:
             last_feature = output["all_drawings"][-1]
             roi_geojson = last_feature["geometry"]
             st.session_state.user_roi = roi_geojson
+            st.session_state['roi_selected'] = True  # Set to True when ROI is selected
+
+            # Disable zoom and pan after ROI selection (during processing)
+            if st.session_state['roi_selected']:
+                m.options['zoomControl'] = False  # Disable zoom controls
+                m.options['dragging'] = False  # Disable dragging (panning)
+                m.options['scrollWheelZoom'] = False  # Disable zoom with scroll wheel
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-            
+         
             # Add your existing processing logic here (e.g., image fetching, display results)
             
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
