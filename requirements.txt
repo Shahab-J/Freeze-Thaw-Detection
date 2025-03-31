@@ -9,3 +9,4 @@ streamlit-folium
 scikit-learn
 geopy
 googlemaps==4.5.3
+python-dotenv
