@@ -912,6 +912,17 @@ def submit_roi():
 
 
 
+# ========== ✅ Functions to Lock Map and Disable Drawing ==========
+
+def lock_map(map_object):
+    """Disables all interactions (zoom, pan, etc.) on the map."""
+    map_object.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
+        </script>
+    """))
+    return map_object
 
 # ========== ✅ Submit Handler ==========
 if submit:
