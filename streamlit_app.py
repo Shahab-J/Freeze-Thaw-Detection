@@ -121,6 +121,30 @@ from geopy.geocoders import Nominatim
 # Initialize the geolocator object
 geolocator = Nominatim(user_agent="streamlit_app")
 
+
+
+
+# ========== ✅ Functions to Lock Map and Disable Drawing ==========
+
+def lock_map(map_object):
+    """Disables all interactions (zoom, pan, etc.) on the map."""
+    map_object.get_root().html.add_child(folium.Element("""
+        <script>
+            var map = document.querySelector('div.leaflet-container');
+            map.style.pointerEvents = 'none';  // Disable all interactions
+        </script>
+    """))
+    return map_object
+
+def disable_drawing(draw):
+    """Disables the drawing tool by using the proper folium configuration."""
+    draw._draw.options['draw'] = False  # Disable drawing control
+    draw._draw.options['edit'] = False  # Disable editing of existing shapes
+    return draw
+
+
+
+
 def add_search_bar(map_object):
     # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
@@ -184,6 +208,9 @@ add_search_bar(m)
 
 # ========== ✅ Render the map once with the updated location ==========
 output = st_folium(m, width=1300, height=600)  # Display map with updated location
+
+
+
 
 
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
@@ -936,22 +963,6 @@ def submit_roi():
 
 
 
-
-# ========== ✅ Functions to Lock Map and Disable Drawing ==========
-def lock_map(map_object):
-    map_object.get_root().html.add_child(folium.Element(""" 
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions (zoom, pan, etc.)
-        </script>
-    """))
-    return map_object
-
-def disable_drawing(draw):
-    """Disables the drawing tool."""
-    draw.options['draw'] = False  # Disable drawing control
-    draw.options['edit'] = False  # Disable editing of existing shapes
-    return draw
 
 # ========== ✅ Submit Handler ==========
 if submit:
