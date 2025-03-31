@@ -114,7 +114,7 @@ def add_search_bar(map_object):
             folium.Marker(location, popup=place).add_to(map_object)
 
     # Render the map with the updated location
-    st_folium(map_object, width=700, height=500)
+    st_folium(map_object, width=1300, height=500)
 
 # Create the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
