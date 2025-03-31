@@ -82,11 +82,7 @@ import folium
 from geopy.geocoders import Nominatim
 from folium.plugins import Draw
 from streamlit_folium import st_folium
-import time
-import json
-import ee
-
-
+from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 # Create a geocoder using Nominatim for place search
 geolocator = Nominatim(user_agent="streamlit_app")
@@ -121,8 +117,6 @@ def add_search_bar(map_object):
 
             # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
-        else:
-            time.sleep(2)  # Optional: add a small delay before allowing another request
 
     # Render the map with the updated location
     st_folium(map_object, width=1300, height=500)
@@ -145,9 +139,6 @@ draw.add_to(m)
 
 # Add the search bar (the user input field for place search)
 add_search_bar(m)
-
-
-
 
 
 
