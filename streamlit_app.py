@@ -789,7 +789,7 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri
 
         st.success("✅ ROI submitted and ready for processing.")
-        with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
+#       with st.spinner("⏳ Running freeze–thaw processing pipeline..."):
             submit_roi()
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
