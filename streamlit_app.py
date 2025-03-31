@@ -827,12 +827,16 @@ def submit_roi():
 
 
 
-# ========== ✅ Handle drawing output ==========
+
+
+# ========== ✅ Handle drawing output and submit ==========
+
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+        # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
-        
+
         # Store the drawn ROI in session state
         st.session_state.user_roi = roi_geojson
         st.session_state.start_date = start_date
@@ -842,7 +846,7 @@ if submit:
 
         # Display the ROI submitted message immediately after the map
         st.success("✅ ROI submitted and ready for processing.")
-        
+
         # Lock the map immediately after submission to prevent zooming or panning
         st.markdown(
             """
@@ -855,8 +859,10 @@ if submit:
         )
 
         # Running the processing function (ensure submit_roi is defined elsewhere)
-        submit_roi()
+        submit_roi()  # This will trigger your processing logic
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
 
