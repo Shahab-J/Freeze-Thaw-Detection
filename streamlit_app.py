@@ -71,25 +71,35 @@ st.markdown(
 
 
 
-import streamlit as st
-import folium
-from geopy.geocoders import Nominatim
-from folium.plugins import Search
+
+
+import googlemaps
+from folium.plugins import Draw
 from streamlit_folium import st_folium
+import time
 
-# ==================================================
-# Function to add a search bar to the map
+# Initialize the Google Maps client with your API key
+gmaps = googlemaps.Client(key='YOUR_GOOGLE_MAPS_API_KEY')
+
+# Create a function to add a search bar to the map
 def add_search_bar(map_object):
-    # Create a geocoder
-    geolocator = Nominatim(user_agent="geoapiExercises")
-
-    # Search function to get coordinates from the place name
+    # Search function to get coordinates from the place name using Google Maps API
     def search_location(place):
-        location = geolocator.geocode(place)
-        if location:
-            return [location.latitude, location.longitude]
-        else:
-            st.warning("Location not found.")
+        try:
+            # Geocode the place using Google Maps
+            geocode_result = gmaps.geocode(place)
+            if geocode_result:
+                lat = geocode_result[0]['geometry']['location']['lat']
+                lng = geocode_result[0]['geometry']['location']['lng']
+                return [lat, lng]
+            else:
+                st.warning("Location not found.")
+                return None
+        except googlemaps.exceptions.ApiError as e:
+            st.error(f"API Error: {e}")
+            return None
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
             return None
 
     # Add a search box in the sidebar for easy input
@@ -98,17 +108,16 @@ def add_search_bar(map_object):
     if place:
         location = search_location(place)
         if location:
+            # Move the map to the found location
+            map_object.location = location
+            map_object.zoom_start = 12  # Zoom level
+
             # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
-
-            # Center the map on the found location and set zoom
-            map_object.location = location
-            map_object.zoom_start = 12  # Set zoom level
 
     # Render the map with the updated location
     st_folium(map_object, width=700, height=500)
 
-# ==================================================
 # Create the map
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
 
@@ -121,16 +130,14 @@ satellite_tile = folium.TileLayer(
 folium.LayerControl(position="topright").add_to(m)
 
 # Add drawing control to the map
-draw = folium.plugins.Draw(export=False)
+draw = Draw(export=False)
 draw.add_to(m)
 
 # Add the search bar (the user input field)
 add_search_bar(m)
 
-# ==================================================
 # Display the map
 st.subheader("Search for a city or place below")
-
 
 
 
