@@ -80,7 +80,6 @@ folium.LayerControl(position="topright").add_to(m)
 # Add drawing control to the map
 draw = Draw(export=False)
 draw.add_to(m)
-
 # Dynamically control zoom and pan based on ROI selection
 if st.session_state['roi_selected']:
     m.options['zoomControl'] = False  # Disable zoom controls
@@ -112,8 +111,6 @@ if submit:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-
 
 
 
