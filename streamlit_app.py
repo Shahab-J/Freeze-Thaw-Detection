@@ -61,10 +61,20 @@ except Exception as e:
     st.error(f"❌ EE Auth failed: {e}")
     st.stop()  # Stop execution if authentication fails
 
+
+
+
+# ========== ✅ Set up map with default satellite view ==========
+st.subheader("Draw your ROI below")
+st.markdown(
+    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
+    unsafe_allow_html=True
+)
+
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
-def_end = date(2024, 6, 30)
+def_end = date(2024, 6, 30)  
 
 # Initialize the resolution key if not already in session state
 if 'resolution' not in st.session_state:
@@ -778,7 +788,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 # ========== ✅ Processing Pipeline ==========
 # ✅ Step 12: Submit ROI and Processing Pipeline
-# ✅ Step 12: Submit ROI and Processing Pipeline
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -791,7 +800,7 @@ def submit_roi():
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
-   
+
     if user_selected_end >= today:
         st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
@@ -865,14 +874,13 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+          # st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
                 # Load NALCMS and mask class 15 (cropland)
                 landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
-                cropland_mask = landcover.eq(15)  # Cropland class (15)
+                cropland_mask = landcover.eq(15)
 
-                # Apply mask to cropland data
                 cropland_geometry = cropland_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType='polygon',
@@ -880,16 +888,15 @@ def submit_roi():
                     maxPixels=1e13
                 )
 
-                # Perform intersection between user's ROI and the cropland geometry
                 intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
 
-                # Check if the intersection is valid (non-empty)
+                # Check validity
                 if intersected_roi.coordinates().size().getInfo() == 0:
                     st.error("❌ Cropland mask removed entire ROI. Please select a different area or disable cropland-only mode.")
                     return
 
-                user_roi = intersected_roi  # Update the ROI to the intersection with agricultural land
-                classified_images = classified_images.map(lambda img: img.clip(user_roi))  # Clip images
+                user_roi = intersected_roi
+                classified_images = classified_images.map(lambda img: img.clip(user_roi))
 
                 st.success("🌾 ROI successfully clipped to cropland using NALCMS.")
 
@@ -906,12 +913,6 @@ def submit_roi():
 
 
 
-
-
-
-
-
-
 # ========== ✅ Submit Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -921,8 +922,10 @@ if submit:
         
         # Store the drawn ROI in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date  # Store start date
-        st.session_state.end_date = end_date  # Store end date
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+        st.session_state.resolution = resolution
+        st.session_state.clip_to_agriculture = clip_to_agri
 
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
