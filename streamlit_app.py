@@ -77,6 +77,8 @@ st.markdown(
 
 
 
+
+
 import streamlit as st
 import folium
 from geopy.geocoders import Nominatim
@@ -133,7 +135,6 @@ add_search_bar(m)
 
 # Display the map
 st.subheader("Search for a city or place below")
-
 
 
 
