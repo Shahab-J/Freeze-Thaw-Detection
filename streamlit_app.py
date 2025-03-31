@@ -63,12 +63,11 @@ resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100])
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
+
+
 # Initialize session state for ROI and map interaction
 if 'roi_selected' not in st.session_state:
     st.session_state['roi_selected'] = False  # Initially, ROI is not selected
-
-if 'map_interaction_enabled' not in st.session_state:
-    st.session_state['map_interaction_enabled'] = True  # Initially, map interaction is enabled
 
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
@@ -111,7 +110,6 @@ if submit:
 
             # Display the ROI submitted message immediately after the map
             st.success("✅ ROI submitted and ready for processing.")
-
         else:
             st.warning("⚠️ No drawings detected, please draw an ROI.")
     else:
