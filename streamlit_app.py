@@ -75,13 +75,19 @@ start_date = st.sidebar.date_input("Start Date", value=def_start)
 end_date = st.sidebar.date_input("End Date", value=def_end)
 
 # Ensure the resolution is set based on the session state value
-resolution = st.sidebar.selectbox("Resolution (meters)", [10, 30, 100], index=[10, 30, 100].index(st.session_state.resolution))
+# Fix: Ensuring that the correct resolution is selected
+resolution = st.sidebar.selectbox(
+    "Resolution (meters)", 
+    [10, 30, 100], 
+    index=[10, 30, 100].index(st.session_state.resolution)
+)
 
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
 # Store the resolution in session state
 st.session_state.resolution = resolution
+
 
 
 # ========== ✅ Set up map with default satellite view ==========
