@@ -69,7 +69,9 @@ st.subheader("Draw your ROI below")
 st.markdown(
     "<p style='font-size: 12px;'>"
     "(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map "
-    "<img src='/mnt/data/file-HinBmbU4psALDuC7N3wVUd' style='width:15px;height:15px;'>)</p>", 
+    "<img src='data:image/png;base64,{}' style='width:15px;height:15px;'>)</p>".format(
+        base64.b64encode(open("/mnt/data/file-1NLWbysFRmP4eM4gb7HvgZ", "rb").read()).decode()
+    ), 
     unsafe_allow_html=True
 )
 
