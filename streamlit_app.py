@@ -825,6 +825,13 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
+# Function to lock the map interactions
+def lock_map(map_obj):
+    """Locks map interactions to prevent zooming, panning, and drawing."""
+    map_obj.options['zoomControl'] = False
+    map_obj.options['dragging'] = False
+    map_obj.options['scrollWheelZoom'] = False
+    map_obj.options['doubleClickZoom'] = False
 
 # ========== ✅ Submit Handler ==========
 if submit:
