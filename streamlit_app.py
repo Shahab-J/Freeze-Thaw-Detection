@@ -115,7 +115,7 @@ def process_sentinel1(start_date, end_date, roi, resolution):
         st.error("❌ No Sentinel-1 images found in the selected date range and ROI.")
         return None
 
-    st.success(f"🔍 Found {image_count_val} Sentinel-1 images in ROI.")
+#   st.success(f"🔍 Found {image_count_val} Sentinel-1 images in ROI.")
 
     # ✅ Refined Lee Filter Function
     def RefinedLee(img):
@@ -733,7 +733,7 @@ def submit_roi():
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+#   st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
 
 
