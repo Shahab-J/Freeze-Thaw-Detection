@@ -840,8 +840,9 @@ def lock_map(map_obj):
 
 # Function to disable drawing tool after submitting ROI
 def disable_drawing(draw):
-    """Disables drawing tool after submitting ROI."""
-    draw.remove_from(m)  # Remove drawing tool so users can't draw further
+    """Disables the drawing tool after submitting ROI."""
+    # Disable drawing functionality by setting the drawing options to False
+    draw.options['draw'] = False  # Disable the drawing control from the map
 
 # ========== ✅ Submit Handler ==========
 if submit:
