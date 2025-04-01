@@ -923,13 +923,22 @@ def submit_roi():
 
 
 
-# ========== ✅ Submit ROI Handler ==========
+# ========== ✅ Display Message after Submit Button ==========
 if submit:
+    # Show the alert message just below the Submit button in the sidebar
+    st.sidebar.markdown("""
+        <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
+            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
+            Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Proceed with ROI handling and other processing as needed
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
         # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
-        
+
         # Store the drawn ROI and other parameters in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
         st.session_state.start_date = start_date  # Store start date
@@ -938,18 +947,7 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
 
         st.success("✅ ROI submitted and ready for processing.")
-
-        # Display the message just below the Submit button in the sidebar
-        st.sidebar.markdown("""
-            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
-                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-            </div>
-        """, unsafe_allow_html=True)
-
-        # Running Freeze–Thaw processing pipeline without the spinner
-        submit_roi()  # Ensure this function is defined elsewhere in your code
-
+        submit_roi()  # Process the ROI and start processing pipeline
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
