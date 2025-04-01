@@ -113,7 +113,7 @@ geolocator = Nominatim(user_agent="streamlit_app")
 
 def search_location_with_retry(place, retries=3, delay=5):
     """Search for a location with retry logic in case of failure."""
-    attempt = 0
+    attempt = 120
     while attempt < retries:
         try:
             location = geolocator.geocode(place)
