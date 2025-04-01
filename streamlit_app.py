@@ -893,35 +893,6 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
-# Footer Section (on the left side below the Submit ROI button)
-with st.sidebar:
-    # Footer information with extra space before "Submit ROI" button
-    st.markdown(
-        """
-        <style>
-        .footer-text {
-            font-size: 12px;  /* Adjust the font size */
-        }
-        </style>
-        <div class="footer-text">
-        <br><br><br><br><br><br><br><br><br><br><br><br>
-        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
-        <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
-        <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
-        <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
-        🔒 <strong>All rights reserved</strong> © 2025 <br><br>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # Create collapsible section for Contact Us at the end of the sidebar
-    with st.expander("📩 Contact Us", expanded=False):
-        st.write("If you have any questions, please feel free to reach out!")
-        st.markdown("[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)")
-
-
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -935,7 +906,7 @@ if submit:
         st.session_state.end_date = end_date  # Store end date
         st.session_state.resolution = resolution  # Store resolution
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
-        
+
         # Display the message immediately below the "Submit ROI & Start Processing" button in the sidebar
         st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
@@ -943,8 +914,9 @@ if submit:
                 Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
             </div>
         """, unsafe_allow_html=True)
+
         st.success("✅ ROI submitted and ready for processing.")
-        
+
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
@@ -952,4 +924,37 @@ if submit:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
 
+# Footer Section (on the left side below the Submit ROI button)
+with st.sidebar:
+    # Footer information with extra space before "Submit ROI" button
+    st.markdown(
+        """
+        <style>
+        .footer-text {
+            font-size: 12px;  /* Adjust the font size */
+        }
+        </style>
+        <div class="footer-text">
+        <br><br><br><br><br><br><br><br><br><br><br><br>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Footer details
+    st.markdown(
+        """
+        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
+        <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
+        <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
+        <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
+        🔒 <strong>All rights reserved</strong> © 2025 <br><br>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Create collapsible section for Contact Us at the end of the sidebar
+    with st.expander("📩 Contact Us", expanded=False):
+        st.write("If you have any questions, please feel free to reach out!")
+        st.markdown("[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)")
 
