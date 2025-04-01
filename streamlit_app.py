@@ -59,7 +59,6 @@ except Exception as e:
 
 
 
-
 # ========== ✅ Set up map with default satellite view ==========
 st.subheader("Draw your ROI below")
 st.markdown(
@@ -152,11 +151,6 @@ def add_search_bar(map_object):
         search_location(place)
 
 
-
-
-
-
-
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
@@ -178,7 +172,6 @@ add_search_bar(m)
 
 # ========== ✅ Render the map once with the updated location ==========
 output = st_folium(m, width=1300, height=450)  # Display map with updated location
-
 
 
 
@@ -605,8 +598,6 @@ def classify_image(img, rf_model, resolution):
 
 
 
-
-
 # ✅ Step 11: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
     """
@@ -666,10 +657,6 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 
-
-
-
-
 # ✅ Step 12: Visualize FT Classification for Streamlit
 def visualize_ft_classification(collection, user_roi, resolution):
     import tempfile
@@ -687,7 +674,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
     # Get start and end dates from user input
     start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
-
 
 
 # Display the total number of images for the selected date range
@@ -755,7 +741,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
-
 
 
 # ✅ Step 13: Submit ROI and Processing Pipelin
@@ -961,4 +946,3 @@ with st.sidebar:
     with st.expander("📩 Contact Us", expanded=False):
         st.write("If you have any questions, please feel free to reach out!")
         st.markdown("[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)")
-
