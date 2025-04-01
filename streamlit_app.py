@@ -941,7 +941,7 @@ if submit:
 
         # Display the message just below the Submit ROI button (inside the sidebar)
         st.sidebar.markdown("""
-            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
+            <div style="font-size: 16px; color: #FFA500; font-weight: bold; padding-top: 20px;">
                 ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
                 Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
             </div>
