@@ -129,9 +129,7 @@ def search_location_with_retry(place, retries=3, delay=5):
     return None
 
 
-# Add search bar function
-def add_search_bar(map_object):
-    # Search function to get coordinates from the place name using Nominatim
+ # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
         location = search_location_with_retry(place)
         if location:
@@ -147,32 +145,12 @@ def add_search_bar(map_object):
         else:
             st.warning("Please try searching for the place again later.")
 
-    # Add custom HTML to position the search box in the top right corner
-    st.markdown("""
-        <style>
-        .search-bar {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 200px;
-            z-index: 9999;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-
-    # Create the input field with the custom class
-    place = st.text_input("Enter place (city, landmark, etc.):", key="search", label_visibility="collapsed", help="Search location")
+    place = st.text_input("Enter place (city, landmark, etc.):")
     if place:
         search_location(place)
 
-# Assuming map object is defined and ready
-m = folium.Map(location=[46.29, -72.75], zoom_start=12)
 
-# Add the search bar to the map
-add_search_bar(m)
 
-# Display the map
-st_folium(m, width=800, height=500)
 
 
 
