@@ -939,7 +939,7 @@ if submit:
 
         st.success("✅ ROI submitted and ready for processing.")
 
-        # Display the message in the sidebar below the Submit button and above 'Developed by' section
+        # Display the message just below the Submit button in the sidebar
         st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
                 ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
