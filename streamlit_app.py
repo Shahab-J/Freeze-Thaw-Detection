@@ -111,16 +111,16 @@ import time
 # Initialize the geolocator object
 geolocator = Nominatim(user_agent="streamlit_app")
 
-def search_location_with_retry(place, retries=3, delay=5):
+def search_location_with_retry(place, retries=3, delay=10):
     """Search for a location with retry logic in case of failure."""
-    attempt = 120
+    attempt = 0
     while attempt < retries:
         try:
-            location = geolocator.geocode(place)
+            location = geolocator.geocode(place, timeout=60)  # Increased timeout
             if location:
                 return [location.latitude, location.longitude]
             else:
-                st.warning("Location not found.")
+                st.warning("Location not found. Please check the place name and try again.")
                 return None
         except (GeocoderUnavailable, GeocoderTimedOut) as e:
             st.warning(f"Geocoding service is unavailable. Retrying... ({attempt + 1}/{retries})")
@@ -129,8 +129,9 @@ def search_location_with_retry(place, retries=3, delay=5):
         except Exception as e:
             st.error(f"An error occurred: {e}")
             return None
-    st.error("Failed to geocode after multiple attempts.")
+    st.error("Failed to geocode after multiple attempts. Please try searching for the place again later.")
     return None
+
 
 
 def add_search_bar(map_object):
