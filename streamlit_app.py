@@ -920,6 +920,8 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
+
+
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -944,7 +946,7 @@ if submit:
             </div>
         """, unsafe_allow_html=True)
 
-        # Footer information (moved up just below the message)
+        # Footer information with added space before the footer text
         st.sidebar.markdown(
             """
             <style>
@@ -964,6 +966,7 @@ if submit:
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 
