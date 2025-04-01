@@ -155,8 +155,6 @@ def add_search_bar(map_object):
 
 
 
-
-
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
 m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
@@ -177,14 +175,7 @@ draw.add_to(m)
 add_search_bar(m)
 
 # ========== ✅ Render the map once with the updated location ==========
-output = st_folium(m, width=1300, height=600)  # Display map with updated location
-
-
-
-
-
-
-
+output = st_folium(m, width=1300, height=450)  # Display map with updated location
 
 
 
@@ -586,7 +577,7 @@ def train_rf_model():
             classProperty=label,
             inputProperties=bands
         )
-        st.success("✅ Optimized FT model trained successfully in GEE.")
+        # st.success("✅ Optimized FT model trained successfully in GEE.")
         return rf_model
     except Exception as e:
         st.error(f"❌ Failed to train RF model: {e}")
@@ -612,15 +603,9 @@ def classify_image(img, rf_model, resolution):
 
 
 
-#✅ Step 11: ROI Selection Before Processing for Streamlit
 
 
-
-
-
-
-
-# ✅ Step 12: Compute and Summarize FT Classification for Streamlit
+# ✅ Step 11: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
     """
     Computes and displays the percentage of Frozen vs. Thawed pixels
@@ -703,8 +688,6 @@ with st.sidebar:
     )
 
 
-
-
     # Create collapsible section for Contact Us at the end of the sidebar
     with st.expander("📩 Contact Us", expanded=False):
         st.write("If you have any questions, please feel free to reach out!")
@@ -714,7 +697,7 @@ with st.sidebar:
 
 
 
-# ✅ Step 13: Visualize FT Classification for Streamlit
+# ✅ Step 12: Visualize FT Classification for Streamlit
 def visualize_ft_classification(collection, user_roi, resolution):
     import tempfile
     import base64
@@ -731,7 +714,6 @@ def visualize_ft_classification(collection, user_roi, resolution):
     # Get start and end dates from user input
     start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
-
 
 
 
@@ -803,8 +785,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
 
-# ========== ✅ Processing Pipeline ==========
-# ========== ✅ Step 12: Submit ROI and Processing Pipeline ==========
+# ✅ Step 13: Submit ROI and Processing Pipelin
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -939,15 +920,6 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
-
-
-
-
-
-
-
-
-
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -971,5 +943,3 @@ if submit:
         st.warning("⚠️ When scrolling up or down, do not zoom or tap the map after submitting the ROI. It may cause the process to collapse and prevent images from displaying.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-
