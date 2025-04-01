@@ -133,15 +133,29 @@ def search_location_with_retry(place, retries=3, delay=5):
     return None
 
 def add_search_bar(map_object):
-    place = st.text_input("Enter place (city, landmark, etc.):")
-    if place:
+    # Search function to get coordinates from the place name using Nominatim
+    def search_location(place):
         location = search_location_with_retry(place)
         if location:
             map_object.location = location
             map_object.zoom_start = 12  # Zoom level
+
+            # Update user_roi based on the geocoded location
+            user_roi = ee.Geometry.Point(location)  # Re-define the ROI based on new map location
+            st.session_state.user_roi = user_roi  # Update session state with new ROI
+
+            # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
         else:
             st.warning("Please try searching for the place again later.")
+
+    place = st.text_input("Enter place (city, landmark, etc.):")
+    if place:
+        search_location(place)
+
+
+
+
 
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
@@ -890,7 +904,7 @@ def submit_roi():
                 ).getInfo()
                 st.write(f"Debug: Cropland pixels in ROI = {cropland_area}")
 
-                # If there is no cropland, the cropland mask might remove the ROI
+                # Apply cropland mask
                 cropland_geometry = cropland_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType='polygon',
@@ -904,7 +918,6 @@ def submit_roi():
                 intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
                 st.write(f"Debug: Intersected ROI size = {intersected_roi_valid}")
 
-                # Check validity
                 if intersected_roi_valid == 0:
                     st.error("❌ Cropland mask removed the entire ROI. Please select a different area or disable cropland-only mode.")
                     return
@@ -921,6 +934,15 @@ def submit_roi():
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
+
+
+
+
+
+
+
+
+
 
 
 # ========== ✅ Submit ROI Handler ==========
