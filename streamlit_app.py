@@ -736,6 +736,9 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
 # Display the total number of images for the selected date range
+    st.markdown(
+    "Open the dropdown below to view all classified images and the total for the selected date range."
+    )
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
             f"🖼️ Total Images for visualization during the selected date range from "
