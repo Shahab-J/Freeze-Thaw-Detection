@@ -963,15 +963,7 @@ if submit:
 
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
-
-        # Lock map and disable drawing after submission
-        if 'm' in locals():  # Check if map object exists
-            m = lock_map(m)  # Lock interactions after ROI submission
-        
-        # Disable the drawing tool by reinitializing it
-        if 'draw' in locals():  # Check if draw tool is initialized
-            draw = disable_drawing(draw)
-        
+       
         # Display an alert to warn users not to interact with the map
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
     else:
