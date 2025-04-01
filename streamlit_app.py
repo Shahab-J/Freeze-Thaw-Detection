@@ -944,15 +944,23 @@ with st.sidebar:
     # Footer details
     st.markdown(
         """
+        <style>
+        .footer-text {
+            font-size: 12px;  /* Adjust the font size */
+        }
+        </style>
+        <div class="footer-text">
+        <br><br><br><br><br><br><br><br><br><br><br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
         <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
         🔒 <strong>All rights reserved</strong> © 2025 <br><br>
+        </div>
         """,
         unsafe_allow_html=True
     )
-
+   
     # Create collapsible section for Contact Us at the end of the sidebar
     with st.expander("📩 Contact Us", expanded=False):
         st.write("If you have any questions, please feel free to reach out!")
