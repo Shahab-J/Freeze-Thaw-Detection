@@ -74,7 +74,7 @@ st.markdown(
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
-def_end = date(2024, 6, 30)  
+def_end = date(2024, 6, 30)
 
 # Initialize the resolution key if not already in session state
 if 'resolution' not in st.session_state:
@@ -97,71 +97,19 @@ st.session_state.resolution = resolution
 clip_to_agri = st.sidebar.checkbox("🌾 Clip to Agricultural Land Only", value=True)
 submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
 
-
-
-
-# ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below")
-st.markdown(
-    "<p style='font-size: 12px;'>(choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
-    unsafe_allow_html=True
-)
-
 # ========== ✅ Session State Initialization ==========
 if 'start_date' not in st.session_state:
     st.session_state.start_date = start_date
 if 'end_date' not in st.session_state:
     st.session_state.end_date = end_date
 
-# ========== ✅ Add Search Bar ==========
-# Import the necessary libraries
+# ========== ✅ Geocoding Search Bar ==========
 from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 from geopy.geocoders import Nominatim
+import time
 
 # Initialize the geolocator object
 geolocator = Nominatim(user_agent="streamlit_app")
-
-
-
-
-# ========== ✅ Functions to Lock Map and Disable Drawing ==========
-import time
-from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
-
-
-
-
-# ========== ✅ Functions to Lock Map and Disable Drawing ==========
-def lock_map(map_object):
-    """Disables all interactions (zoom, pan, etc.) on the map."""
-    map_object.get_root().html.add_child(folium.Element("""
-        <script>
-            var map = document.querySelector('div.leaflet-container');
-            map.style.pointerEvents = 'none';  // Disable all interactions
-        </script>
-    """))
-    return map_object
-
-def disable_drawing(draw):
-    """Disables the drawing tool."""
-    try:
-        # Disabling the drawing control
-        draw._draw.handlers['marker'].disable()
-        draw._draw.handlers['polygon'].disable()
-        draw._draw.handlers['polyline'].disable()
-        draw._draw.handlers['rectangle'].disable()
-        draw._draw.handlers['circle'].disable()
-        draw._draw.handlers['circlemarker'].disable()
-        # Also disable the drawing and editing controls
-        draw._draw.options['draw'] = False
-        draw._draw.options['edit'] = False
-    except AttributeError:
-        # Catching if the attribute doesn't exist
-        st.warning("⚠️ Failed to disable drawing tool.")
-    return draw
-
-
-# ========== ✅ Geocoding Search Bar ==========
 
 def search_location_with_retry(place, retries=3, delay=5):
     """Search for a location with retry logic in case of failure."""
@@ -185,8 +133,8 @@ def search_location_with_retry(place, retries=3, delay=5):
     return None
 
 def add_search_bar(map_object):
-    # Search function to get coordinates from the place name using Nominatim
-    def search_location(place):
+    place = st.text_input("Enter place (city, landmark, etc.):")
+    if place:
         location = search_location_with_retry(place)
         if location:
             map_object.location = location
@@ -194,17 +142,6 @@ def add_search_bar(map_object):
             folium.Marker(location, popup=place).add_to(map_object)
         else:
             st.warning("Please try searching for the place again later.")
-
-    place = st.text_input("Enter place (city, landmark, etc.):")
-    if place:
-        search_location(place)
-
-
-
-
-
-
-
 
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
@@ -227,6 +164,12 @@ add_search_bar(m)
 
 # ========== ✅ Render the map once with the updated location ==========
 output = st_folium(m, width=1300, height=600)  # Display map with updated location
+
+
+
+
+
+
 
 
 
@@ -844,7 +787,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 
 # ========== ✅ Processing Pipeline ==========
-# ✅ Step 12: Submit ROI and Processing Pipeline
+# ========== ✅ Step 12: Submit ROI and Processing Pipeline ==========
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -873,7 +816,7 @@ def submit_roi():
 
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         st.warning("""
-            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed, as this may cause the process to collapse. 
+            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
             Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
         """)
 
@@ -931,7 +874,6 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-            # Debug: Print that Cropland-only mode is enabled
             st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
@@ -981,9 +923,6 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
-
-
-# ========== ✅ Submit ROI Handler ==========
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -1004,13 +943,16 @@ if submit:
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
         # Lock map and disable drawing after submission
-        m = lock_map(m)  # Lock interactions after ROI submission
+        if 'm' in locals():  # Check if map object exists
+            m = lock_map(m)  # Lock interactions after ROI submission
         
         # Disable the drawing tool by reinitializing it
-        draw = disable_drawing(draw)
+        if 'draw' in locals():  # Check if draw tool is initialized
+            draw = disable_drawing(draw)
         
         # Display an alert to warn users not to interact with the map
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
