@@ -935,7 +935,7 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
-        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+        <br><br><br><br><br><br><br><br><br><br><br><br>
         </div>
         """,
         unsafe_allow_html=True
@@ -950,6 +950,7 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
+        <br><br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
