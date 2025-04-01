@@ -918,21 +918,6 @@ if submit:
         """, unsafe_allow_html=True)
         st.success("✅ ROI submitted and ready for processing.")
         
-        # Footer information with added space before the footer text
-        st.sidebar.markdown(
-            """
-            <style>
-            .footer-text {
-                font-size: 12px;  /* Adjust the font size */
-            }
-            </style>
-            <div class="footer-text">
-            <br><br><br><br><br><br><br><br><br><br><br><br>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
@@ -951,7 +936,6 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
-        <br><br><br><br><br><br><br><br><br><br><br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
