@@ -922,7 +922,6 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
-
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -939,14 +938,14 @@ if submit:
 
         st.success("✅ ROI submitted and ready for processing.")
 
-        # Display the message just below the Submit ROI button (inside the sidebar)
+        # Display the message right after the "Submit ROI & Start Processing" button in the sidebar
         st.sidebar.markdown("""
-            <div style="font-size: 16px; color: #FFA500; font-weight: bold; padding-top: 20px;">
+            <div style="font-size: 16px; color: #FFA500; font-weight: bold; margin-top: 10px;">
                 ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
                 Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
             </div>
         """, unsafe_allow_html=True)
-        
+
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
