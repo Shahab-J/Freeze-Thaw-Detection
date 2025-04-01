@@ -682,7 +682,7 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
-        <br><br><br><br><br><br><br><br>
+        <br><br><br><br><br><br><br><br><br><br><br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
@@ -819,10 +819,6 @@ def submit_roi():
     end_date = f"{start_year+1}-06-30"
 
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
-        st.warning("""
-            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-            Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-        """)
 
         # Processing Sentinel-1 Images
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
@@ -926,6 +922,7 @@ def submit_roi():
         st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
+
 # ========== ✅ Submit ROI Handler ==========
 if submit:
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -940,12 +937,19 @@ if submit:
         st.session_state.resolution = resolution  # Store resolution
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
 
-        # st.success("✅ ROI submitted and ready for processing.")
+        st.success("✅ ROI submitted and ready for processing.")
 
+        # Display the message once the user clicks Submit ROI
+        st.warning("""
+            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
+            Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
+        """)
+        
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
-       
+              
         # Display an alert to warn users not to interact with the map
-        st.warning("⚠️ When scrolling up or down, do not zoom or tap the map after submitting the ROI. It may cause the process to collapse and prevent images from displaying.")
+        st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
