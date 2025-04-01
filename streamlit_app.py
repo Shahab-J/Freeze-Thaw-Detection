@@ -938,7 +938,7 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
 
         st.success("✅ ROI submitted and ready for processing.")
-        
+
         # Display the message in the sidebar (left side)
         st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
@@ -946,11 +946,12 @@ if submit:
                 Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
             </div>
         """, unsafe_allow_html=True)
-        
+
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
