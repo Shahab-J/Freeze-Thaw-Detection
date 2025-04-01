@@ -915,7 +915,7 @@ if submit:
             </div>
         """, unsafe_allow_html=True)
 
-        st.success("✅ ROI submitted and ready for processing.")
+        # st.success("✅ ROI submitted and ready for processing.")
 
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
@@ -935,7 +935,7 @@ with st.sidebar:
         }
         </style>
         <div class="footer-text">
-        <br><br><br><br><br><br><br><br><br><br><br><br>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
         </div>
         """,
         unsafe_allow_html=True
