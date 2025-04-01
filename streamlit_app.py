@@ -937,7 +937,7 @@ if submit:
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
         
         # Display the message immediately below the "Submit ROI & Start Processing" button in the sidebar
-                st.sidebar.markdown("""
+        st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
                 ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
                 Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
@@ -960,15 +960,11 @@ if submit:
             unsafe_allow_html=True
         )
 
-        
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
-
-
-
 
 
 
