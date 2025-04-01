@@ -129,7 +129,8 @@ def search_location_with_retry(place, retries=3, delay=5):
     return None
 
 
- # Search function to get coordinates from the place name using Nominatim
+def add_search_bar(map_object):
+    # Search function to get coordinates from the place name using Nominatim
     def search_location(place):
         location = search_location_with_retry(place)
         if location:
