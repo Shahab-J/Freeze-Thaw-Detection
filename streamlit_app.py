@@ -125,6 +125,10 @@ geolocator = Nominatim(user_agent="streamlit_app")
 
 
 # ========== ✅ Functions to Lock Map and Disable Drawing ==========
+import time
+from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
+
+# ========== ✅ Functions to Lock Map and Disable Drawing ==========
 
 def lock_map(map_object):
     """Disables all interactions (zoom, pan, etc.) on the map."""
@@ -138,48 +142,48 @@ def lock_map(map_object):
 
 def disable_drawing(draw):
     """Disables the drawing tool by using the proper folium configuration."""
-    draw._draw.options['draw'] = False  # Disable drawing control
-    draw._draw.options['edit'] = False  # Disable editing of existing shapes
+    draw.options['draw'] = False  # Disable drawing control
+    draw.options['edit'] = False  # Disable editing of existing shapes
     return draw
 
+# ========== ✅ Geocoding Search Bar ==========
 
-
-
-def add_search_bar(map_object):
-    # Search function to get coordinates from the place name using Nominatim
-    def search_location(place):
+def search_location_with_retry(place, retries=3, delay=5):
+    """Search for a location with retry logic in case of failure."""
+    attempt = 0
+    while attempt < retries:
         try:
-            # Use the geolocator object to get location coordinates
             location = geolocator.geocode(place)
             if location:
                 return [location.latitude, location.longitude]
             else:
                 st.warning("Location not found.")
                 return None
-        except GeocoderUnavailable as e:
-            st.error("Geocoding service is currently unavailable. Please try again later.")
-            return None
-        except GeocoderTimedOut as e:
-            st.error("Geocoding service timed out. Please try again.")
-            return None
+        except (GeocoderUnavailable, GeocoderTimedOut) as e:
+            st.warning(f"Geocoding service is unavailable. Retrying... ({attempt + 1}/{retries})")
+            attempt += 1
+            time.sleep(delay)  # Wait for some time before retrying
         except Exception as e:
             st.error(f"An error occurred: {e}")
             return None
+    st.error("Failed to geocode after multiple attempts.")
+    return None
 
-    # Add a search box in the sidebar for easy input
-    place = st.text_input("Enter place (city, landmark, etc.):")
-    
-    if place:
-        location = search_location(place)
+def add_search_bar(map_object):
+    # Search function to get coordinates from the place name using Nominatim
+    def search_location(place):
+        location = search_location_with_retry(place)
         if location:
-            # Move the map to the found location
             map_object.location = location
             map_object.zoom_start = 12  # Zoom level
-
-            # Add a marker on the map for the location
             folium.Marker(location, popup=place).add_to(map_object)
         else:
-            time.sleep(2)  # Optional: add a small delay before allowing another request
+            st.warning("Please try searching for the place again later.")
+
+    place = st.text_input("Enter place (city, landmark, etc.):")
+    if place:
+        search_location(place)
+
 
 
 
