@@ -935,10 +935,16 @@ if submit:
         st.session_state.end_date = end_date  # Store end date
         st.session_state.resolution = resolution  # Store resolution
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
-
-        st.success("✅ ROI submitted and ready for processing.")
-
+        
         # Display the message immediately below the "Submit ROI & Start Processing" button in the sidebar
+                st.sidebar.markdown("""
+            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
+                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
+                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
+            </div>
+        """, unsafe_allow_html=True)
+        st.success("✅ ROI submitted and ready for processing.")
+        
         # Footer information with added space before the footer text
         st.sidebar.markdown(
             """
@@ -953,12 +959,7 @@ if submit:
             """,
             unsafe_allow_html=True
         )
-        st.sidebar.markdown("""
-            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
-                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-            </div>
-        """, unsafe_allow_html=True)
+
         
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
