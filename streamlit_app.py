@@ -6,7 +6,8 @@ import ee
 import io
 import sys
 import math
-import json 
+import json
+import time
 import geemap
 import folium
 import subprocess
@@ -15,22 +16,17 @@ import urllib.request
 from PIL import Image
 from datetime import date
 import ipywidgets as widgets
-import matplotlib.pyplot as plt
 from folium.plugins import Draw
+import matplotlib.pyplot as plt
 import geemap.foliumap as geemap
 from google.auth import credentials
+from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderTimedOut
 from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
-
-from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
-from geopy.exc import GeocoderTimedOut
-
-import time
 # ==================================================
-
-
 
 
 # ✅ Step 1: Setup
