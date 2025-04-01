@@ -888,7 +888,7 @@ def submit_roi():
 
         # ✅ Optional: Clip to cropland using NALCMS class 15
         if clip_agriculture:
-            st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
+            # st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
 
             try:
                 # Load NALCMS and mask class 15 (cropland)
@@ -902,7 +902,7 @@ def submit_roi():
                     scale=30,
                     maxPixels=1e13
                 ).getInfo()
-                st.write(f"Debug: Cropland pixels in ROI = {cropland_area}")
+                # st.write(f"Debug: Cropland pixels in ROI = {cropland_area}")
 
                 # Apply cropland mask
                 cropland_geometry = cropland_mask.selfMask().reduceToVectors(
@@ -916,7 +916,7 @@ def submit_roi():
 
                 # Debug: Check if intersection results in a valid geometry
                 intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
-                st.write(f"Debug: Intersected ROI size = {intersected_roi_valid}")
+                # st.write(f"Debug: Intersected ROI size = {intersected_roi_valid}")
 
                 if intersected_roi_valid == 0:
                     st.error("❌ Cropland mask removed the entire ROI. Please select a different area or disable cropland-only mode.")
