@@ -965,7 +965,7 @@ if submit:
         submit_roi()  # Ensure this function is defined elsewhere in your code
        
         # Display an alert to warn users not to interact with the map
-        st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
+        st.warning("⚠️ When scrolling up or down, do not zoom or tap the map after submitting the ROI. It may cause the process to collapse and prevent images from displaying.")
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
