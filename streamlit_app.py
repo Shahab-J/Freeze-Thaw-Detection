@@ -939,15 +939,17 @@ if submit:
 
         st.success("✅ ROI submitted and ready for processing.")
 
-        # Display the message once the user clicks Submit ROI
-        st.warning("""
-            ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-            Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-        """)
+        # Display the message below the submit button in the main section
+        st.markdown("""
+            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
+                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
+                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
+            </div>
+        """, unsafe_allow_html=True)
         
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
-              
+
         # Display an alert to warn users not to interact with the map
         st.warning("⚠️ The process will collapse if interacted with after submitting the ROI. Please do not zoom or tap the map. Scroll down to see the visualization.")
     else:
