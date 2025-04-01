@@ -128,8 +128,10 @@ geolocator = Nominatim(user_agent="streamlit_app")
 import time
 from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
-# ========== ✅ Functions to Lock Map and Disable Drawing ==========
 
+
+
+# ========== ✅ Functions to Lock Map and Disable Drawing ==========
 def lock_map(map_object):
     """Disables all interactions (zoom, pan, etc.) on the map."""
     map_object.get_root().html.add_child(folium.Element("""
@@ -141,10 +143,23 @@ def lock_map(map_object):
     return map_object
 
 def disable_drawing(draw):
-    """Disables the drawing tool by using the proper folium configuration."""
-    draw.options['draw'] = False  # Disable drawing control
-    draw.options['edit'] = False  # Disable editing of existing shapes
+    """Disables the drawing tool."""
+    try:
+        # Disabling the drawing control
+        draw._draw.handlers['marker'].disable()
+        draw._draw.handlers['polygon'].disable()
+        draw._draw.handlers['polyline'].disable()
+        draw._draw.handlers['rectangle'].disable()
+        draw._draw.handlers['circle'].disable()
+        draw._draw.handlers['circlemarker'].disable()
+        # Also disable the drawing and editing controls
+        draw._draw.options['draw'] = False
+        draw._draw.options['edit'] = False
+    except AttributeError:
+        # Catching if the attribute doesn't exist
+        st.warning("⚠️ Failed to disable drawing tool.")
     return draw
+
 
 # ========== ✅ Geocoding Search Bar ==========
 
