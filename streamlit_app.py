@@ -959,7 +959,7 @@ if submit:
         st.session_state.resolution = resolution  # Store resolution
         st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
 
-        st.success("✅ ROI submitted and ready for processing.")
+        # st.success("✅ ROI submitted and ready for processing.")
 
         # Running Freeze–Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
