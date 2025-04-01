@@ -65,7 +65,11 @@ except Exception as e:
 
 
 # ========== ✅ Set up map with default satellite view ==========
-st.subheader("Draw your ROI below <p style='font-size: 12px;'> (choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", unsafe_allow_html=True)
+st.subheader("Draw your ROI below")
+st.markdown(
+    "<p style='font-size: 12px;'> (choose 'Satellite' or 'OpenStreetMap' for map view using the Layer Switcher in the top right of the map)</p>", 
+    unsafe_allow_html=True
+)
 
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
