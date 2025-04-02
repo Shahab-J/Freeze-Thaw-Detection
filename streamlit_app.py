@@ -29,11 +29,11 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 
-# ========== ✅ Background with snow/❄️snowflake animation ===================
-def inject_background_and_snow(image_url):
+# ========== ✅ ❄️ Background with snow ===================
+def inject_clean_background(image_url):
     st.markdown(f"""
         <style>
-        /* Top white strip (adjusted to 0.5cm) */
+        /* Top white strip */
         .top-white {{
             position: fixed;
             top: 0;
@@ -51,49 +51,14 @@ def inject_background_and_snow(image_url):
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center top;
-        }}
-
-        /* Snowflake animation */
-        .snowflake {{
-            position: fixed;
-            top: -40px;
-            color: white;
-            font-size: 40px;
-            animation: fall 3s linear forwards;
-            z-index: 10000;
-            opacity: 0.9;
-        }}
-
-        @keyframes fall {{
-            to {{
-                transform: translateY(100vh);
-                opacity: 0;
-            }}
+            opacity: 0.2;  /* Adjust this value for more/less transparency */
         }}
         </style>
 
         <div class="top-white"></div>
-
-        <script>
-        const container = document.createElement("div");
-        document.body.appendChild(container);
-
-        for (let i = 0; i < 20; i++) {{
-            const flake = document.createElement("div");
-            flake.innerHTML = "❄️";
-            flake.className = "snowflake";
-            flake.style.left = Math.random() * window.innerWidth + "px";
-            flake.style.animationDelay = Math.random() * 1 + "s";
-            document.body.appendChild(flake);
-        }}
-        </script>
     """, unsafe_allow_html=True)
 
-# Call it right after set_page_config
-inject_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
-
-
-
+inject_clean_background("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
 
 
