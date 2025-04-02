@@ -102,11 +102,6 @@ st.markdown(
 )
 
 # ========== ✅ Sidebar UI ==========
-st.sidebar.title("Set Parameters")
-
-
-
-
 with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
     st.markdown("""
         <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 1: Open the Web App</div>
@@ -158,12 +153,8 @@ with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
 
 
 
-
-
-
-
-
-
+                                                                      
+st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
 def_end = date(2024, 6, 30)
 
