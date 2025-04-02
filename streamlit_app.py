@@ -104,49 +104,40 @@ st.markdown(
 # ========== ✅ Sidebar UI ==========
 with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
     st.markdown("""
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 1: Open the Web App</div>
-        <div style="font-size:11pt;">
-        Visit the provided app link.<br>
-        It opens in your browser — no setup or login needed.
-        </div>
-
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 2: Search for a Location (Optional)</div>
+        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 1: Search for a Location (Optional)</div>
         <div style="font-size:11pt;">
         Use the <i>search box</i> to type any city or landmark (e.g., <b>Montreal</b>).<br>
         The map will zoom to that location to help you easily draw your ROI.
         </div>
 
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 3: Draw Your ROI</div>
+        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 2: Draw Your ROI</div>
         <div style="font-size:11pt;">
         Use the tools on the <b>left side of the map</b> — rectangle or polygon is recommended.<br>
         You can draw your Region of Interest anywhere in Canada.<br>
         The map supports zooming, dragging, and switching basemaps.
         </div>
 
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 4: Set Parameters</div>
+        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 3: Set Parameters</div>
         <div style="font-size:11pt;">
         Choose a <b>start and end date</b> between <b>October 1 and June 30</b>.<br>
         We recommend selecting a full freeze–thaw season (e.g., Oct 1 to June 30 of the next year).<br>
-        Even if your range is shorter (e.g., Oct to Nov), the app internally adjusts the date range but shows results only for your selection.<br>
-        <br>
+        Even if your range is shorter (e.g., Oct to Nov), the app internally adjusts the date range but shows results only for your selection.<br><br>
         Select a <b>spatial resolution</b>: 10 m (high detail), 30 m (default), or 100 m (faster).<br>
         Optionally, use the checkbox to <b>clip to cropland only</b> based on the 2020 NALCMS dataset.
         </div>
 
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 5: Click “Submit ROI & Start Processing”</div>
+        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 4: Click “Submit ROI & Start Processing”</div>
         <div style="font-size:11pt;">
-        This triggers the full workflow: ROI validation, date adjustments, Sentinel-1 loading, metric computation, and freeze–thaw classification.<br>
-        <br>
+        This triggers the full workflow: ROI validation, date adjustments, Sentinel-1 loading, metric computation, and freeze–thaw classification.<br><br>
         <b>Important!</b> After clicking the button, a message appears:<br>
         <i>“Please wait. Do not zoom or tap on the map… Scroll down to view results.”</i>
         </div>
 
-        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 6: View the Results</div>
+        <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 5: View the Results</div>
         <div style="font-size:11pt;">
         A dropdown will appear labeled “View All Freeze–Thaw Results”.<br>
         Scroll down to view the images in chronological order.<br>
-        Each classified panel shows thawed areas in <b>red</b> and frozen in <b>blue</b>, along with pixel counts and percentages.<br>
-        <br>
+        Each classified panel shows thawed areas in <b>red</b> and frozen in <b>blue</b>, along with pixel counts and percentages.<br><br>
         <b>Download Option:</b> You can download high-resolution TIFFs for analysis or archiving.
         </div>
     """, unsafe_allow_html=True)
