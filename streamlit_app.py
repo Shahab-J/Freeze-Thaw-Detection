@@ -30,60 +30,72 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ Background with snow/❄️snowflake animation ===================
-def inject_css_background_and_snow(image_url):
+def inject_background_and_snow(image_url):
     st.markdown(f"""
         <style>
-        /* Make sure top 3cm is pure white and clean */
-        body {{
-            margin: 0;
-        }}
-
-        /* ⬜ White top strip */
-        .white-top {{
+        /* Top white strip */
+        .top-white {{
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
             height: 3cm;
-            background-color: white;
-            z-index: 9999;
+            width: 100%;
+            background: white;
+            z-index: 9998;
         }}
 
-        /* ⬇️ Background image starts after top strip */
+        /* Background image */
         [data-testid="stAppViewContainer"] {{
             background-image: url("{image_url}");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center top;
-            margin-top: 3cm;
         }}
 
-        /* ❄️ Snow animation */
+        /* Snowflake animation */
         .snowflake {{
-            position: absolute;
-            top: 0;
+            position: fixed;
+            top: -40px;
             color: white;
             font-size: 40px;
-            opacity: 0.9;
             animation: fall 3s linear forwards;
             z-index: 10000;
+            opacity: 0.9;
         }}
 
         @keyframes fall {{
-            0% {{ transform: translateY(0); opacity: 1; }}
-            100% {{ transform: translateY(100vh); opacity: 0; }}
+            to {{
+                transform: translateY(100vh);
+                opacity: 0;
+            }}
         }}
         </style>
 
-        <!-- White bar on top -->
-        <div class="white-top"></div>
+        <div class="top-white"></div>
 
-        <!-- Snowflakes -->
-        <div style="position: fixed; width: 100%; height: 100%; z-index: 9998; pointer-events: none;">
-            {''.join([f'<div class="snowflake" style="left: {i * 5}vw; animation-delay: {i * 0.2}s;">❄️</div>' for i in range(20)])}
-        </div>
+        <script>
+        const delay = ms => new Promise(res => setTimeout(res, ms));
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+
+        async function snow() {{
+            for (let i = 0; i < 20; i++) {{
+                const flake = document.createElement("div");
+                flake.innerHTML = "❄️";
+                flake.className = "snowflake";
+                flake.style.left = Math.random() * window.innerWidth + "px";
+                flake.style.animationDelay = Math.random() * 1 + "s";
+                document.body.appendChild(flake);
+            }}
+        }}
+
+        snow();
+        </script>
     """, unsafe_allow_html=True)
+
+# Call it
+inject_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
 
 
