@@ -104,17 +104,96 @@ st.markdown(
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 
-# Add an expander box with helpful tips
-with st.sidebar.expander("📘 Click for Help"):
-    st.markdown("""
-**How to Use These Settings:**
-- **Start/End Date:** Choose a range between **October and June** (one full freeze–thaw cycle is recommended).
-- If you select a partial season, the tool auto-adjusts for processing, but output will match your range.
-- **Resolution:** Choose 10 m (detailed), 30 m (default), or 100 m (fastest).
-- **Clip to Agricultural Land:** Tick this to limit results to cropland (Class 15 – NALCMS 2020).
 
-Once set, scroll down and click **"Submit ROI & Start Processing"**.
-    """)
+
+
+# Add an expander box with helpful tips
+st.markdown("""
+<style>
+/* Button style */
+.open-button {
+  background-color: #f0f0f0;
+  color: black;
+  padding: 6px 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 0.9rem;
+}
+
+/* Popup background */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%%;
+  height: 100%%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5);
+}
+
+/* Modal content */
+.modal-content {
+  background-color: #fff;
+  margin: 15%% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 60%%;
+  border-radius: 10px;
+}
+
+/* Close button */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
+}
+.close:hover,
+.close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+</style>
+
+<!-- Trigger Button -->
+<button class="open-button" onclick="document.getElementById('popupModal').style.display='block'">📘 Help</button>
+
+<!-- Modal Structure -->
+<div id="popupModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="document.getElementById('popupModal').style.display='none'">&times;</span>
+    <h3>🧭 How to Set Parameters</h3>
+    <p>
+    • Select a start and end date between October and June.<br>
+    • Pick spatial resolution (10m, 30m, 100m).<br>
+    • Optionally clip to croplands.<br>
+    • Then draw your Region of Interest (ROI) and click Submit.<br>
+    </p>
+    <p><strong>Tip:</strong> Wait patiently for processing after submitting.</p>
+  </div>
+</div>
+
+<script>
+// Close modal if user clicks outside it
+window.onclick = function(event) {
+  var modal = document.getElementById('popupModal');
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+</script>
+""", unsafe_allow_html=True)
+
+
+
+
+
+
+
 
 
 def_start = date(2023, 10, 1)
