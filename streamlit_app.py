@@ -33,7 +33,7 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 def inject_background_and_snow(image_url):
     st.markdown(f"""
         <style>
-        /* Top white strip */
+        /* Top white strip (adjusted to 0.5cm) */
         .top-white {{
             position: fixed;
             top: 0;
@@ -67,7 +67,7 @@ def inject_background_and_snow(image_url):
         @keyframes fall {{
             to {{
                 transform: translateY(100vh);
-                opacity: 0.5;
+                opacity: 0;
             }}
         }}
         </style>
@@ -75,31 +75,22 @@ def inject_background_and_snow(image_url):
         <div class="top-white"></div>
 
         <script>
-        const delay = ms => new Promise(res => setTimeout(res, ms));
         const container = document.createElement("div");
         document.body.appendChild(container);
 
-        async function snow() {{
-            for (let i = 0; i < 20; i++) {{
-                const flake = document.createElement("div");
-                flake.innerHTML = "❄️";
-                flake.className = "snowflake";
-                flake.style.left = Math.random() * window.innerWidth + "px";
-                flake.style.animationDelay = Math.random() * 1 + "s";
-                document.body.appendChild(flake);
-            }}
+        for (let i = 0; i < 20; i++) {{
+            const flake = document.createElement("div");
+            flake.innerHTML = "❄️";
+            flake.className = "snowflake";
+            flake.style.left = Math.random() * window.innerWidth + "px";
+            flake.style.animationDelay = Math.random() * 1 + "s";
+            document.body.appendChild(flake);
         }}
-
-        snow();
         </script>
     """, unsafe_allow_html=True)
 
-# Call it
+# Call it right after set_page_config
 inject_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
-
-
-
-
 
 
 
