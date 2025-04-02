@@ -103,6 +103,18 @@ st.markdown(
 
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
+
+# Add an expander for instructions with a help icon next to the title
+with st.sidebar.expander("ℹ️ Help"):
+    st.markdown("""
+    **Instructions for Setting Parameters:**
+    - **Start Date & End Date:** Select a date range between October 1 and June 30.
+    - **Recommendation:** It is best to select a full freeze–thaw season (e.g., October 1 to June 30). If a partial range is selected (e.g., October 1 to November 20), the app will internally adjust the dates for processing while visualizing only the selected range.
+    - **Resolution:** Choose between 10 m, 30 m, or 100 m for the desired detail and processing speed.
+    - **Clip Option:** Enable the checkbox to limit the analysis to agricultural lands.
+    """)
+
+
 def_start = date(2023, 10, 1)
 def_end = date(2024, 6, 30)
 
