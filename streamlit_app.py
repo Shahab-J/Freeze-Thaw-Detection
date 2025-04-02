@@ -33,6 +33,62 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 # ========== ✅ Title and Setup ===================
 st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
+
+
+# ========== ✅ Background withsnow ===================
+# ⬇️ ADD THIS RIGHT AFTER IMPORTS
+def inject_background_with_snow(image_url):
+    st.markdown(f"""
+        <style>
+        body {{
+            background-image: url("{image_url}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }}
+        .snowflake {{
+            position: fixed;
+            top: -10px;
+            z-index: 9999;
+            color: white;
+            font-size: 1.5em;
+            animation: fall 2s linear forwards;
+            opacity: 0.8;
+        }}
+        @keyframes fall {{
+            to {{ transform: translateY(100vh); opacity: 0; }}
+        }}
+        </style>
+
+        <script>
+        const snowContainer = document.createElement("div");
+        document.body.appendChild(snowContainer);
+
+        for (let i = 0; i < 40; i++) {{
+            setTimeout(() => {{
+                const snow = document.createElement("div");
+                snow.innerHTML = "❄️";
+                snow.className = "snowflake";
+                snow.style.left = Math.random() * window.innerWidth + "px";
+                snow.style.animationDelay = Math.random() * 2 + "s";
+                document.body.appendChild(snow);
+            }}, Math.random() * 2000);
+        }}
+        </script>
+    """, unsafe_allow_html=True)
+
+# ⬇️ Call it with your image URL
+inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
+
+# Your app code continues as usual...
+st.set_page_config(layout="wide")
+st.title("🧊 Freeze–Thaw Soil Conditions in Canadian Agriculture")
+
+
+
+
+
 # ========== ✅ Authenticate Earth Engine ========== 
 try:
     service_account = st.secrets["GEE_SERVICE_ACCOUNT"]
