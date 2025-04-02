@@ -30,49 +30,50 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ Background with snow/❄️snowflake animation ===================
-# ✅ Define the background function
-def inject_background_with_snow(image_url):
+# ✅ Simulated background + snow (NO JS needed!)
+def inject_css_background_and_snow(image_url):
     st.markdown(f"""
         <style>
-        [data-testid="stAppViewContainer"] > .main {{
-            background: url("{image_url}");
+        [data-testid="stAppViewContainer"] {{
+            background-image: url("{image_url}");
             background-size: cover;
             background-position: center;
+            background-repeat: no-repeat;
             background-attachment: fixed;
         }}
         .snowflake {{
-            position: fixed;
-            top: -10px;
-            z-index: 9999;
+            position: absolute;
+            top: 0;
             color: white;
-            font-size: 1.5em;
-            animation: fall 2s linear forwards;
+            font-size: 24px;
+            animation: fall 2s linear infinite;
             opacity: 0.8;
         }}
         @keyframes fall {{
-            to {{ transform: translateY(100vh); opacity: 0; }}
+            0% {{ transform: translateY(0); }}
+            100% {{ transform: translateY(100vh); opacity: 0; }}
         }}
         </style>
 
-        <script>
-        const snowContainer = document.createElement("div");
-        document.body.appendChild(snowContainer);
-
-        for (let i = 0; i < 30; i++) {{
-            setTimeout(() => {{
-                const snow = document.createElement("div");
-                snow.innerHTML = "❄️";
-                snow.className = "snowflake";
-                snow.style.left = Math.random() * window.innerWidth + "px";
-                snow.style.animationDelay = Math.random() * 2 + "s";
-                snowContainer.appendChild(snow);
-            }}, Math.random() * 500);
-        }}
-        </script>
+        <div style="position: fixed; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">
+            {''.join([f'<div class="snowflake" style="left: {i*5}vw;">❄️</div>' for i in range(20)])}
+        </div>
     """, unsafe_allow_html=True)
 
-# ✅ THEN call it here
-inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
+# ✅ Call with your image
+inject_css_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
