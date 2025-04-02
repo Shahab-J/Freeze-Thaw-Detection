@@ -67,7 +67,7 @@ def inject_background_and_snow(image_url):
         @keyframes fall {{
             to {{
                 transform: translateY(100vh);
-                opacity: 0;
+                opacity: 0.5;
             }}
         }}
         </style>
