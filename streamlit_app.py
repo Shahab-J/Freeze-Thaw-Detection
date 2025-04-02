@@ -1,6 +1,7 @@
 # ✅ Step 0: Must be FIRST
 import streamlit as st
 st.set_page_config(layout="wide")
+inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
 import ee
 import io
@@ -35,17 +36,14 @@ st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 
 
-# ========== ✅ Background withsnow ===================
-# ✅ THIS GOES FIRST
-# 🎨 THEN YOUR BACKGROUND + SNOW
+# ========== ✅ Background with snow/❄️snowflake animation ===================
 def inject_background_with_snow(image_url):
     st.markdown(f"""
         <style>
-        body {{
-            background-image: url("{image_url}");
+        [data-testid="stAppViewContainer"] > .main {{
+            background: url("{image_url}");
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
             background-attachment: fixed;
         }}
         .snowflake {{
@@ -66,20 +64,20 @@ def inject_background_with_snow(image_url):
         const snowContainer = document.createElement("div");
         document.body.appendChild(snowContainer);
 
-        for (let i = 0; i < 40; i++) {{
+        for (let i = 0; i < 30; i++) {{
             setTimeout(() => {{
                 const snow = document.createElement("div");
                 snow.innerHTML = "❄️";
                 snow.className = "snowflake";
                 snow.style.left = Math.random() * window.innerWidth + "px";
                 snow.style.animationDelay = Math.random() * 2 + "s";
-                document.body.appendChild(snow);
-            }}, Math.random() * 2000);
+                snowContainer.appendChild(snow);
+            }}, Math.random() * 500);
         }}
         </script>
     """, unsafe_allow_html=True)
 
-inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
+
 
 
 
