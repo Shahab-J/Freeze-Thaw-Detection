@@ -51,7 +51,6 @@ def inject_clean_background(image_url):
             background-repeat: no-repeat;
             background-attachment: fixed;
             background-position: center top;
-            opacity: 0.2;  /* Adjust this value for more/less transparency */
         }}
         </style>
 
