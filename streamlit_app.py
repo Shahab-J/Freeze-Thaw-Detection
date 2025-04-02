@@ -36,7 +36,10 @@ st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 
 # ========== ✅ Background withsnow ===================
-# ⬇️ ADD THIS RIGHT AFTER IMPORTS
+# ✅ THIS GOES FIRST
+st.set_page_config(layout="wide")
+
+# 🎨 THEN YOUR BACKGROUND + SNOW
 def inject_background_with_snow(image_url):
     st.markdown(f"""
         <style>
@@ -78,13 +81,7 @@ def inject_background_with_snow(image_url):
         </script>
     """, unsafe_allow_html=True)
 
-# ⬇️ Call it with your image URL
 inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
-
-# Your app code continues as usual...
-st.set_page_config(layout="wide")
-st.title("🧊 Freeze–Thaw Soil Conditions in Canadian Agriculture")
-
 
 
 
