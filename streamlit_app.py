@@ -1,7 +1,6 @@
 # ✅ Step 0: Must be FIRST
 import streamlit as st
 st.set_page_config(layout="wide")
-inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
 import ee
 import io
@@ -27,16 +26,11 @@ from streamlit_folium import st_folium
 from google.oauth2 import service_account
 from streamlit_folium import folium_static
 from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
-# ==================================================
-
-
-# ✅ Step 1: Setup
-# ========== ✅ Title and Setup ===================
-st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 
 
 # ========== ✅ Background with snow/❄️snowflake animation ===================
+# ✅ Define the background function
 def inject_background_with_snow(image_url):
     st.markdown(f"""
         <style>
@@ -77,9 +71,16 @@ def inject_background_with_snow(image_url):
         </script>
     """, unsafe_allow_html=True)
 
+# ✅ THEN call it here
+inject_background_with_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
 
 
+
+
+# ✅ Step 1: Setup
+# ========== ✅ Title and Setup ===================
+st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 
 # ========== ✅ Authenticate Earth Engine ========== 
