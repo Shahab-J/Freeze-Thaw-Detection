@@ -30,25 +30,34 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ Background with snow/❄️snowflake animation ===================
-# ✅ Custom background + one-time snowfall
+# ✅ Inject background + snow, starting after 3cm
 def inject_css_background_and_snow(image_url):
     st.markdown(f"""
         <style>
+        /* Shift background down by 3cm */
         [data-testid="stAppViewContainer"] {{
-            background-image: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url("{image_url}");
+            background: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url("{image_url}");
             background-size: cover;
-            background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
+            background-position: center top;
+            padding-top: 3cm;  /* Push content down to leave top clear */
+            box-sizing: border-box;
+        }}
+
+        /* Add white strip at top */
+        [data-testid="stHeader"] {{
+            background-color: white !important;
         }}
 
         .snowflake {{
             position: absolute;
-            top: -50px;
+            top: 0;
             color: white;
             font-size: 40px;
-            opacity: 0.9;
+            opacity: 0.8;
             animation: fall 3s linear forwards;
+            z-index: 1000;
         }}
 
         @keyframes fall {{
@@ -57,14 +66,14 @@ def inject_css_background_and_snow(image_url):
         }}
         </style>
 
+        <!-- Snowflake layer -->
         <div style="position: fixed; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">
             {''.join([f'<div class="snowflake" style="left: {i * 5}vw; animation-delay: {i * 0.2}s;">❄️</div>' for i in range(20)])}
         </div>
     """, unsafe_allow_html=True)
 
-# ✅ Call with your image
+# ✅ Use your image URL
 inject_css_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
-
 
 
 
