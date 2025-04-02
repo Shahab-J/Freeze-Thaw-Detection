@@ -38,7 +38,7 @@ def inject_background_and_snow(image_url):
             position: fixed;
             top: 0;
             left: 0;
-            height: 3cm;
+            height: 0.5cm;
             width: 100%;
             background: white;
             z-index: 9998;
