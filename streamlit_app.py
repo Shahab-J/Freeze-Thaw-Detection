@@ -47,7 +47,7 @@ def inject_css_background_and_snow(image_url):
             top: -50px;
             color: white;
             font-size: 40px;
-            opacity: 0.8;
+            opacity: 0.9;
             animation: fall 3s linear forwards;
         }}
 
