@@ -107,86 +107,23 @@ st.sidebar.title("Set Parameters")
 
 
 
-# Add an expander box with helpful tips
-st.markdown("""
-<style>
-/* Button style */
-.open-button {
-  background-color: #f0f0f0;
-  color: black;
-  padding: 6px 10px;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 0.9rem;
-}
+st.sidebar.title("Set Parameters")
 
-/* Popup background */
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%%;
-  height: 100%%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-}
+with st.sidebar.expander("📘 Help – How to Use These Parameters", expanded=False):
+    st.markdown("""
+    **Instructions for Use:**
 
-/* Modal content */
-.modal-content {
-  background-color: #fff;
-  margin: 15%% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 60%%;
-  border-radius: 10px;
-}
+    - **Start Date & End Date**: Select a date range between **October 1** and **June 30**.  
+      ⚠️ Future dates are not allowed.
+    
+    - **Resolution (meters)**: Choose 10, 30, or 100 meters depending on your desired detail vs. speed.
 
-/* Close button */
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 24px;
-  font-weight: bold;
-}
-.close:hover,
-.close:focus {
-  color: black;
-  text-decoration: none;
-  cursor: pointer;
-}
-</style>
+    - **Clip to Agricultural Land Only**: If enabled, limits analysis to cropland pixels based on NALCMS 2020 data.
 
-<!-- Trigger Button -->
-<button class="open-button" onclick="document.getElementById('popupModal').style.display='block'">📘 Help</button>
+    - After drawing your region of interest (ROI) on the map, click **Submit ROI & Start Processing**.
 
-<!-- Modal Structure -->
-<div id="popupModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="document.getElementById('popupModal').style.display='none'">&times;</span>
-    <h3>🧭 How to Set Parameters</h3>
-    <p>
-    • Select a start and end date between October and June.<br>
-    • Pick spatial resolution (10m, 30m, 100m).<br>
-    • Optionally clip to croplands.<br>
-    • Then draw your Region of Interest (ROI) and click Submit.<br>
-    </p>
-    <p><strong>Tip:</strong> Wait patiently for processing after submitting.</p>
-  </div>
-</div>
-
-<script>
-// Close modal if user clicks outside it
-window.onclick = function(event) {
-  var modal = document.getElementById('popupModal');
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
-}
-</script>
-""", unsafe_allow_html=True)
+    Please scroll down on the left after submission to view results.
+    """)
 
 
 
