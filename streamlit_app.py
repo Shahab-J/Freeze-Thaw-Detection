@@ -104,14 +104,16 @@ st.markdown(
 # ========== ✅ Sidebar UI ==========
 st.sidebar.title("Set Parameters")
 
-# Instruction panel under "Set Parameters"
-with st.sidebar.expander("ℹ️ How to use these parameters"):
+# Add an expander box with helpful tips
+with st.sidebar.expander("📘 Click for Help"):
     st.markdown("""
-    - **Start Date & End Date:** Select a range between **October 1st and June 30th**.
-    - It's recommended to cover the **entire freeze–thaw season** (e.g., Oct 1 – Jun 30).
-    - The tool will **automatically adjust** partial ranges for processing.
-    - **Resolution:** Choose 10m (detailed), 30m (balanced), or 100m (fast).
-    - **Clipping Option:** Check the box to restrict to **agricultural land only**.
+**How to Use These Settings:**
+- **Start/End Date:** Choose a range between **October and June** (one full freeze–thaw cycle is recommended).
+- If you select a partial season, the tool auto-adjusts for processing, but output will match your range.
+- **Resolution:** Choose 10 m (detailed), 30 m (default), or 100 m (fastest).
+- **Clip to Agricultural Land:** Tick this to limit results to cropland (Class 15 – NALCMS 2020).
+
+Once set, scroll down and click **"Submit ROI & Start Processing"**.
     """)
 
 
