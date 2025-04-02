@@ -30,41 +30,40 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ Background with snow/❄️snowflake animation ===================
-# ✅ Simulated background + snow (NO JS needed!)
+# ✅ Custom background + one-time snowfall
 def inject_css_background_and_snow(image_url):
     st.markdown(f"""
         <style>
         [data-testid="stAppViewContainer"] {{
-            background-image: url("{image_url}");
+            background-image: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5)), url("{image_url}");
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
         }}
+
         .snowflake {{
             position: absolute;
-            top: 0;
+            top: -50px;
             color: white;
-            font-size: 24px;
-            animation: fall 2s linear infinite;
+            font-size: 40px;
             opacity: 0.8;
+            animation: fall 3s linear forwards;
         }}
+
         @keyframes fall {{
-            0% {{ transform: translateY(0); }}
+            0% {{ transform: translateY(0); opacity: 1; }}
             100% {{ transform: translateY(100vh); opacity: 0; }}
         }}
         </style>
 
         <div style="position: fixed; width: 100%; height: 100%; z-index: 9999; pointer-events: none;">
-            {''.join([f'<div class="snowflake" style="left: {i*5}vw;">❄️</div>' for i in range(20)])}
+            {''.join([f'<div class="snowflake" style="left: {i * 5}vw; animation-delay: {i * 0.2}s;">❄️</div>' for i in range(20)])}
         </div>
     """, unsafe_allow_html=True)
 
 # ✅ Call with your image
 inject_css_background_and_snow("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
-
-
-
 
 
 
