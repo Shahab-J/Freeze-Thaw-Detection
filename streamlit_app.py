@@ -37,8 +37,6 @@ st.title("🧊 Soil Freeze–Thaw Mapping Tool")
 
 # ========== ✅ Background withsnow ===================
 # ✅ THIS GOES FIRST
-st.set_page_config(layout="wide")
-
 # 🎨 THEN YOUR BACKGROUND + SNOW
 def inject_background_with_snow(image_url):
     st.markdown(f"""
