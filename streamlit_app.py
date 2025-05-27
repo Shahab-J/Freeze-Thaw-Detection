@@ -974,13 +974,26 @@ if submit:
             </div>
         """, unsafe_allow_html=True)
 
-        # st.success("✅ ROI submitted and ready for processing.")
+        # Lock the map immediately after submission to prevent zooming, panning, and interaction
+        st.markdown(
+            """
+            <style>
+                .folium-map {
+                    pointer-events: none;  /* Disable all map interactions */
+                }
+            </style>
+            """, unsafe_allow_html=True
+        )
 
-        # Running Freeze–Thaw processing pipeline without the spinner
+        # Display processing message
+        st.success("✅ ROI submitted and ready for processing.")
+        
+        # Run the Freeze-Thaw processing pipeline without the spinner
         submit_roi()  # Ensure this function is defined elsewhere in your code
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 # Footer Section (on the left side below the Submit ROI button)
