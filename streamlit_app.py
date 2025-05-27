@@ -821,7 +821,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
 
 
-# ✅ Step 13: Submit ROI and Processing Pipelin
+# ✅ Step 13: Submit ROI and Processing Pipeline
 def submit_roi():
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
@@ -900,51 +900,54 @@ def submit_roi():
             st.warning("⚠️ RF Model training failed.")
             return
 
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+        classified_images = efta_collection.map(lambda img: img.classify(rf_model))
 
-        # ✅ Optional: Clip to cropland using NALCMS class 15
+        # ✅ Optional: Clip to cropland and relevant land cover classes
         if clip_agriculture:
-            # st.info("🌾 Cropland-only mode enabled. Intersecting ROI with agricultural land...")
-
             try:
-                # Load NALCMS and mask class 15 (cropland)
+                # Load NALCMS land cover dataset
                 landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
-                cropland_mask = landcover.eq(15)
 
-                # Debug: Check how many cropland pixels exist
-                cropland_area = cropland_mask.reduceRegion(
+                # Create a mask for relevant land cover classes (cropland, grassland, barren land)
+                expanded_mask = (
+                    landcover.eq(9)   # Tropical/sub-tropical grassland
+                    .Or(landcover.eq(10))  # Temperate/sub-polar grassland
+                    .Or(landcover.eq(15))  # Cropland
+                    .Or(landcover.eq(16))  # Barren lands
+                )
+
+                # Debug: Check how many relevant land cover pixels exist
+                land_cover_area = expanded_mask.reduceRegion(
                     reducer=ee.Reducer.count(),
                     geometry=user_roi,
                     scale=30,
                     maxPixels=1e13
                 ).getInfo()
-                # st.write(f"Debug: Cropland pixels in ROI = {cropland_area}")
 
-                # Apply cropland mask
-                cropland_geometry = cropland_mask.selfMask().reduceToVectors(
+                # Apply the expanded land cover mask
+                land_cover_geometry = expanded_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType='polygon',
                     scale=30,
                     maxPixels=1e13
                 )
 
-                intersected_roi = user_roi.intersection(cropland_geometry.geometry(), ee.ErrorMargin(30))
+                intersected_roi = user_roi.intersection(land_cover_geometry.geometry(), ee.ErrorMargin(30))
 
                 # Debug: Check if intersection results in a valid geometry
                 intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
-                # st.write(f"Debug: Intersected ROI size = {intersected_roi_valid}")
 
                 if intersected_roi_valid == 0:
-                    st.error("❌ Cropland mask removed the entire ROI. Please select a different area or disable cropland-only mode.")
+                    st.error("❌ Land cover mask removed the entire ROI. Please select a different area or disable the land cover mode.")
                     return
 
                 user_roi = intersected_roi
                 classified_images = classified_images.map(lambda img: img.clip(user_roi))
 
-                st.success("🌾 ROI successfully clipped to cropland using NALCMS.")
+                st.success("🌾 ROI successfully clipped to relevant land cover classes.")
 
             except Exception as e:
-                st.warning(f"⚠️ Cropland masking failed: {e}")
+                st.warning(f"⚠️ Land cover masking failed: {e}")
 
         classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
         visualize_ft_classification(classified_collection_visual, user_roi, resolution)
