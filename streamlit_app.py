@@ -123,7 +123,7 @@ with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
         We recommend selecting a full freeze–thaw season (e.g., Oct 1 to June 30 of the next year).<br>
         Even if your range is shorter (e.g., Oct to Nov), the app internally adjusts the date range but shows results only for your selection.<br><br>
         Select a <b>spatial resolution</b>: 10 m (high detail), 30 m (default), or 100 m (faster).<br>
-        Optionally, use the checkbox to <b>clip to cropland only</b> based on the 2020 NALCMS dataset.
+        Optionally, use the checkbox to <b>Clip ROI to cropland, grasslands, barren lands</b> based on the 2020 NALCMS dataset.
         </div>
 
         <div style="font-size:12pt; font-weight:bold; margin-top: 10px;">Step 4: Click “Submit ROI & Start Processing”</div>
@@ -852,7 +852,7 @@ def submit_roi():
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-    st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+    # st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
 
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
 
