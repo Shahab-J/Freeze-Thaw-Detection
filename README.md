@@ -8,7 +8,7 @@ The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for dete
 
 - 🗺️ Interactive region selection: Allows users to define a custom Region of Interest (ROI) directly on a map interface.
 - 📅 Customizable temporal range: Enables selection of a date range between October and June, with automatic adjustment to align with seasonal freeze–thaw periods.
-- 🌱 Optional cropland-only analysis: Provides the option to restrict analysis to agricultural areas (Class 15) using the 2020 NALCMS land cover dataset (https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2020_REL_NALCMS).
+- 🌱 Cropland, Grasslands, and Barren Lands Filter Option: Provides the option to restrict analysis to clip results to cropland, grasslands, and barren lands (Class 9: Tropical/Sub-tropical grasslands, Class 10: Temperate/Sub-polar grasslands, Class 15: Cropland, Class 16: Barren lands), based on the 2020 NALCMS dataset at 30m resolution (https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2020_REL_NALCMS).
 - 🧩 User-defined spatial resolution: Supports output resolutions of 10 m, 30 m, or 100 m to match user needs and computational resources.
 - ⚙️ EFTA computation: Implements the Exponential Freeze–Thaw Algorithm (EFTA) using Sentinel-1 VH backscatter for enhanced transition detection (Refer to: https://doi.org/10.3390/rs16071294).
 - 🌐 Random Forest classification: Applies a pre-trained Random Forest (RF) model to classify each image pixel as either Frozen (1) or Thawed (0).
