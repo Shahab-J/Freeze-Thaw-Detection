@@ -31,7 +31,7 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ ❄️ Background with snow ===================
-def inject_clean_background(image_url):
+def inject_clean_background(image_):
     st.markdown(f"""
         <style>
         /* Top white strip */
@@ -47,7 +47,7 @@ def inject_clean_background(image_url):
 
         /* Background image */
         [data-testid="stAppViewContainer"] {{
-            background-image: url("{image_url}");
+            background-image: ("{image_url}");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -705,11 +705,13 @@ def attach_era5_to_efta(efta_collection, start_date, end_date, roi):
 # ✅ Step 10 — Freeze–Thaw Classification Using RF (Streamlit)
 # =========================================================
 
-# Load training data from GitHub RAW
+# ========== TRAINING DATASET (NO GEOMETRY NEEDED) ==========
 url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/RF_FT_Snow_EFTA_training.csv"
+
+import pandas as pd
 df_train = pd.read_csv(url)
 
-# Convert pandas rows to ee.Features
+# Convert each row to an ee.Feature WITHOUT geometry
 def row_to_feature(row):
     props = {
         "EFTA": float(row["EFTA"]),
@@ -717,13 +719,6 @@ def row_to_feature(row):
         "Snow_temp": float(row["Snow_temp"]),
         "label": int(row["label"])
     }
-
-    # If CSV contains Longitude/Latitude columns
-    if "Longitude" in df_train.columns and "Latitude" in df_train.columns:
-        geom = ee.Geometry.Point([row["Longitude"], row["Latitude"]])
-        return ee.Feature(geom, props)
-
-    # Otherwise construct Feature without geometry
     return ee.Feature(None, props)
 
 training_features = df_train.apply(row_to_feature, axis=1).tolist()
@@ -732,6 +727,8 @@ training_asset = ee.FeatureCollection(training_features)
 # Predictors and label
 bands = ['EFTA', 'Snow_depth', 'Snow_temp']
 label = 'label'
+
+
 
 # Random Forest Model
 def train_rf_model():
