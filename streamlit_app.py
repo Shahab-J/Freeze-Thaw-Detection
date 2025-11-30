@@ -618,20 +618,25 @@ def compute_efta(collection, resolution):
 # =========================================================
 # ✅ ERA5 DAILY SNOW DEPTH + SNOW TEMPERATURE (Optimized)
 # =========================================================
+# =========================================================
+# ✅ ERA5 DAILY SNOW DEPTH + SNOW TEMPERATURE (FIXED VERSION)
+#   • NO reproject at 10/30 m (prevents half-ROI from disappearing)
+#   • ERA5 kept at native resolution (~9 km)
+#   • EFTA & RF classification still occur at user-selected resolution
+# =========================================================
+
 def build_era5_snow_collection(start_date, end_date, roi):
     """
-    Efficient daily ERA5 snow and snow temperature extraction.
-    Returns bands:
-        - Snow_depth  (cm)
-        - Snow_temp   (°C)
+    Efficient daily ERA5 snow & snow temperature extraction.
+    FIXED VERSION:
+      - DO NOT reproject ERA5 to 10m/30m (caused half-ROI masking)
+      - Keep native 9 km resolution
     """
     roi = ee.Geometry(roi)
-    res = st.session_state.resolution
 
-    # Load ERA5-Land hourly dataset (corrected: include filterDate)
     era5 = (
         ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
-        .filterDate(start_date, end_date)          # ✅ IMPORTANT
+        .filterDate(start_date, end_date)
         .filterBounds(roi)
         .select([
             "snow_depth",                     # meters
@@ -639,7 +644,6 @@ def build_era5_snow_collection(start_date, end_date, roi):
         ])
     )
 
-    # Generate daily list
     start = ee.Date(start_date)
     end = ee.Date(end_date)
     n_days = end.difference(start, "day")
@@ -648,33 +652,31 @@ def build_era5_snow_collection(start_date, end_date, roi):
         day_offset = ee.Number(day_offset)
         day = start.advance(day_offset, "day")
 
-        # Daily mean ERA5
         daily = era5.filterDate(day, day.advance(1, "day")).mean()
 
         snow_depth_cm = daily.select("snow_depth") \
-                             .multiply(100) \
-                             .rename("Snow_depth")
+            .multiply(100) \
+            .rename("Snow_depth")
 
         snow_temp_C = daily.select("temperature_of_snow_layer") \
-                           .subtract(273.15) \
-                           .rename("Snow_temp")
+            .subtract(273.15) \
+            .rename("Snow_temp")
 
+        # KEEP NATIVE RESOLUTION — NO REPROJECT HERE
         return (
             snow_depth_cm.addBands(snow_temp_C)
             .set("system:time_start", day.millis())
             .clip(roi)
-            .reproject(crs="EPSG:4326", scale=res)
         )
 
     return ee.ImageCollection.fromImages(
         ee.List.sequence(0, n_days.subtract(1)).map(make_daily_image)
     )
 
-    
+
 def attach_era5_to_efta(efta_collection, start_date, end_date, roi):
     """
     Joins daily ERA5 snow predictors to EFTA images by timestamp.
-    Returns EFTA + Snow_depth + Snow_temp.
     """
     roi = ee.Geometry(roi)
 
@@ -688,12 +690,11 @@ def attach_era5_to_efta(efta_collection, start_date, end_date, roi):
     inner_join = ee.Join.inner().apply(efta_collection, era5_daily, join_filter)
 
     def merge(pair):
-        return ee.Image(pair.get("primary")).addBands(
-            ee.Image(pair.get("secondary"))
-        )
+        primary = ee.Image(pair.get("primary"))
+        secondary = ee.Image(pair.get("secondary"))
+        return primary.addBands(secondary)
 
     return ee.ImageCollection(inner_join.map(merge))
-
 
 
 
