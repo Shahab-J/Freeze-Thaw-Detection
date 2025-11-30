@@ -729,25 +729,30 @@ label = 'label'
 
 
 # Random Forest Model
+# Define predictor band names
+bands = ['EFTA', 'Snow_depth', 'Snow_temp']
+
+# Random Forest Model
 def train_rf_model():
     try:
-        rf_model = ee.Classifier.smileRandomForest(
-            numberOfTrees=150,
-            variablesPerSplit=1,
-            minLeafPopulation=3,
-            seed=42
-        ).train(
-            features=training_asset,
-            classProperty=label,
-            inputProperties=bands
+        rf_model = (
+            ee.Classifier.smileRandomForest(
+                numberOfTrees=150,
+                variablesPerSplit=1,
+                minLeafPopulation=3,
+                seed=42
+            )
+            .train(
+                features=training_asset,     # Must be ee.FeatureCollection
+                classProperty="label",        # CLASS NAME MUST BE STRING
+                inputProperties=bands         # Predictors list
+            )
         )
         return rf_model
 
     except Exception as e:
         st.error(f"❌ Failed to train RF model: {e}")
         return None
-
-
 
 
 # ✅ Classify each image using the trained model
