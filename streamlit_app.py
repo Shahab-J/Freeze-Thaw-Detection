@@ -943,7 +943,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
 # ========== ✅ Step 13: Submit ROI and Processing Pipeline ==========
 def submit_roi():
-    # Ensure ROI is selected
+    # ===== 0. CHECK ROI =====
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
@@ -952,20 +952,20 @@ def submit_roi():
     resolution = st.session_state.get("resolution", 30)
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
 
-    # User dates
+    # ===== 1. READ USER DATE INPUT =====
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
 
-    # Validate date range
+    # Validate input
     if user_selected_end >= today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
+        st.error(f"❌ End date ({user_selected_end}) is in the future.")
         return
     if user_selected_start >= user_selected_end:
         st.error("❌ Start date must be earlier than end date.")
         return
 
-    # Adjust season (Oct → June window)
+    # Seasonal alignment (Oct 1 → June 30)
     start_year = int(user_selected_start[:4])
     if int(user_selected_start[5:7]) < 10:
         start_year -= 1
@@ -973,126 +973,140 @@ def submit_roi():
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
+    # ===============================================================
+    #                     RUN PIPELINE
+    # ===============================================================
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
 
-        # 1) Sentinel-1 Processing
+        # 1) Process Sentinel-1
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
             st.warning("⚠️ Sentinel-1 processing failed.")
             return
 
-        # 2) Daily Mosaic
+        # 2) Daily mosaics
         mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
         if mosaicked_images is None:
             st.warning("⚠️ Mosaicking failed.")
             return
 
-        # 3) SigmaDiff pixelwise
-        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-        if sigma_diff_collection is None:
-            st.warning("⚠️ SigmaDiff computation failed.")
+        # 3) Pixelwise SigmaDiff
+        sigma_diff = compute_sigma_diff_pixelwise(mosaicked_images)
+        if sigma_diff is None:
+            st.warning("⚠️ SigmaDiff failed.")
             return
 
-        # 4) Seasonal SigmaDiff extremes
-        sigma_extreme_collection = compute_sigma_diff_extremes(
-            sigma_diff_collection, start_year, user_roi
-        )
-        if sigma_extreme_collection is None:
+        # 4) Seasonal extremes
+        sigma_ext = compute_sigma_diff_extremes(sigma_diff, start_year, user_roi)
+        if sigma_ext is None:
             st.warning("⚠️ SigmaDiff extremes failed.")
             return
 
-        # 5) Freeze–Thaw K assignment
-        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-        if final_k_collection is None:
+        # 5) K assignment
+        k_collection = assign_freeze_thaw_k(sigma_ext)
+        if k_collection is None:
             st.warning("⚠️ K assignment failed.")
             return
 
-        # 6) ThawRef image
-        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-        if thaw_ref_image is None:
-            st.warning("⚠️ ThawRef computation failed.")
+        # 6) ThawRef
+        thaw_ref = compute_thaw_ref_pixelwise(k_collection, start_year, user_roi)
+        if thaw_ref is None:
+            st.warning("⚠️ ThawRef failed.")
             return
 
-        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
+        k_with_thaw_ref = k_collection.map(lambda img: img.addBands(thaw_ref))
 
-        # 7) DeltaTheta
-        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-        if delta_theta_collection is None:
-            st.warning("⚠️ ΔTheta computation failed.")
+        # 7) ΔTheta
+        delta_theta = compute_delta_theta(k_with_thaw_ref, thaw_ref)
+        if delta_theta is None:
+            st.warning("⚠️ ΔTheta failed.")
             return
 
-        # 8) EFTA generation
-        efta_collection = compute_efta(delta_theta_collection, resolution)
+        # 8) EFTA
+        efta_collection = compute_efta(delta_theta, resolution)
         if efta_collection is None:
-            st.warning("⚠️ EFTA calculation failed.")
+            st.warning("⚠️ EFTA failed.")
             return
 
-        # -----------------------------------------------------
-        # ⭐ NEW CRITICAL STEP — Attach ERA5 SNOW PREDICTORS ⭐
-        # -----------------------------------------------------
-        efta_with_snow = attach_era5_to_efta(
-            efta_collection, start_date, end_date, user_roi
-        )
+        # ===============================================================
+        #     ⭐ 9) Attach ERA5 Snow_depth + Snow_temp  (FIXED VERSION) ⭐
+        # ===============================================================
+        efta_with_snow = attach_era5_to_efta(efta_collection, start_date, end_date, user_roi)
 
         if efta_with_snow is None or efta_with_snow.size().getInfo() == 0:
-            st.error("❌ ERA5 Snow join failed.")
+            st.error("❌ ERA5 join failed.")
             return
 
-        st.session_state.efta_collection = efta_with_snow
+        # ===============================================================
+        #     ⭐ 10) MASK OUT BAD PIXELS (IMPORTANT FIX) ⭐
+        # ===============================================================
 
-        # 9) Train RF model (EFTA + Snow_depth + Snow_temp)
+        def mask_valid(img):
+            m = img.select(['EFTA', 'Snow_depth', 'Snow_temp']).reduce(ee.Reducer.min()).mask()
+            return img.updateMask(m)
+
+        efta_clean = efta_with_snow.map(mask_valid)
+
+        st.session_state.efta_collection = efta_clean
+
+        # ===============================================================
+        #     ⭐ 11) Train RF model (EFTA + Snow predictors) ⭐
+        # ===============================================================
         rf_model = train_rf_model()
         if rf_model is None:
             st.warning("⚠️ RF training failed.")
             return
 
-        # 10) Classify each image
-        classified_images = efta_with_snow.map(
+        # ===============================================================
+        #     ⭐ 12) Classify every image ⭐
+        # ===============================================================
+        classified_images = efta_clean.map(
             lambda img: classify_image(img, rf_model, resolution)
         )
 
-        # 11) Optional — clip to cropland classes
+        # ===============================================================
+        # 13) OPTIONAL: Clip to Cropland/Grassland/Barren
+        # ===============================================================
         if clip_agriculture:
             try:
-                landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
-
+                lc = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
                 mask = (
-                    landcover.eq(9)   # Tropical/sub-tropical grassland
-                    .Or(landcover.eq(10))  # Temperate/sub-polar grassland
-                    .Or(landcover.eq(15))  # Cropland
-                    .Or(landcover.eq(16))  # Barren land
+                    lc.eq(9)
+                    .Or(lc.eq(10))
+                    .Or(lc.eq(15))
+                    .Or(lc.eq(16))
                 )
 
-                land_cover_geom = mask.selfMask().reduceToVectors(
+                land_geom = mask.selfMask().reduceToVectors(
                     geometry=user_roi,
                     geometryType="polygon",
                     scale=30,
                     maxPixels=1e13
                 )
 
-                new_roi = user_roi.intersection(
-                    land_cover_geom.geometry(), ee.ErrorMargin(30)
-                )
+                new_roi = user_roi.intersection(land_geom.geometry(), ee.ErrorMargin(30))
 
                 if new_roi.coordinates().size().getInfo() == 0:
-                    st.error("❌ Whole ROI removed by land cover mask.")
+                    st.error("❌ Land cover mask removed entire ROI.")
                     return
 
                 user_roi = new_roi
                 classified_images = classified_images.map(lambda img: img.clip(user_roi))
-                st.success("🌾 ROI clipped to cropland/grassland/barren land.")
+
+                st.success("🌾 ROI clipped to agricultural classes.")
 
             except Exception as e:
                 st.warning(f"⚠️ Land cover clipping failed: {e}")
 
-        # 12) Visualization (filtered to user's date selection)
-        classified_visual = classified_images.filterDate(
-            user_selected_start, user_selected_end
-        )
+        # ===============================================================
+        # 14) Filter to date selection for visualization
+        # ===============================================================
+        classified_visual = classified_images.filterDate(user_selected_start, user_selected_end)
 
         visualize_ft_classification(classified_visual, user_roi, resolution)
 
         st.success("🎉 Full Freeze–Thaw Pipeline Completed Successfully!")
+
 
 
 
