@@ -1091,49 +1091,50 @@ def submit_roi():
 
 
 # ========== ✅ Submit ROI Handler ==========
+# ========== ✅ Submit ROI Handler ==========
 if submit:
-    # 1) Check if user actually drew something
-    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
 
-        # Get the last drawn ROI polygon
+    # 1) Ensure output is a dictionary
+    if isinstance(output, dict) and \
+       "all_drawings" in output and \
+       isinstance(output["all_drawings"], list) and \
+       len(output["all_drawings"]) > 0:
+
+        # Extract the drawing
         last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature["geometry"]
+        roi_geojson = last_feature.get("geometry", None)
 
-        # 2) Save everything to session state
+        if roi_geojson is None:
+            st.error("❌ No valid geometry detected. Please draw the ROI again.")
+            st.stop()
+
+        # Save to session
         st.session_state.user_roi = ee.Geometry(roi_geojson)
         st.session_state.start_date = start_date
         st.session_state.end_date = end_date
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
 
-        # 3) Show yellow warning message in sidebar
+        # Warning message
         st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
-                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-                Scroll down to view the dropdown menu of <b>"View All Freeze–Thaw Results"</b>.
+                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI.
             </div>
         """, unsafe_allow_html=True)
 
-        # 4) Disable map interactions
-        st.markdown(
-            """
-            <style>
-                .folium-map {
-                    pointer-events: none;
-                }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+        # Disable map moves
+        st.markdown("""
+            <style>.folium-map { pointer-events: none; }</style>
+        """, unsafe_allow_html=True)
 
-        # 5) Inform user
-        st.success("✅ ROI submitted and ready for processing.")
+        st.success("✅ ROI submitted. Processing started...")
 
-        # 6) Run the full Freeze–Thaw pipeline
-        submit_roi()   # <— Your Step 13 big function is executed here
+        # Run your FT pipeline
+        submit_roi()
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 # ========== Sidebar Footer ==========
