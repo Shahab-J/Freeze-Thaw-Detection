@@ -31,7 +31,7 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 
 
 # ========== ✅ ❄️ Background with snow ===================
-def inject_clean_background(image_):
+def inject_clean_background(image_url):
     st.markdown(f"""
         <style>
         /* Top white strip */
@@ -47,7 +47,7 @@ def inject_clean_background(image_):
 
         /* Background image */
         [data-testid="stAppViewContainer"] {{
-            background-image: ("{image_url}");
+            background-image: url("{image_url}");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -57,6 +57,7 @@ def inject_clean_background(image_):
 
         <div class="top-white"></div>
     """, unsafe_allow_html=True)
+
 
 inject_clean_background("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/assets/20201215_155514.jpg")
 
