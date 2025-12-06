@@ -34,6 +34,7 @@ from geopy.exc import GeocoderUnavailable, GeocoderTimedOut
 def inject_clean_background(image_url):
     st.markdown(f"""
         <style>
+        /* Top white strip */
         .top-white {{
             position: fixed;
             top: 0;
@@ -44,8 +45,9 @@ def inject_clean_background(image_url):
             z-index: 9998;
         }}
 
+        /* Background image */
         [data-testid="stAppViewContainer"] {{
-            background-image: url('{image_url}');
+            background-image: url("{image_url}");
             background-size: cover;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -614,146 +616,47 @@ def compute_efta(collection, resolution):
 
 
 
+# ✅ Step 10: Freeze–Thaw Classification Using RF for Streamlit
+# 🔗 Load training data from GitHub (geojson hosted in your repo _ not from Earth Engine assets)
+url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/training_data.geojson"
+with urllib.request.urlopen(url) as response:
+    geojson_data = json.load(response)
 
-# =========================================================
-# ✅ ERA5 DAILY SNOW DEPTH + SNOW TEMPERATURE (Optimized)
-# =========================================================
-# =========================================================
-# ✅ ERA5 DAILY SNOW DEPTH + SNOW TEMPERATURE (FIXED VERSION)
-#   • NO reproject at 10/30 m (prevents half-ROI from disappearing)
-#   • ERA5 kept at native resolution (~9 km)
-#   • EFTA & RF classification still occur at user-selected resolution
-# =========================================================
-
-def build_era5_snow_collection(start_date, end_date, roi):
-    """
-    Efficient daily ERA5 snow & snow temperature extraction.
-    FIXED VERSION:
-      - DO NOT reproject ERA5 to 10m/30m (caused half-ROI masking)
-      - Keep native 9 km resolution
-    """
-    roi = ee.Geometry(roi)
-
-    era5 = (
-        ee.ImageCollection("ECMWF/ERA5_LAND/HOURLY")
-        .filterDate(start_date, end_date)
-        .filterBounds(roi)
-        .select([
-            "snow_depth",                     # meters
-            "temperature_of_snow_layer"       # Kelvin
-        ])
-    )
-
-    start = ee.Date(start_date)
-    end = ee.Date(end_date)
-    n_days = end.difference(start, "day")
-
-    def make_daily_image(day_offset):
-        day_offset = ee.Number(day_offset)
-        day = start.advance(day_offset, "day")
-
-        daily = era5.filterDate(day, day.advance(1, "day")).mean()
-
-        snow_depth_cm = daily.select("snow_depth") \
-            .multiply(100) \
-            .rename("Snow_depth")
-
-        snow_temp_C = daily.select("temperature_of_snow_layer") \
-            .subtract(273.15) \
-            .rename("Snow_temp")
-
-        # KEEP NATIVE RESOLUTION — NO REPROJECT HERE
-        return (
-            snow_depth_cm.addBands(snow_temp_C)
-            .set("system:time_start", day.millis())
-            .clip(roi)
-        )
-
-    return ee.ImageCollection.fromImages(
-        ee.List.sequence(0, n_days.subtract(1)).map(make_daily_image)
-    )
-
-
-def attach_era5_to_efta(efta_collection, start_date, end_date, roi):
-    """
-    Joins daily ERA5 snow predictors to EFTA images by timestamp.
-    """
-    roi = ee.Geometry(roi)
-
-    era5_daily = build_era5_snow_collection(start_date, end_date, roi)
-
-    join_filter = ee.Filter.equals(
-        leftField="system:time_start",
-        rightField="system:time_start"
-    )
-
-    inner_join = ee.Join.inner().apply(efta_collection, era5_daily, join_filter)
-
-    def merge(pair):
-        primary = ee.Image(pair.get("primary"))
-        secondary = ee.Image(pair.get("secondary"))
-        return primary.addBands(secondary)
-
-    return ee.ImageCollection(inner_join.map(merge))
+# ✅ Convert to Earth Engine FeatureCollection
+features = [ee.Feature(f) for f in geojson_data["features"]]
+training_asset = ee.FeatureCollection(features)
 
 
 
+# 🔤 Define features and label
+bands = ['EFTA']  # Input feature(s) for classification
+label = 'label'   # Class label (0 = Frozen, 1 = Thawed)
 
-
-# =========================================================
-# ✅ Step 10 — Freeze–Thaw Classification Using RF (Streamlit)
-# =========================================================
-
-# ========== TRAINING DATASET (NO GEOMETRY NEEDED) ==========
-url = "https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-Detection/main/data/RF_FT_Snow_EFTA_training.csv"
-
-import pandas as pd
-df_train = pd.read_csv(url)
-
-# Convert each row to an ee.Feature WITHOUT geometry
-def row_to_feature(row):
-    props = {
-        "EFTA": float(row["EFTA"]),
-        "Snow_depth": float(row["Snow_depth"]),
-        "Snow_temp": float(row["Snow_temp"]),
-        "label": int(row["label"])
-    }
-    return ee.Feature(None, props)
-
-training_features = df_train.apply(row_to_feature, axis=1).tolist()
-training_asset = ee.FeatureCollection(training_features)
-
-# Predictors and label
-bands = ['EFTA', 'Snow_depth', 'Snow_temp']
-label = 'label'
-
-
-
-# Random Forest Model
-# Define predictor band names
-bands = ['EFTA', 'Snow_depth', 'Snow_temp']
-
-# Random Forest Model
+# ✅ Train Random Forest Model in GEE
 def train_rf_model():
-    try:
-        rf_model = (
-            ee.Classifier.smileRandomForest(
-                numberOfTrees=150,
-                variablesPerSplit=1,
-                minLeafPopulation=3,
-                seed=42
-            )
-            .train(
-                features=training_asset,     # Must be ee.FeatureCollection
-                classProperty="label",        # CLASS NAME MUST BE STRING
-                inputProperties=bands         # Predictors list
-            )
-        )
-        return rf_model
+    """
+    Trains a Random Forest model using EFTA values.
 
+    Returns:
+        ee.Classifier: Trained RF classifier
+    """
+    try:
+        rf_model = ee.Classifier.smileRandomForest(
+            numberOfTrees=150,
+            variablesPerSplit=1,
+            minLeafPopulation=3,
+            seed=42
+        ).train(
+            features=training_asset,
+            classProperty=label,
+            inputProperties=bands
+        )
+        # st.success("✅ Optimized FT model trained successfully in GEE.")
+        return rf_model
     except Exception as e:
         st.error(f"❌ Failed to train RF model: {e}")
         return None
+
 
 
 # ✅ Classify each image using the trained model
@@ -762,52 +665,47 @@ def classify_image(img, rf_model, resolution):
     Classifies an image using the trained Random Forest model.
 
     Args:
-        img (ee.Image): Input image with EFTA + Snow_depth + Snow_temp
+        img (ee.Image): Input image with 'EFTA' band
         rf_model (ee.Classifier): Trained RF classifier
         resolution (int): Resolution to reproject classified results
 
     Returns:
         ee.Image: Image with an added 'FT_State' classification band
     """
-
-    # IMPORTANT: Select all three predictors in correct order
-    predictors = img.select(['EFTA', 'Snow_depth', 'Snow_temp'])
-
-    classified = predictors.classify(rf_model).rename('FT_State')
-
+    classified = img.select('EFTA').classify(rf_model).rename('FT_State')
     return img.addBands(classified).reproject(crs="EPSG:4326", scale=resolution)
 
 
 
-
-# ============================================================
-# ✅ Step 11: Compute and Summarize FT Classification (UPDATED)
-# ============================================================
-
+# ✅ Step 11: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
     """
-    Summarizes freeze–thaw classification (0 = Thawed, 1 = Frozen)
-    for each image inside the user's ROI.
+    Computes and displays the percentage of Frozen vs. Thawed pixels
+    in the classification results for each image.
+
+    Args:
+        collection (ee.ImageCollection): Collection with 'FT_State' classified band.
+        user_roi (ee.Geometry): ROI to summarize statistics over.
+        resolution (int): User-selected spatial resolution (10, 30, 100 m).
     """
 
     if collection is None or collection.size().getInfo() == 0:
         st.error("❌ No classified images available for summarization.")
         return
 
-    st.markdown("## 📊 Freeze–Thaw Classification Summary")
+    image_list = collection.toList(collection.size())
+    num_images = collection.size().getInfo()
 
-    img_list = collection.toList(collection.size())
-    n = collection.size().getInfo()
+    st.markdown("### 📊 Freeze–Thaw Classification Summary")
 
-    for i in range(n):
-
+    for i in range(num_images):
         try:
-            img = ee.Image(img_list.get(i))
+            img = ee.Image(image_list.get(i))
 
-            # Extract date
-            date_str = img.date().format("YYYY-MM-dd").getInfo()
+            # Extract timestamp and format it
+            timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
-            # Compute histogram of FT_State
+            # Compute histogram of Freeze (1) / Thaw (0) pixels
             stats = img.select("FT_State").reduceRegion(
                 reducer=ee.Reducer.frequencyHistogram(),
                 geometry=user_roi,
@@ -817,25 +715,20 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
             hist = stats.get("FT_State", {})
 
-            # Retrieve counts safely (avoid KeyError)
-            thawed = int(hist.get("0", 0))     # label 0 → thawed
-            frozen = int(hist.get("1", 0))     # label 1 → frozen
+            thawed = int(hist.get("0", 0))
+            frozen = int(hist.get("1", 0))
             total = thawed + frozen
 
-            if total == 0:
-                thawed_pct = frozen_pct = 0
-            else:
-                thawed_pct = thawed / total * 100
-                frozen_pct = frozen / total * 100
+            thawed_percent = (thawed / total * 100) if total > 0 else 0
+            frozen_percent = (frozen / total * 100) if total > 0 else 0
 
-            # Display result
+            # Output summary for this image
             st.markdown(f"""
-### 🗓️ Image {i+1} — **{date_str}**
-- **Thawed (0):** {thawed:,} pixels  —  {thawed_pct:.2f}%
-- **Frozen (1):** {frozen:,} pixels  —  {frozen_pct:.2f}%
----
-""")
-
+            **🗓️ Image {i+1} — {timestamp}**
+            - Thawed Pixels (0): {thawed:,} ({thawed_percent:.2f}%)
+            - Frozen Pixels (1): {frozen:,} ({frozen_percent:.2f}%)
+            ---
+            """)
         except Exception as e:
             st.warning(f"⚠️ Could not summarize image {i+1}: {e}")
 
@@ -843,9 +736,7 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 
-# ======================================================
 # ✅ Step 12: Visualize FT Classification for Streamlit
-# ======================================================
 def visualize_ft_classification(collection, user_roi, resolution):
     import tempfile
     import base64
@@ -856,35 +747,33 @@ def visualize_ft_classification(collection, user_roi, resolution):
         st.error("❌ No classification results available for visualization.")
         return
 
-    # Convert ImageCollection to a list
     image_list = collection.toList(collection.size())
     num_images = collection.size().getInfo()
 
-    # Get user-selected dates for display
+    # Get start and end dates from user input
     start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
 
-    # UI
-    st.markdown("🔽 Open the dropdown below to view all classified images.")
-    with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
 
-        # Total image count
+# Display the total number of images for the selected date range
+    st.markdown(
+    "🔽 Open the dropdown below to view all classified images and the total for the selected date range."
+    )
+    with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
-            f"""
-            🖼️ Total FT Classified Images  
-            from <u>{start_date_str}</u> to <u>{end_date_str}</u>:  
-            <b><span style='font-size: 26px'>{num_images}</span></b>
-            """,
+            f"🖼️ Total Images for visualization during the selected date range from "
+            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
             unsafe_allow_html=True
         )
 
-        # Loop through each image
+    # Continue with the rest of the logic (image processing, visualization, etc.)
+        # Loop through the images and display results
         for i in range(num_images):
             try:
                 img = ee.Image(image_list.get(i))
                 timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
-                # Thumbnail URL for FT_State band
+                # Generate the image URL for display
                 url = img.select("FT_State").clip(user_roi).getThumbURL({
                     "min": 0,
                     "max": 1,
@@ -892,22 +781,19 @@ def visualize_ft_classification(collection, user_roi, resolution):
                     "palette": ["red", "blue"]
                 })
 
-                # Display image
+                # Load the image into Streamlit
                 image = Image.open(urllib.request.urlopen(url))
                 st.image(image, caption=f"🗓️ {timestamp}", use_container_width=True)
 
-                # Offer TIFF download
+                # Save TIFF file and provide a download link
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
                     image.save(tmp.name)
                     with open(tmp.name, "rb") as file:
                         b64 = base64.b64encode(file.read()).decode()
-                        href = (
-                            f'<a href="data:file/tif;base64,{b64}" '
-                            f'download="FT_{timestamp}.tif">📥 Download TIFF</a>'
-                        )
+                        href = f'<a href="data:file/tif;base64,{b64}" download="FT_{timestamp}.tif">📥 Download TIFF</a>'
                         st.markdown(href, unsafe_allow_html=True)
 
-                # Pixel statistics
+                # Compute Pixel Stats
                 stats = img.select("FT_State").reduceRegion(
                     reducer=ee.Reducer.frequencyHistogram(),
                     geometry=user_roi,
@@ -915,263 +801,246 @@ def visualize_ft_classification(collection, user_roi, resolution):
                     maxPixels=1e13
                 ).getInfo()
 
+                # Extract histogram data
                 hist = stats.get("FT_State", {})
-
-                thawed = int(hist.get("0", 0))
-                frozen = int(hist.get("1", 0))
+                thawed = int(hist.get("0", 0))  # Thawed pixels
+                frozen = int(hist.get("1", 0))  # Frozen pixels
                 total = thawed + frozen
+                thawed_pct = (thawed / total) * 100 if total > 0 else 0
+                frozen_pct = (frozen / total) * 100 if total > 0 else 0
 
-                thawed_pct = (thawed / total * 100) if total > 0 else 0
-                frozen_pct = (frozen / total * 100) if total > 0 else 0
-
-                # Printed summary
+                # Display updated stats with colored squares for Frozen and Thawed and Resolution
                 st.markdown(
-                    f"""
-                    **🧊 Freeze–Thaw Stats — {timestamp}**
-                    - 🟦 Frozen: **{frozen:,}** ({frozen_pct:.1f}%)
-                    - 🟥 Thawed: **{thawed:,}** ({thawed_pct:.1f}%)
-                    - 📏 Resolution: **{resolution} m**
-                    """
+                    f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
+                    f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
+                    f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%  \n"
+                    f"📏 Resolution: **{resolution} meters**"
                 )
-
                 st.divider()
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
 
 
-
 # ========== ✅ Step 13: Submit ROI and Processing Pipeline ==========
 def submit_roi():
-    # ===== 0. CHECK ROI =====
+    # Ensure ROI is selected before processing
     if "user_roi" not in st.session_state or st.session_state.user_roi is None:
         st.error("❌ No ROI selected. Please draw an ROI before processing.")
         return
 
+    # Retrieve the stored ROI and parameters from session state
     user_roi = st.session_state.user_roi
     resolution = st.session_state.get("resolution", 30)
     clip_agriculture = st.session_state.get("clip_to_agriculture", False)
 
-    # ===== 1. READ USER DATE INPUT =====
+    # Get the selected date range and ensure the end date is not in the future
     user_selected_start = st.session_state.start_date.strftime("%Y-%m-%d")
     user_selected_end = st.session_state.end_date.strftime("%Y-%m-%d")
     today = date.today().strftime("%Y-%m-%d")
 
-    # Validate input
     if user_selected_end >= today:
-        st.error(f"❌ End date ({user_selected_end}) is in the future.")
+        st.error(f"❌ End date ({user_selected_end}) is in the future. Please select a valid range.")
         return
     if user_selected_start >= user_selected_end:
         st.error("❌ Start date must be earlier than end date.")
         return
 
-    # Seasonal alignment (Oct 1 → June 30)
+    # Adjust the start and end date to match the processing range
     start_year = int(user_selected_start[:4])
     if int(user_selected_start[5:7]) < 10:
         start_year -= 1
-
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-    # ===============================================================
-    #                     RUN PIPELINE
-    # ===============================================================
+    # st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
+
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
 
-        # 1) Process Sentinel-1
+        # Step 1: Process Sentinel-1 Images
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
-            st.warning("⚠️ Sentinel-1 processing failed.")
+            st.warning("⚠️ Step failed: Sentinel-1 processing.")
             return
 
-        # 2) Daily mosaics
+        # Step 2: Mosaicking images by date
         mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
         if mosaicked_images is None:
-            st.warning("⚠️ Mosaicking failed.")
+            st.warning("⚠️ Step failed: Mosaicking by date.")
             return
 
-        # 3) Pixelwise SigmaDiff
-        sigma_diff = compute_sigma_diff_pixelwise(mosaicked_images)
-        if sigma_diff is None:
-            st.warning("⚠️ SigmaDiff failed.")
+        # Step 3: Compute Sigma Difference Pixel-wise
+        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
+        if sigma_diff_collection is None:
+            st.warning("⚠️ Step failed: SigmaDiff computation.")
             return
 
-        # 4) Seasonal extremes
-        sigma_ext = compute_sigma_diff_extremes(sigma_diff, start_year, user_roi)
-        if sigma_ext is None:
-            st.warning("⚠️ SigmaDiff extremes failed.")
+        # Step 4: Compute Sigma Difference Extremes
+        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
+        if sigma_extreme_collection is None:
+            st.warning("⚠️ Step failed: Sigma extremes.")
             return
 
-        # 5) K assignment
-        k_collection = assign_freeze_thaw_k(sigma_ext)
-        if k_collection is None:
-            st.warning("⚠️ K assignment failed.")
+        # Step 5: Assign Freeze-Thaw K
+        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
+        if final_k_collection is None:
+            st.warning("⚠️ Step failed: K assignment.")
             return
 
-        # 6) ThawRef
-        thaw_ref = compute_thaw_ref_pixelwise(k_collection, start_year, user_roi)
-        if thaw_ref is None:
-            st.warning("⚠️ ThawRef failed.")
+        # Step 6: Compute Thaw Reference Image Pixel-wise
+        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
+        if thaw_ref_image is None:
+            st.warning("⚠️ Step failed: ThawRef image.")
             return
 
-        k_with_thaw_ref = k_collection.map(lambda img: img.addBands(thaw_ref))
+        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
 
-        # 7) ΔTheta
-        delta_theta = compute_delta_theta(k_with_thaw_ref, thaw_ref)
-        if delta_theta is None:
-            st.warning("⚠️ ΔTheta failed.")
+        # Step 7: Compute Delta Theta (ΔΘ) Collection
+        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
+        if delta_theta_collection is None:
+            st.warning("⚠️ Step failed: ΔTheta computation.")
             return
 
-        # 8) EFTA
-        efta_collection = compute_efta(delta_theta, resolution)
+        # Step 8: Compute EFTA (Exponential Freeze-Thaw Algorithm)
+        efta_collection = compute_efta(delta_theta_collection, resolution)
         if efta_collection is None:
-            st.warning("⚠️ EFTA failed.")
+            st.warning("⚠️ Step failed: EFTA calculation.")
             return
 
-        # ===============================================================
-        #     ⭐ 9) Attach ERA5 Snow_depth + Snow_temp  (FIXED VERSION) ⭐
-        # ===============================================================
-        efta_with_snow = attach_era5_to_efta(efta_collection, start_date, end_date, user_roi)
+        st.session_state.efta_collection = efta_collection
 
-        if efta_with_snow is None or efta_with_snow.size().getInfo() == 0:
-            st.error("❌ ERA5 join failed.")
-            return
-
-        # ===============================================================
-        #     ⭐ 10) MASK OUT BAD PIXELS (IMPORTANT FIX) ⭐
-        # ===============================================================
-
-        def mask_valid(img):
-            m = img.select(['EFTA', 'Snow_depth', 'Snow_temp']).reduce(ee.Reducer.min()).mask()
-            return img.updateMask(m)
-
-        efta_clean = efta_with_snow.map(mask_valid)
-
-        st.session_state.efta_collection = efta_clean
-
-        # ===============================================================
-        #     ⭐ 11) Train RF model (EFTA + Snow predictors) ⭐
-        # ===============================================================
+        # Step 9: Train Random Forest Model
         rf_model = train_rf_model()
         if rf_model is None:
-            st.warning("⚠️ RF training failed.")
+            st.warning("⚠️ RF Model training failed.")
             return
 
-        # ===============================================================
-        #     ⭐ 12) Classify every image ⭐
-        # ===============================================================
-        classified_images = efta_clean.map(
-            lambda img: classify_image(img, rf_model, resolution)
-        )
+        # Step 10: Classify the Images using the trained model
+        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
 
-        # ===============================================================
-        # 13) OPTIONAL: Clip to Cropland/Grassland/Barren
-        # ===============================================================
+        # ✅ Optional: Clip to cropland and relevant land cover classes
         if clip_agriculture:
             try:
-                lc = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
-                mask = (
-                    lc.eq(9)
-                    .Or(lc.eq(10))
-                    .Or(lc.eq(15))
-                    .Or(lc.eq(16))
+                # Load NALCMS land cover dataset
+                landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+
+                # Create a mask for relevant land cover classes (cropland, grassland, barren land)
+                expanded_mask = (
+                    landcover.eq(9)   # Tropical/sub-tropical grassland
+                    .Or(landcover.eq(10))  # Temperate/sub-polar grassland
+                    .Or(landcover.eq(15))  # Cropland
+                    .Or(landcover.eq(16))  # Barren lands
                 )
 
-                land_geom = mask.selfMask().reduceToVectors(
+                # Apply the expanded land cover mask
+                land_cover_geometry = expanded_mask.selfMask().reduceToVectors(
                     geometry=user_roi,
-                    geometryType="polygon",
+                    geometryType='polygon',
                     scale=30,
                     maxPixels=1e13
                 )
 
-                new_roi = user_roi.intersection(land_geom.geometry(), ee.ErrorMargin(30))
+                # Intersect the original ROI with the land cover geometry
+                intersected_roi = user_roi.intersection(land_cover_geometry.geometry(), ee.ErrorMargin(30))
 
-                if new_roi.coordinates().size().getInfo() == 0:
-                    st.error("❌ Land cover mask removed entire ROI.")
+                # Check if the intersection results in a valid geometry
+                intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
+
+                # If no valid ROI after intersection, return an error
+                if intersected_roi_valid == 0:
+                    st.error("❌ Land cover mask removed the entire ROI. Please select a different area or disable the land cover mode.")
                     return
 
-                user_roi = new_roi
+                user_roi = intersected_roi
+                # Clip the images with the updated user ROI
                 classified_images = classified_images.map(lambda img: img.clip(user_roi))
 
-                st.success("🌾 ROI clipped to agricultural classes.")
+                st.success("🌾 ROI successfully clipped to relevant land cover classes.")
 
             except Exception as e:
-                st.warning(f"⚠️ Land cover clipping failed: {e}")
+                st.warning(f"⚠️ Land cover masking failed: {e}")
 
-        # ===============================================================
-        # 14) Filter to date selection for visualization
-        # ===============================================================
-        classified_visual = classified_images.filterDate(user_selected_start, user_selected_end)
+        # Step 11: Visualize the classified results
+        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
+        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
-        visualize_ft_classification(classified_visual, user_roi, resolution)
-
-        st.success("🎉 Full Freeze–Thaw Pipeline Completed Successfully!")
+        st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
 
 
-# ========== ✅ Submit ROI Handler ==========
+
 # ========== ✅ Submit ROI Handler ==========
 if submit:
-
-    # 1) Ensure output is a dictionary
-    if isinstance(output, dict) and \
-       "all_drawings" in output and \
-       isinstance(output["all_drawings"], list) and \
-       len(output["all_drawings"]) > 0:
-
-        # Extract the drawing
+    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+        # Get the last drawn feature (ROI)
         last_feature = output["all_drawings"][-1]
-        roi_geojson = last_feature.get("geometry", None)
-
-        if roi_geojson is None:
-            st.error("❌ No valid geometry detected. Please draw the ROI again.")
-            st.stop()
-
-        # Save to session
+        roi_geojson = last_feature["geometry"]
+        
+        # Store the drawn ROI and other parameters in session state
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date
-        st.session_state.end_date = end_date
-        st.session_state.resolution = resolution
-        st.session_state.clip_to_agriculture = clip_to_agri
+        st.session_state.start_date = start_date  # Store start date
+        st.session_state.end_date = end_date  # Store end date
+        st.session_state.resolution = resolution  # Store resolution
+        st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
 
-        # Warning message
+        # Display the message immediately below the "Submit ROI & Start Processing" button in the sidebar
         st.sidebar.markdown("""
             <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
-                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI.
+                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
+                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
             </div>
         """, unsafe_allow_html=True)
 
-        # Disable map moves
-        st.markdown("""
-            <style>.folium-map { pointer-events: none; }</style>
-        """, unsafe_allow_html=True)
+        # Lock the map immediately after submission to prevent zooming, panning, and interaction
+        st.markdown(
+            """
+            <style>
+                .folium-map {
+                    pointer-events: none;  /* Disable all map interactions */
+                }
+            </style>
+            """, unsafe_allow_html=True
+        )
 
-        st.success("✅ ROI submitted. Processing started...")
-
-        # Run your FT pipeline
-        submit_roi()
+        # Display processing message
+        st.success("✅ ROI submitted and ready for processing.")
+        
+        # Run the Freeze-Thaw processing pipeline without the spinner
+        submit_roi()  # Ensure this function is defined elsewhere in your code
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
 
 
 
-# ========== Sidebar Footer ==========
+# Footer Section (on the left side below the Submit ROI button)
 with st.sidebar:
+    # Footer information with extra space before "Submit ROI" button
     st.markdown(
         """
         <style>
-        .footer-text { font-size: 12px; }
+        .footer-text {
+            font-size: 12px;  /* Adjust the font size */
+        }
         </style>
-        <div class="footer-text"><br><br><br><br><br><br><br><br><br><br><br></div>
+        <div class="footer-text">
+        <br><br><br><br><br><br><br><br><br><br><br><br>
+        </div>
         """,
         unsafe_allow_html=True
     )
 
+    # Footer details
     st.markdown(
         """
+        <style>
+        .footer-text {
+            font-size: 12px;  /* Adjust the font size */
+        }
+        </style>
         <div class="footer-text">
+        <br><br>
         <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
         <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
         <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
@@ -1181,7 +1050,8 @@ with st.sidebar:
         """,
         unsafe_allow_html=True
     )
-
+   
+    # Create collapsible section for Contact Us at the end of the sidebar
     with st.expander("📩 Contact Us", expanded=False):
         st.write("If you have any questions, please feel free to reach out!")
         st.markdown("[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)")
