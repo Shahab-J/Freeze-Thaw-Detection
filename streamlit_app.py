@@ -847,6 +847,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
                 st.warning(f"⚠️ Error displaying image {i+1}: {e}")
 
 
+
 # ========== ✅ Step 13: Submit ROI and Processing Pipeline ==========
 def submit_roi():
     # Ensure ROI is selected before processing
@@ -878,117 +879,112 @@ def submit_roi():
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
 
-    # st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
-    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
-        # Step 1: Process Sentinel-1 Images
-        processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
-        if processed_images is None:
-            st.warning("⚠️ Step failed: Sentinel-1 processing.")
-            return
+    # Step 1: Process Sentinel-1 Images
+    processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
+    if processed_images is None:
+        st.warning("⚠️ Step failed: Sentinel-1 processing.")
+        return
 
-        # Step 2: Mosaicking images by date
-        mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
-        if mosaicked_images is None:
-            st.warning("⚠️ Step failed: Mosaicking by date.")
-            return
+    # Step 2: Mosaicking images by date
+    mosaicked_images = mosaic_by_date(processed_images, user_roi, start_date, end_date)
+    if mosaicked_images is None:
+        st.warning("⚠️ Step failed: Mosaicking by date.")
+        return
 
-        # Step 3: Compute Sigma Difference Pixel-wise
-        sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
-        if sigma_diff_collection is None:
-            st.warning("⚠️ Step failed: SigmaDiff computation.")
-            return
+    # Step 3: Compute Sigma Difference Pixel-wise
+    sigma_diff_collection = compute_sigma_diff_pixelwise(mosaicked_images)
+    if sigma_diff_collection is None:
+        st.warning("⚠️ Step failed: SigmaDiff computation.")
+        return
 
-        # Step 4: Compute Sigma Difference Extremes
-        sigma_extreme_collection = compute_sigma_diff_extremes(sigma_diff_collection, start_year, user_roi)
-        if sigma_extreme_collection is None:
-            st.warning("⚠️ Step failed: Sigma extremes.")
-            return
+    # Step 4: Compute Sigma Difference Extremes
+    sigma_extreme_collection = compute_sigma_diff_extremes(
+        sigma_diff_collection, start_year, user_roi
+    )
+    if sigma_extreme_collection is None:
+        st.warning("⚠️ Step failed: Sigma extremes.")
+        return
 
-        # Step 5: Assign Freeze-Thaw K
-        final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
-        if final_k_collection is None:
-            st.warning("⚠️ Step failed: K assignment.")
-            return
+    # Step 5: Assign Freeze-Thaw K
+    final_k_collection = assign_freeze_thaw_k(sigma_extreme_collection)
+    if final_k_collection is None:
+        st.warning("⚠️ Step failed: K assignment.")
+        return
 
-        # Step 6: Compute Thaw Reference Image Pixel-wise
-        thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
-        if thaw_ref_image is None:
-            st.warning("⚠️ Step failed: ThawRef image.")
-            return
+    # Step 6: Compute Thaw Reference Image Pixel-wise
+    thaw_ref_image = compute_thaw_ref_pixelwise(final_k_collection, start_year, user_roi)
+    if thaw_ref_image is None:
+        st.warning("⚠️ Step failed: ThawRef image.")
+        return
 
-        thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
+    thaw_ref_collection = final_k_collection.map(lambda img: img.addBands(thaw_ref_image))
 
-        # Step 7: Compute Delta Theta (ΔΘ) Collection
-        delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
-        if delta_theta_collection is None:
-            st.warning("⚠️ Step failed: ΔTheta computation.")
-            return
+    # Step 7: Compute Delta Theta (ΔΘ)
+    delta_theta_collection = compute_delta_theta(thaw_ref_collection, thaw_ref_image)
+    if delta_theta_collection is None:
+        st.warning("⚠️ Step failed: ΔTheta computation.")
+        return
 
-        # Step 8: Compute EFTA (Exponential Freeze-Thaw Algorithm)
-        efta_collection = compute_efta(delta_theta_collection, resolution)
-        if efta_collection is None:
-            st.warning("⚠️ Step failed: EFTA calculation.")
-            return
+    # Step 8: Compute EFTA
+    efta_collection = compute_efta(delta_theta_collection, resolution)
+    if efta_collection is None:
+        st.warning("⚠️ Step failed: EFTA calculation.")
+        return
 
-        st.session_state.efta_collection = efta_collection
+    st.session_state.efta_collection = efta_collection
 
-        # Step 9: Train Random Forest Model
-        rf_model = train_rf_model()
-        if rf_model is None:
-            st.warning("⚠️ RF Model training failed.")
-            return
+    # Step 9: Train Random Forest Model
+    rf_model = train_rf_model()
+    if rf_model is None:
+        st.warning("⚠️ RF Model training failed.")
+        return
 
-        # Step 10: Classify the Images using the trained model
-        classified_images = efta_collection.map(lambda img: classify_image(img, rf_model, resolution))
+    # Step 10: Classify images
+    classified_images = efta_collection.map(
+        lambda img: classify_image(img, rf_model, resolution)
+    )
 
-        # ✅ Optional: Clip to cropland and relevant land cover classes
-        if clip_agriculture:
-            try:
-                # Load NALCMS land cover dataset
-                landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
+    # Optional: Clip to land cover
+    if clip_agriculture:
+        try:
+            landcover = ee.Image("USGS/NLCD_RELEASES/2020_REL/NALCMS").select("landcover")
 
-                # Create a mask for relevant land cover classes (cropland, grassland, barren land)
-                expanded_mask = (
-                    landcover.eq(9)   # Tropical/sub-tropical grassland
-                    .Or(landcover.eq(10))  # Temperate/sub-polar grassland
-                    .Or(landcover.eq(15))  # Cropland
-                    .Or(landcover.eq(16))  # Barren lands
-                )
+            expanded_mask = (
+                landcover.eq(9)
+                .Or(landcover.eq(10))
+                .Or(landcover.eq(15))
+                .Or(landcover.eq(16))
+            )
 
-                # Apply the expanded land cover mask
-                land_cover_geometry = expanded_mask.selfMask().reduceToVectors(
-                    geometry=user_roi,
-                    geometryType='polygon',
-                    scale=30,
-                    maxPixels=1e13
-                )
+            land_cover_geometry = expanded_mask.selfMask().reduceToVectors(
+                geometry=user_roi,
+                geometryType="polygon",
+                scale=30,
+                maxPixels=1e13
+            )
 
-                # Intersect the original ROI with the land cover geometry
-                intersected_roi = user_roi.intersection(land_cover_geometry.geometry(), ee.ErrorMargin(30))
+            intersected_roi = user_roi.intersection(
+                land_cover_geometry.geometry(), ee.ErrorMargin(30)
+            )
 
-                # Check if the intersection results in a valid geometry
-                intersected_roi_valid = intersected_roi.coordinates().size().getInfo()
+            if intersected_roi.coordinates().size().getInfo() == 0:
+                st.error("❌ Land cover mask removed the entire ROI.")
+                return
 
-                # If no valid ROI after intersection, return an error
-                if intersected_roi_valid == 0:
-                    st.error("❌ Land cover mask removed the entire ROI. Please select a different area or disable the land cover mode.")
-                    return
+            user_roi = intersected_roi
+            classified_images = classified_images.map(lambda img: img.clip(user_roi))
+            st.success("🌾 ROI successfully clipped to relevant land cover classes.")
 
-                user_roi = intersected_roi
-                # Clip the images with the updated user ROI
-                classified_images = classified_images.map(lambda img: img.clip(user_roi))
+        except Exception as e:
+            st.warning(f"⚠️ Land cover masking failed: {e}")
 
-                st.success("🌾 ROI successfully clipped to relevant land cover classes.")
+    # Step 11: Visualize results
+    classified_collection_visual = classified_images.filterDate(
+        user_selected_start, user_selected_end
+    )
+    visualize_ft_classification(classified_collection_visual, user_roi, resolution)
 
-            except Exception as e:
-                st.warning(f"⚠️ Land cover masking failed: {e}")
-
-        # Step 11: Visualize the classified results
-        classified_collection_visual = classified_images.filterDate(user_selected_start, user_selected_end)
-        visualize_ft_classification(classified_collection_visual, user_roi, resolution)
-
-        st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
-
+    st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
 
 
 
