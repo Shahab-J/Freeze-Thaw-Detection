@@ -1008,7 +1008,10 @@ if submit:
         st.session_state.roi_confirmed = False
         st.session_state.processing_started = False
 
-        st.sidebar.success("✅ ROI stored. Please confirm to start processing.")
+        st.sidebar.success(
+            "✅ **Step 1 completed:** ROI stored successfully.\n\n"
+            "👉 **Step 2 required:** Please confirm below to start processing."
+        )
 
     else:
         st.sidebar.warning("⚠️ Please draw an ROI before submitting.")
@@ -1025,10 +1028,10 @@ if (
 
     with st.sidebar:
         st.markdown("---")
-        st.markdown("### ⚠️ Important – Please Confirm")
+        st.markdown("### 👉 Step 2: Confirm Before Processing")
 
         st.warning("""
-        Once processing starts:
+        Before processing starts, please read carefully:
 
         ❌ Do **NOT** zoom, pan, or click on the map  
         ❌ Do **NOT** interact with the map in any way  
@@ -1039,13 +1042,14 @@ if (
         """)
 
         confirm = st.checkbox(
-            "✅ I understand and will not interact with the map",
+            "✅ I understand and will NOT interact with the map during processing",
             key="confirm_no_map_interaction"
         )
 
         if confirm:
             st.session_state.roi_confirmed = True
             st.success("✔️ Confirmation received. The pipeline will now start.")
+
 
 
 
