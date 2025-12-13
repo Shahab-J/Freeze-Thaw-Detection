@@ -879,7 +879,7 @@ def submit_roi():
     end_date = f"{start_year+1}-06-30"
 
     # st.write(f"✅ Adjusted Processing Range: {start_date} to {end_date}")
-
+    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         # Step 1: Process Sentinel-1 Images
         processed_images = process_sentinel1(start_date, end_date, user_roi, resolution)
         if processed_images is None:
