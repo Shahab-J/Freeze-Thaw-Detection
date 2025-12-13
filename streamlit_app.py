@@ -989,7 +989,7 @@ def submit_roi():
 
 
 
-# ========== ✅ Submit ROI Handler ==========
+# ========== ✅ Submit ROI Handler (SIDEBAR) ==========
 if submit:
 
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
@@ -1004,19 +1004,18 @@ if submit:
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
 
-        # Reset confirmation states
+        # Reset states
         st.session_state.roi_confirmed = False
         st.session_state.processing_started = False
 
         st.sidebar.success("✅ ROI stored. Please confirm to start processing.")
 
     else:
-        st.warning("⚠️ Please draw an ROI before submitting.")
-
+        st.sidebar.warning("⚠️ Please draw an ROI before submitting.")
 
 
 # ======================================
-# ⚠️ USER CONFIRMATION GATE (POPUP)
+# ⚠️ Sidebar Confirmation (UNDER Submit)
 # ======================================
 if (
     "user_roi" in st.session_state
@@ -1024,24 +1023,32 @@ if (
     and not st.session_state.processing_started
 ):
 
-    st.markdown("### ⚠️ Important – Please Confirm")
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("### ⚠️ Important – Please Confirm")
 
-    st.warning("""
-    Once processing starts:
+        st.warning("""
+        Once processing starts:
 
-    ❌ Do NOT zoom, pan, or click on the map  
-    ❌ Do NOT interact with the map in any way  
-    ✅ Scroll **using the mouse margin / trackpad only**  
-    ⏳ Processing may take several minutes depending on ROI size  
+        ❌ Do **NOT** zoom, pan, or click on the map  
+        ❌ Do **NOT** interact with the map in any way  
+        ✅ Scroll using the **mouse margin / trackpad only**  
+        ⏳ Processing may take several minutes depending on ROI size  
 
-    Any interaction with the map will **restart the app and cancel processing**.
-    """)
+        Any interaction with the map will restart the app and cancel processing.
+        """)
 
-    confirm = st.checkbox("✅ I understand and will not interact with the map")
+        confirm = st.checkbox(
+            "✅ I understand and will not interact with the map",
+            key="confirm_no_map_interaction"
+        )
 
-    if confirm:
-        st.session_state.roi_confirmed = True
-        st.success("✔️ Confirmation received. The pipeline will now start.")
+        if confirm:
+            st.session_state.roi_confirmed = True
+            st.success("✔️ Confirmation received. The pipeline will now start.")
+
+
+
 
 
 # ======================================
