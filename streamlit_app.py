@@ -3,6 +3,16 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 
+# ======================================
+# 🔐 ROI Confirmation State (GLOBAL)
+# ======================================
+if "roi_confirmed" not in st.session_state:
+    st.session_state.roi_confirmed = False
+
+if "processing_started" not in st.session_state:
+    st.session_state.processing_started = False
+
+
 import ee
 import io
 import sys
@@ -252,6 +262,21 @@ add_search_bar(m)
 # ========== ✅ Render the map once with the updated location ==========
 output = st_folium(m, width=1300, height=450)  # Display map with updated location
 
+# ======================================
+# 🔒 Lock map after confirmation
+# ======================================
+if st.session_state.get("roi_confirmed", False):
+    st.markdown(
+        """
+        <style>
+            .folium-map {
+                pointer-events: none;
+                filter: grayscale(20%);
+            }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ✅ Step 2: Sentinel-1 Processing for Streamlit
@@ -972,45 +997,71 @@ def submit_roi():
 
 # ========== ✅ Submit ROI Handler ==========
 if submit:
+
     if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
-        # Get the last drawn feature (ROI)
+
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
-        
-        # Store the drawn ROI and other parameters in session state
+
+        # Store inputs ONLY (no processing yet)
         st.session_state.user_roi = ee.Geometry(roi_geojson)
-        st.session_state.start_date = start_date  # Store start date
-        st.session_state.end_date = end_date  # Store end date
-        st.session_state.resolution = resolution  # Store resolution
-        st.session_state.clip_to_agriculture = clip_to_agri  # Store clip to agriculture flag
+        st.session_state.start_date = start_date
+        st.session_state.end_date = end_date
+        st.session_state.resolution = resolution
+        st.session_state.clip_to_agriculture = clip_to_agri
 
-        # Display the message immediately below the "Submit ROI & Start Processing" button in the sidebar
-        st.sidebar.markdown("""
-            <div style="font-size: 16px; color: #FFA500; font-weight: bold;">
-                ⚠️ Please wait. Do not zoom or tap on the map after submitting the ROI until the process is completed. 
-                Scroll down without tapping or zooming the selected ROI to see the dropdown menu of **"View All Freeze–Thaw Results"**.
-            </div>
-        """, unsafe_allow_html=True)
+        # Reset confirmation states
+        st.session_state.roi_confirmed = False
+        st.session_state.processing_started = False
 
-        # Lock the map immediately after submission to prevent zooming, panning, and interaction
-        st.markdown(
-            """
-            <style>
-                .folium-map {
-                    pointer-events: none;  /* Disable all map interactions */
-                }
-            </style>
-            """, unsafe_allow_html=True
-        )
-
-        # Display processing message
-        st.success("✅ ROI submitted and ready for processing.")
-        
-        # Run the Freeze-Thaw processing pipeline without the spinner
-        submit_roi()  # Ensure this function is defined elsewhere in your code
+        st.sidebar.success("✅ ROI stored. Please confirm to start processing.")
 
     else:
         st.warning("⚠️ Please draw an ROI before submitting.")
+
+
+
+# ======================================
+# ⚠️ USER CONFIRMATION GATE (POPUP)
+# ======================================
+if (
+    "user_roi" in st.session_state
+    and not st.session_state.roi_confirmed
+    and not st.session_state.processing_started
+):
+
+    st.markdown("### ⚠️ Important – Please Confirm")
+
+    st.warning("""
+    Once processing starts:
+
+    ❌ Do NOT zoom, pan, or click on the map  
+    ❌ Do NOT interact with the map in any way  
+    ✅ Scroll **using the mouse margin / trackpad only**  
+    ⏳ Processing may take several minutes depending on ROI size  
+
+    Any interaction with the map will **restart the app and cancel processing**.
+    """)
+
+    confirm = st.checkbox("✅ I understand and will not interact with the map")
+
+    if confirm:
+        st.session_state.roi_confirmed = True
+        st.success("✔️ Confirmation received. The pipeline will now start.")
+
+
+# ======================================
+# 🚀 Start Processing (ONE-TIME)
+# ======================================
+if (
+    st.session_state.get("roi_confirmed", False)
+    and not st.session_state.processing_started
+):
+
+    st.session_state.processing_started = True
+
+    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
+        submit_roi()
 
 
 
