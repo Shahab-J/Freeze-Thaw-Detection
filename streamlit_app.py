@@ -1232,11 +1232,64 @@ if (
 
     st.session_state.processing_started = True
 
-    with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
+    # 🔵 Highly visible operator status (STRONG visual cue)
+    status_box = st.empty()
+    status_box.markdown(
+        """
+        <div style="
+            background-color:#E3F2FD;
+            border-left:8px solid #1565C0;
+            padding:18px;
+            border-radius:8px;
+            font-size:19px;
+            font-weight:600;
+            color:#0D47A1;
+            display:flex;
+            align-items:center;
+            gap:16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        ">
+            <span style="font-size:32px;">🔄</span>
+            <span>
+                <b>Processing in progress</b><br>
+                Running the full <b>Freeze–Thaw pipeline</b><br>
+                🚫 <b>Please do NOT interact with the map</b>
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 🔒 Actual processing lock (spinner stays for backend)
+    with st.spinner("Running full Freeze–Thaw processing pipeline…"):
         submit_roi()
 
-    # Optional: prevent reruns after completion
-    # st.stop()
+    # 🟢 Update when finished
+    status_box.markdown(
+        """
+        <div style="
+            background-color:#E8F5E9;
+            border-left:8px solid #2E7D32;
+            padding:18px;
+            border-radius:8px;
+            font-size:19px;
+            font-weight:600;
+            color:#1B5E20;
+            display:flex;
+            align-items:center;
+            gap:16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        ">
+            <span style="font-size:32px;">✅</span>
+            <span>
+                <b>Processing completed successfully</b><br>
+                Results are now available below
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 
 # ======================================
