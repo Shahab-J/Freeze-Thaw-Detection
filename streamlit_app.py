@@ -761,62 +761,121 @@ def classify_image(img, rf_model, resolution):
 # ✅ Step 11: Compute and Summarize FT Classification for Streamlit
 def summarize_ft_classification(collection, user_roi, resolution):
     """
-    Computes and displays the percentage of Frozen vs. Thawed pixels
-    in the classification results for each image.
-
-    Args:
-        collection (ee.ImageCollection): Collection with 'FT_State' classified band.
-        user_roi (ee.Geometry): ROI to summarize statistics over.
-        resolution (int): User-selected spatial resolution (10, 30, 100 m).
+    Computes and displays:
+    - ROI spatial coverage based on raw Sentinel-1 availability (VH)
+    - Percentage of Frozen vs. Thawed pixels (FT_State)
+    
+    Coverage is computed BEFORE any land-cover masking.
     """
 
     if collection is None:
-        st.error("❌ ERROR: Input collection is None.")
-        return None
-   
         st.error("❌ No classified images available for summarization.")
         return
 
-    image_list = collection.toList(collection.size())
-    num_images = collection.size().getInfo()
+    # --------------------------------------------------
+    # Collection size
+    # --------------------------------------------------
+    num_images = ee_getinfo(collection.size(), "Summary image count")
+    if num_images == 0:
+        st.warning("⚠️ No images available for summarization.")
+        return
+
+    image_list = collection.toList(num_images)
+
+    # --------------------------------------------------
+    # Compute TOTAL ROI pixel count ONCE
+    # --------------------------------------------------
+    roi_pixel_count = ee_getinfo(
+        ee.Image.constant(1)
+        .clip(user_roi)
+        .reduceRegion(
+            reducer=ee.Reducer.count(),
+            geometry=user_roi,
+            scale=resolution,
+            maxPixels=1e13,
+            bestEffort=True
+        )
+        .values()
+        .get(0),
+        "Total ROI pixel count (summary)"
+    )
+
+    if roi_pixel_count == 0:
+        st.error("❌ ROI contains no valid pixels at this resolution.")
+        return
 
     st.markdown("### 📊 Freeze–Thaw Classification Summary")
 
+    # --------------------------------------------------
+    # Loop over images
+    # --------------------------------------------------
     for i in range(num_images):
         try:
             img = ee.Image(image_list.get(i))
+            timestamp = ee_getinfo(
+                img.date().format("YYYY-MM-dd"),
+                "Image timestamp"
+            )
 
-            # Extract timestamp and format it
-            timestamp = img.date().format("YYYY-MM-dd").getInfo()
+            # ----------------------------------------------
+            # 1) ROI COVERAGE (raw Sentinel-1 availability)
+            # ----------------------------------------------
+            coverage_stats = img.select("VH").reduceRegion(
+                reducer=ee.Reducer.count(),
+                geometry=user_roi,
+                scale=resolution,
+                maxPixels=1e13,
+                bestEffort=True
+            )
 
-            # Compute histogram of Freeze (1) / Thaw (0) pixels
+            valid_pixels = ee_getinfo(
+                coverage_stats.values().get(0),
+                f"ROI acquisition pixels for {timestamp}"
+            )
+
+            roi_coverage = valid_pixels / roi_pixel_count
+            roi_coverage = min(roi_coverage, 1.0)  # safety clamp
+
+            # ----------------------------------------------
+            # 2) Freeze–Thaw histogram (classified pixels)
+            # ----------------------------------------------
             stats = img.select("FT_State").reduceRegion(
                 reducer=ee.Reducer.frequencyHistogram(),
                 geometry=user_roi,
                 scale=resolution,
-                maxPixels=1e13
-            ).getInfo()
+                maxPixels=1e13,
+                bestEffort=True
+            )
 
-            hist = stats.get("FT_State", {})
+            stats_dict = ee_getinfo(stats, f"FT stats for {timestamp}")
+            hist = stats_dict.get("FT_State", {}) if stats_dict else {}
 
             thawed = int(hist.get("0", 0))
             frozen = int(hist.get("1", 0))
-            total = thawed + frozen
+            classified_total = thawed + frozen
 
-            thawed_percent = (thawed / total * 100) if total > 0 else 0
-            frozen_percent = (frozen / total * 100) if total > 0 else 0
+            thawed_percent = (thawed / classified_total * 100) if classified_total > 0 else 0
+            frozen_percent = (frozen / classified_total * 100) if classified_total > 0 else 0
 
-            # Output summary for this image
-            st.markdown(f"""
-            **🗓️ Image {i+1} — {timestamp}**
-            - Thawed Pixels (0): {thawed:,} ({thawed_percent:.2f}%)
-            - Frozen Pixels (1): {frozen:,} ({frozen_percent:.2f}%)
-            ---
-            """)
+            # ----------------------------------------------
+            # Output summary
+            # ----------------------------------------------
+            st.markdown(
+                f"""
+**🗓️ {timestamp}**
+- 📊 **ROI Coverage (Sentinel-1)**: **{roi_coverage:.0%}**
+- 🟦 Frozen Pixels: {frozen:,} ({frozen_percent:.1f}%)
+- 🟥 Thawed Pixels: {thawed:,} ({thawed_percent:.1f}%)
+- 🧮 Classified Pixels: {classified_total:,}
+---
+"""
+            )
+
         except Exception as e:
-            st.warning(f"⚠️ Could not summarize image {i+1}: {e}")
+            st.warning(f"⚠️ Could not summarize image {i + 1}: {e}")
 
     st.success("✅ Freeze–Thaw Classification Summary Computed.")
+
 
 
 
@@ -974,7 +1033,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
                     f"🟦 Frozen: **{frozen} pixels** ({frozen_pct:.1f}%)  \n"
                     f"🟥 Thawed: **{thawed} pixels** ({thawed_pct:.1f}%)  \n"
-                    f"📊 ROI Coverage: **{roi_coverage:.0%}**  \n"
+                    f"📊 ROI Coverage (cropland / bare land / grassland only): **{roi_coverage:.0%}**  \n"
                     f"📏 Resolution: **{resolution} m**"
                 )
                 st.divider()
