@@ -1311,7 +1311,7 @@ if "user_roi" in st.session_state and st.session_state.user_roi is not None:
 
 
 # ======================================
-# ⚠️ Sidebar Confirmation (UNDER Submit)
+# 👉 Sidebar: Step 2 — Confirm Before Processing (COMPACT, GREEN)
 # ======================================
 if (
     "user_roi" in st.session_state
@@ -1320,16 +1320,18 @@ if (
 ):
 
     with st.sidebar:
-        st.markdown("---")
 
-        # 🎨 Highlight Step 2 area UNTIL confirmed
+        # Tight separator (small, not tall)
+        st.markdown("<div style='margin:6px 0;'></div>", unsafe_allow_html=True)
+
+        # 🎨 Light GREEN highlight ONLY for Step 2
         st.markdown(
             """
             <style>
-            section[data-testid="stCheckbox"] {
-                background-color: #fff0f0;
-                border: 1px solid #ff9999;
-                padding: 10px;
+            div.step2-box {
+                background-color: #E8F5E9;
+                border: 1px solid #A5D6A7;
+                padding: 12px;
                 border-radius: 6px;
             }
             </style>
@@ -1337,18 +1339,24 @@ if (
             unsafe_allow_html=True
         )
 
-        st.markdown("### 👉 Step 2: Confirm Before Processing")
+        st.markdown(
+            """
+            <div class="step2-box">
+            <b>👉 Step 2: Confirm Before Processing</b><br><br>
 
-        st.warning("""
-        Before processing starts, please read carefully:
+            ❌ <b>Do NOT</b> zoom, pan, or click on the map<br>
+            ❌ <b>Do NOT</b> interact with the map in any way<br>
+            ✅ Scroll using the <b>mouse margin / trackpad only</b><br>
+            ⏳ Processing may take several minutes depending on ROI size<br><br>
 
-        ❌ Do **NOT** zoom, pan, or click on the map  
-        ❌ Do **NOT** interact with the map in any way  
-        ✅ Scroll using the **mouse margin / trackpad only**  
-        ⏳ Processing may take several minutes depending on ROI size  
+            Any interaction with the map will restart the app and cancel processing.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        Any interaction with the map will restart the app and cancel processing.
-        """)
+        # Small spacing before checkbox
+        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
 
         confirm = st.checkbox(
             "✅ I understand and will NOT interact with the map during processing",
@@ -1358,6 +1366,7 @@ if (
         if confirm:
             st.session_state.roi_confirmed = True
             st.success("✔️ Confirmation received. The pipeline will now start.")
+
 
 
 
