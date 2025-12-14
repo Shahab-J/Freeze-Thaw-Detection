@@ -379,90 +379,98 @@ def process_sentinel1(start_date, end_date, roi, resolution):
     return processed_collection
 
 
-# ✅ Step 3: Mosaicking by Date for Streamlit (UPDATED: keeps raw mask for coverage)
+# ✅ Step 3: Mosaicking by Date (RAW mask preserved)
 def mosaic_by_date(collection, roi, start_date, end_date):
     """
-    Mosaics Sentinel-1 images captured on the same date to avoid duplicate acquisitions.
+    Mosaics Sentinel-1 images captured on the same date.
 
-    ✅ Update vs old version:
-    - DOES NOT clip() the mosaic here (to preserve the native mask for raw ROI coverage checks).
-    - Still sets system:time_start.
-    - You can clip later when creating thumbnails / visualization.
+    IMPORTANT:
+    - No .clip(roi) here → preserves native mask
+    - Raw ROI coverage is computed later
     """
+
     if collection is None:
         st.error("❌ ERROR: No processed images available for mosaicking.")
         return None
 
-    filtered_collection = collection.filterDate(start_date, end_date)
+    filtered = collection.filterDate(start_date, end_date)
 
-    # Use safe getInfo wrapper if you already have ee_getinfo; otherwise keep getInfo()
-    try:
-        count = ee_getinfo(filtered_collection.size(), "Mosaic input count")
-    except Exception:
-        count = filtered_collection.size().getInfo()
-
+    count = ee_getinfo(filtered.size(), "Mosaic input count")
     if not count or count == 0:
-        st.error("❌ ERROR: No images found after filtering for mosaicking.")
+        st.error("❌ ERROR: No images found after filtering.")
         return None
 
-    # Extract unique dates as strings
     unique_dates = (
-        filtered_collection.aggregate_array("system:time_start")
+        filtered.aggregate_array("system:time_start")
         .map(lambda t: ee.Date(t).format("YYYY-MM-dd"))
         .distinct()
     )
 
     def mosaic_same_day(date_str):
         date = ee.Date.parse("YYYY-MM-dd", date_str)
-
-        # IMPORTANT: no .clip(roi) here — keep mask for RAW coverage gate
-        mosaic = (
-            filtered_collection
+        return (
+            filtered
             .filterDate(date, date.advance(1, "day"))
             .mosaic()
             .set("system:time_start", date.millis())
             .set("date_str", date.format("YYYY-MM-dd"))
         )
-        return mosaic
 
-    mosaicked_collection = ee.ImageCollection(unique_dates.map(mosaic_same_day))
+    mosaicked = ee.ImageCollection(unique_dates.map(mosaic_same_day))
 
-    try:
-        mosaicked_count = ee_getinfo(mosaicked_collection.size(), "Mosaicked count")
-    except Exception:
-        mosaicked_count = mosaicked_collection.size().getInfo()
-
-    if not mosaicked_count or mosaicked_count == 0:
+    mosaicked_count = ee_getinfo(mosaicked.size(), "Mosaicked count")
+    if mosaicked_count == 0:
         st.error("❌ ERROR: No mosaicked images generated.")
         return None
 
-    return mosaicked_collection
+    return mosaicked
 
 
+
+# ============================
+# Raw ROI coverage utilities
+# ============================
 MIN_RAW_ROI_COVERAGE = 0.50
-COVERAGE_BAND = "VH"  # or "VV" if that is always present
+COVERAGE_BAND = "VH"  # or "VV" if always present
 
 def add_raw_roi_coverage(img, user_roi, resolution):
-    # valid pixels in ROI (based on band mask)
-    valid = img.select(COVERAGE_BAND).mask().reduceRegion(
-        reducer=ee.Reducer.sum(),
-        geometry=user_roi,
-        scale=resolution,
-        maxPixels=1e13,
-        bestEffort=True
-    ).values().get(0)
+    """
+    Computes RAW coverage of ROI BEFORE any land-cover clipping.
+    """
 
-    # total pixels in ROI (constant 1 image clipped to ROI)
-    total = ee.Image.constant(1).clip(user_roi).reduceRegion(
-        reducer=ee.Reducer.sum(),
-        geometry=user_roi,
-        scale=resolution,
-        maxPixels=1e13,
-        bestEffort=True
-    ).values().get(0)
+    # Count valid pixels (masked band)
+    valid = ee.Number(
+        img.select(COVERAGE_BAND)
+           .mask()
+           .reduceRegion(
+               reducer=ee.Reducer.sum(),
+               geometry=user_roi,
+               scale=resolution,
+               maxPixels=1e13,
+               bestEffort=True
+           )
+           .values()
+           .get(0)
+    )
 
-    cov = ee.Number(valid).divide(ee.Number(total)).clamp(0, 1)
-    return img.set({"roi_cov_raw": cov})
+    # Count total possible pixels in ROI
+    total = ee.Number(
+        ee.Image.constant(1)
+          .clip(user_roi)
+          .reduceRegion(
+              reducer=ee.Reducer.sum(),
+              geometry=user_roi,
+              scale=resolution,
+              maxPixels=1e13,
+              bestEffort=True
+          )
+          .values()
+          .get(0)
+    )
+
+    coverage = valid.divide(total).clamp(0, 1)
+
+    return img.set({"roi_cov_raw": coverage})
 
 
 # ✅ Step 4: SigmaDiff Computation for Streamlit
