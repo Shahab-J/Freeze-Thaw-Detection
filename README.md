@@ -43,7 +43,7 @@ You can choose to clip analysis only to **agricultural land** using the 2020 NAL
 
 ## ✨ Authors
 Developed by:
-- Shahabeddin Taghipourjavi (ORCID: [0000-0002-2036-9863](https://orcid.org/0000-0002-2036-9863))
+- **Shahabeddin Taghipourjavi** (ORCID: [0000-0002-2036-9863](https://orcid.org/0000-0002-2036-9863))
 Institution: Université du Québec à Trois-Rivières
 Address: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3
 Email: Shahabeddin.taghipourjavi@uqtr.ca
