@@ -457,44 +457,59 @@ def compute_sigma_diff_pixelwise(collection):
 # ✅ Step 5: SigmaDiff Min/Max Computation for Streamlit
 def compute_sigma_diff_extremes(collection, start_year, user_roi):
     """
-    Computes SigmaDiff_min and SigmaDiff_max dynamically per pixel based on two seasonal periods:
-    - Min from mid-October to end of January
-    - Max from late February to late May
+    Computes SigmaDiff_min and SigmaDiff_max per pixel.
+    Guarantees both bands exist on every image.
     """
+
     if collection is None:
-        st.error("❌ ERROR: Input collection is None.")
+        st.error("❌ ERROR: No SigmaDiff collection provided.")
         return None
 
-        st.error("❌ ERROR: No valid SigmaDiff images found. Cannot compute extremes.")
-        return None
+    # Seasonal windows
+    mid_oct_to_end_jan = collection.filterDate(
+        f'{start_year}-10-15', f'{start_year+1}-01-31'
+    )
+    end_feb_to_may = collection.filterDate(
+        f'{start_year+1}-02-20', f'{start_year+1}-05-20'
+    )
 
-    # Define seasonal windows for min and max
-    mid_oct_to_end_jan = collection.filterDate(f'{start_year}-10-15', f'{start_year+1}-01-31')
-    end_feb_to_may = collection.filterDate(f'{start_year+1}-02-20', f'{start_year+1}-05-20')
-
-    # Reduce to min/max SigmaDiff in the two periods
+    # --- Compute min ---
     sigma_min = (
         mid_oct_to_end_jan.select('SigmaDiff')
         .reduce(ee.Reducer.min())
         .rename('SigmaDiff_min')
-        .clip(user_roi)
     )
 
+    # --- Compute max ---
     sigma_max = (
         end_feb_to_may.select('SigmaDiff')
         .reduce(ee.Reducer.max())
         .rename('SigmaDiff_max')
-        .clip(user_roi)
     )
 
-    # Attach constant min/max bands to each image
-    def attach_min_max(img):
+    # --- SAFETY: fill missing bands ---
+    # If a reducer returns an empty image, replace with constant 0
+    empty_min = ee.Image.constant(0).rename('SigmaDiff_min')
+    empty_max = ee.Image.constant(0).rename('SigmaDiff_max')
+
+    sigma_min = ee.Image(
+        ee.Algorithms.If(sigma_min.bandNames().size().gt(0), sigma_min, empty_min)
+    )
+
+    sigma_max = ee.Image(
+        ee.Algorithms.If(sigma_max.bandNames().size().gt(0), sigma_max, empty_max)
+    )
+
+    # Clip once
+    sigma_min = sigma_min.clip(user_roi)
+    sigma_max = sigma_max.clip(user_roi)
+
+    # Attach to every image
+    def attach_extremes(img):
         return img.addBands(sigma_min).addBands(sigma_max)
 
-    updated_collection = collection.map(attach_min_max)
+    return collection.map(attach_extremes)
 
-#   st.success("✅ SigmaDiff Min/Max computation complete.")
-    return updated_collection
 
 
 # ✅ Step 6: Freeze–Thaw K Assignment for Streamlit
