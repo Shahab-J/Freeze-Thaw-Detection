@@ -1032,7 +1032,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
     # --------------------------------------------------
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
-            f"🖼️ Images kept (ROI coverage ≥ {MIN_RAW_ROI_COVERAGE:.0%}) from "
+            f"🖼️ Images kept (Sentinel-1 spatial coverage over ROI ≥ {MIN_RAW_ROI_COVERAGE:.0%}) from "
             f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: "
             f"<b><span style='font-size:30px'>{len(valid_indices)}</span></b>",
             unsafe_allow_html=True,
