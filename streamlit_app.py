@@ -179,7 +179,7 @@ resolution = st.sidebar.selectbox(
 st.session_state.resolution = resolution
 
 clip_to_agri = st.sidebar.checkbox("🌾 Clip ROI to cropland, grasslands, and barren lands", value=True)
-submit = st.sidebar.button("🚀 Submit ROI & Start Processing")
+submit = st.sidebar.button("🚀 Step 1: Submit ROI (see Step 2 below)")
 
 # ========== ✅ Session State Initialization ==========
 if 'start_date' not in st.session_state:
