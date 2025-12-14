@@ -982,7 +982,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
         return
 
     # --------------------------------------------------
-    # 3) FIRST PASS: find only images with coverage >= MIN_ROI_COVERAGE
+    # 3) FIRST PASS: find only images with coverage >= MIN_RAW_ROI_COVERAGE
     #    (no printing, no skipped messages)
     # --------------------------------------------------
     valid_indices = []
@@ -1015,7 +1015,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
         roi_coverage = valid_pixels / roi_pixel_count
         roi_coverage = min(roi_coverage, 1.0)  # clamp safety
 
-        if roi_coverage >= MIN_ROI_COVERAGE:
+        if roi_coverage >= MIN_RAW_ROI_COVERAGE:
             valid_indices.append(i)
             valid_coverages[i] = (timestamp, thawed, frozen, roi_coverage)
 
@@ -1023,7 +1023,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
     if len(valid_indices) == 0:
         st.warning(
             f"⚠️ No images meet the minimum ROI coverage threshold "
-            f"({MIN_ROI_COVERAGE:.0%}) for this ROI and date range."
+            f"({MIN_RAW_ROI_COVERAGE:.0%}) for this ROI and date range."
         )
         return
 
@@ -1032,7 +1032,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels=Non
     # --------------------------------------------------
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
-            f"🖼️ Images kept (ROI coverage ≥ {MIN_ROI_COVERAGE:.0%}) from "
+            f"🖼️ Images kept (ROI coverage ≥ {MIN_RAW_ROI_COVERAGE:.0%}) from "
             f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: "
             f"<b><span style='font-size:30px'>{len(valid_indices)}</span></b>",
             unsafe_allow_html=True,
