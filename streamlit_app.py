@@ -861,12 +861,18 @@ def visualize_ft_classification(collection, user_roi, resolution):
                 timestamp = img.date().format("YYYY-MM-dd").getInfo()
 
                 # Generate the image URL for display
-                url = img.select("FT_State").clip(user_roi).getThumbURL({
+                thumb_img = (
+                    img.select("FT_State")
+                   .clipToBoundsAndScale(geometry=user_roi, scale=max(60, resolution))  # ✅ lighter
+                )
+
+                url = thumb_img.getThumbURL({
                     "min": 0,
                     "max": 1,
                     "dimensions": 768,
                     "palette": ["red", "blue"]
                 })
+                
 
                 # Load the image into Streamlit
                 image = Image.open(urllib.request.urlopen(url))
@@ -881,12 +887,17 @@ def visualize_ft_classification(collection, user_roi, resolution):
                         st.markdown(href, unsafe_allow_html=True)
 
                 # Compute Pixel Stats
+                stats_scale = max(120, resolution * 4)
+
                 stats = img.select("FT_State").reduceRegion(
                     reducer=ee.Reducer.frequencyHistogram(),
                     geometry=user_roi,
-                    scale=resolution,
-                    maxPixels=1e13
-                ).getInfo()
+                    scale=stats_scale,
+                    maxPixels=1e13,
+                    bestEffort=True,   # ✅ lets EE auto-adjust internally
+                    tileScale=4        # ✅ reduces memory pressure
+               ).getInfo()
+
 
                 # Extract histogram data
                 hist = stats.get("FT_State", {})
@@ -1067,43 +1078,34 @@ def submit_roi():
         # ==================================================
         if clip_agriculture:
             try:
+                # Load NALCMS land-cover
                 landcover = ee.Image(
                     "USGS/NLCD_RELEASES/2020_REL/NALCMS"
                 ).select("landcover")
 
-                mask = (
-                    landcover.eq(9)
-                    .Or(landcover.eq(10))
-                    .Or(landcover.eq(15))
-                    .Or(landcover.eq(16))
+                # Define allowed land-cover classes
+                agri_mask = (
+                    landcover.eq(9)    # Grassland (tropical/subtropical)
+                    .Or(landcover.eq(10))  # Grassland (temperate/subpolar)
+                    .Or(landcover.eq(15))  # Cropland
+                    .Or(landcover.eq(16))  # Barren land
                 )
 
-                land_cover_geometry = mask.selfMask().reduceToVectors(
-                    geometry=user_roi,
-                    geometryType="polygon",
-                    scale=30,
-                    maxPixels=1e13
+                # Apply mask directly to images (NO vectorization)
+                classified_images = classified_images.map(
+                    lambda img: img.updateMask(agri_mask).clip(user_roi)
                 )
 
-                intersected_roi = user_roi.intersection(
-                    land_cover_geometry.geometry(),
-                    ee.ErrorMargin(30)
+                # Optional sanity check (lightweight)
+                test_count = ee_getinfo(
+                    classified_images.size(),
+                    "Land-cover masked image count"
                 )
-
-                valid = ee_getinfo(
-                    intersected_roi.coordinates().size(),
-                    "Land-cover ROI intersection"
-                )
-                if valid == 0:
-                    st.error("❌ Land-cover mask removed the entire ROI.")
+                if test_count == 0:
+                    st.error("❌ Land-cover mask removed all valid pixels in the ROI.")
                     return
 
-                user_roi = intersected_roi
-                classified_images = classified_images.map(
-                    lambda img: img.clip(user_roi)
-                )
-
-                st.success("🌾 ROI successfully clipped to relevant land-cover classes.")
+                st.success("🌾 Applied agricultural land-cover mask successfully.")
 
             except Exception as e:
                 st.warning(f"⚠️ Land-cover masking failed: {e}")
