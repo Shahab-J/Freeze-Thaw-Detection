@@ -161,8 +161,6 @@ with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
     """, unsafe_allow_html=True)
 
 
-
-MIN_ROI_COVERAGE = 0.50  # 50%
                                                                       
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
@@ -246,6 +244,7 @@ def add_search_bar(map_object):
     place = st.text_input("Enter place (city, landmark, etc.):")
     if place:
         search_location(place)
+
 
 
 # ========== ✅ Map Setup ==========
@@ -380,46 +379,103 @@ def process_sentinel1(start_date, end_date, roi, resolution):
     return processed_collection
 
 
-# ✅ Step 3: Mosaicking by Date for Streamlit
+# ✅ Step 3: Mosaicking by Date for Streamlit (UPDATED: keeps raw mask for coverage)
 def mosaic_by_date(collection, roi, start_date, end_date):
-    """Mosaics Sentinel-1 images captured on the same date to avoid duplicate acquisitions."""
+    """
+    Mosaics Sentinel-1 images captured on the same date to avoid duplicate acquisitions.
+
+    ✅ Update vs old version:
+    - DOES NOT clip() the mosaic here (to preserve the native mask for raw ROI coverage checks).
+    - Still sets system:time_start.
+    - You can clip later when creating thumbnails / visualization.
+    """
     if collection is None:
         st.error("❌ ERROR: No processed images available for mosaicking.")
         return None
 
     filtered_collection = collection.filterDate(start_date, end_date)
 
-    count = filtered_collection.size().getInfo()
-    if count == 0:
+    # Use safe getInfo wrapper if you already have ee_getinfo; otherwise keep getInfo()
+    try:
+        count = ee_getinfo(filtered_collection.size(), "Mosaic input count")
+    except Exception:
+        count = filtered_collection.size().getInfo()
+
+    if not count or count == 0:
         st.error("❌ ERROR: No images found after filtering for mosaicking.")
         return None
 
     # Extract unique dates as strings
     unique_dates = (
-        filtered_collection.aggregate_array('system:time_start')
-        .map(lambda t: ee.Date(t).format('YYYY-MM-dd'))
+        filtered_collection.aggregate_array("system:time_start")
+        .map(lambda t: ee.Date(t).format("YYYY-MM-dd"))
         .distinct()
     )
 
     def mosaic_same_day(date_str):
-        date = ee.Date.parse('YYYY-MM-dd', date_str)
+        date = ee.Date.parse("YYYY-MM-dd", date_str)
+
+        # IMPORTANT: no .clip(roi) here — keep mask for RAW coverage gate
         mosaic = (
             filtered_collection
-            .filterDate(date, date.advance(1, 'day'))
+            .filterDate(date, date.advance(1, "day"))
             .mosaic()
-            .clip(roi)
-            .set('system:time_start', date.millis())
+            .set("system:time_start", date.millis())
+            .set("date_str", date.format("YYYY-MM-dd"))
         )
         return mosaic
 
     mosaicked_collection = ee.ImageCollection(unique_dates.map(mosaic_same_day))
 
-    mosaicked_count = mosaicked_collection.size().getInfo()
-    if mosaicked_count == 0:
+    try:
+        mosaicked_count = ee_getinfo(mosaicked_collection.size(), "Mosaicked count")
+    except Exception:
+        mosaicked_count = mosaicked_collection.size().getInfo()
+
+    if not mosaicked_count or mosaicked_count == 0:
         st.error("❌ ERROR: No mosaicked images generated.")
         return None
 
     return mosaicked_collection
+
+
+
+MIN_RAW_ROI_COVERAGE = 0.50
+COVERAGE_BAND = "VH"  # or "VV" if that is always present
+
+def add_raw_roi_coverage(img, user_roi, resolution):
+    # valid pixels in ROI (based on band mask)
+    valid = img.select(COVERAGE_BAND).mask().reduceRegion(
+        reducer=ee.Reducer.sum(),
+        geometry=user_roi,
+        scale=resolution,
+        maxPixels=1e13,
+        bestEffort=True
+    ).values().get(0)
+
+    # total pixels in ROI (constant 1 image clipped to ROI)
+    total = ee.Image.constant(1).clip(user_roi).reduceRegion(
+        reducer=ee.Reducer.sum(),
+        geometry=user_roi,
+        scale=resolution,
+        maxPixels=1e13,
+        bestEffort=True
+    ).values().get(0)
+
+    cov = ee.Number(valid).divide(ee.Number(total)).clamp(0, 1)
+    return img.set({"roi_cov_raw": cov})
+
+# --- in submit_roi(), right after mosaicked_images is created ---
+mosaicked_images = mosaicked_images.map(lambda img: add_raw_roi_coverage(img, user_roi, resolution))
+mosaicked_images = mosaicked_images.filter(ee.Filter.gte("roi_cov_raw", MIN_RAW_ROI_COVERAGE))
+
+n_good = ee_getinfo(mosaicked_images.size(), "Raw ROI coverage filter (mosaics)")
+if n_good == 0:
+    st.error("❌ No mosaicked Sentinel-1 images cover at least 50% of the ROI (raw coverage).")
+    return
+
+
+
 
 
 # ✅ Step 4: SigmaDiff Computation for Streamlit
@@ -1115,8 +1171,9 @@ def submit_roi():
         st.error("❌ No Sentinel-1 images found for this ROI and season.")
         return
 
+
     # ==================================================
-    # Step 2 — Mosaic by date
+    # Step 2 — Mosaic by date (UPDATED: raw ROI coverage gate)
     # ==================================================
     mosaicked_images = mosaic_by_date(
         processed_images, user_roi, start_date, end_date
@@ -1125,13 +1182,32 @@ def submit_roi():
         st.warning("⚠️ Step failed: Mosaicking by date.")
         return
 
+    # --------------------------------------------------
+    # NEW: Add RAW ROI coverage (before any clipping)
+    # --------------------------------------------------
+    mosaicked_images = mosaicked_images.map(
+        lambda img: add_raw_roi_coverage(img, user_roi, resolution)
+    )
+
+    # Keep only images with ≥ 50% RAW ROI coverage
+    mosaicked_images = mosaicked_images.filter(
+        ee.Filter.gte("roi_cov_raw", MIN_RAW_ROI_COVERAGE)
+    )
+
+    # Check how many mosaics remain
     n_mosaic = ee_getinfo(
         mosaicked_images.size(),
-        "Mosaicked image count"
+        "Mosaicked images with ≥50% raw ROI coverage"
     )
+
     if n_mosaic < 2:
-        st.warning("⚠️ Not enough images to compute SigmaDiff (need ≥ 2 dates).")
+        st.error(
+            "❌ Not enough Sentinel-1 mosaics cover at least 50% of the ROI.\n"
+            "At least 2 dates are required to compute SigmaDiff.\n"
+            "Please adjust the ROI or date range."
+        )
         return
+ 
 
     # ==================================================
     # Step 3 — SigmaDiff
