@@ -1051,10 +1051,6 @@ if (
             st.success("✔️ Confirmation received. The pipeline will now start.")
 
 
-
-
-
-
 # ======================================
 # 🚀 Start Processing (ONE-TIME)
 # ======================================
@@ -1068,46 +1064,39 @@ if (
     with st.spinner("⏳ Running full Freeze–Thaw processing pipeline..."):
         submit_roi()
 
+    # Optional: prevent reruns after completion
+    # st.stop()
 
 
-# Footer Section (on the left side below the Submit ROI button)
+# ======================================
+# 📌 Sidebar Footer (CLEAN – NO GAP)
+# ======================================
 with st.sidebar:
-    # Footer information with extra space before "Submit ROI" button
+
     st.markdown(
         """
         <style>
         .footer-text {
-            font-size: 12px;  /* Adjust the font size */
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 10px;
         }
         </style>
+
         <div class="footer-text">
-        <br><br><br><br><br><br><br><br><br><br><br><br>
+        <strong>Developed by</strong>: Shahabeddin Taghipourjavi<br>
+        <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy<br>
+        <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR)<br>
+        <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3<br>
+        🔒 <strong>All rights reserved</strong> © 2025
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    # Footer details
-    st.markdown(
-        """
-        <style>
-        .footer-text {
-            font-size: 12px;  /* Adjust the font size */
-        }
-        </style>
-        <div class="footer-text">
-        <br><br>
-        <strong>Developed by</strong>: Shahabeddin Taghipourjavi <br>
-        <strong>Supervised by</strong>: Prof. Christophe Kinnard and Prof. Alexandre Roy <br>
-        <strong>Institution</strong>: Université du Québec à Trois-Rivières (UQTR) <br>
-        <strong>Address</strong>: 3351 Bd des Forges, Trois-Rivières, QC G8Z 4M3 <br>
-        🔒 <strong>All rights reserved</strong> © 2025 <br>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-   
-    # Create collapsible section for Contact Us at the end of the sidebar
+    # Contact section (unchanged, compact)
     with st.expander("📩 Contact Us", expanded=False):
         st.write("If you have any questions, please feel free to reach out!")
-        st.markdown("[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)")
+        st.markdown(
+            "[Click here to email us](mailto:Shahabeddin.taghipourjavi@uqtr.ca)"
+        )
