@@ -242,25 +242,62 @@ def add_search_bar(map_object):
 
 # ========== ✅ Map Setup ==========
 # Create the map centered at a location
-m = folium.Map(location=[46.29, -72.75], zoom_start=12, control_scale=True)
+m = folium.Map(
+    location=[46.29, -72.75],
+    zoom_start=12,
+    control_scale=True
+)
 
 # Add Satellite basemap (default)
-satellite_tile = folium.TileLayer(
-    tiles="Esri.WorldImagery", attr="Esri", name="Satellite", overlay=False, control=True
+folium.TileLayer(
+    tiles="Esri.WorldImagery",
+    attr="Esri",
+    name="Satellite",
+    overlay=False,
+    control=True
 ).add_to(m)
 
-# Add Layer control to switch between Satellite and OpenStreetMap
+# Add OpenStreetMap basemap (optional toggle)
+folium.TileLayer(
+    tiles="OpenStreetMap",
+    name="OpenStreetMap",
+    overlay=False,
+    control=True
+).add_to(m)
+
+# Add Layer control (top-right)
 folium.LayerControl(position="topright").add_to(m)
 
-# Add drawing control to the map
-draw = Draw(export=False)
+# ========== ✏️ Draw Control (RESTRICTED) ==========
+from folium.plugins import Draw
+
+draw = Draw(
+    export=False,
+    draw_options={
+        "polyline": False,     # ❌ disable
+        "marker": False,       # ❌ disable
+        "circlemarker": False, # ❌ disable
+        "polygon": True,       # ✅ keep
+        "rectangle": True,     # ✅ keep
+        "circle": True         # ✅ keep
+    },
+    edit_options={
+        "edit": True,          # ✏️ enable
+        "remove": True         # 🗑️ enable
+    }
+)
 draw.add_to(m)
 
-# Add the search bar (the user input field for place search)
+# Add the search bar (city / landmark search)
 add_search_bar(m)
 
-# ========== ✅ Render the map once with the updated location ==========
-output = st_folium(m, width=1300, height=450)  # Display map with updated location
+# ========== ✅ Render the map ==========
+output = st_folium(
+    m,
+    width=1300,
+    height=450
+)
+
 
 # ======================================
 # 🔒 Lock map after confirmation
