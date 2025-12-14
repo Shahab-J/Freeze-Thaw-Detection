@@ -988,23 +988,24 @@ def submit_roi():
 
 
 
-
 # ========== ✅ Submit ROI Handler (SIDEBAR) ==========
 if submit:
 
-    if output and "all_drawings" in output and len(output["all_drawings"]) > 0:
+    if (
+        isinstance(output, dict)
+        and output.get("all_drawings")
+        and len(output.get("all_drawings", [])) > 0
+    ):
 
         last_feature = output["all_drawings"][-1]
         roi_geojson = last_feature["geometry"]
 
-        # Store inputs ONLY (no processing yet)
         st.session_state.user_roi = ee.Geometry(roi_geojson)
         st.session_state.start_date = start_date
         st.session_state.end_date = end_date
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
 
-        # Reset states
         st.session_state.roi_confirmed = False
         st.session_state.processing_started = False
 
@@ -1015,6 +1016,7 @@ if submit:
 
     else:
         st.sidebar.warning("⚠️ Please draw an ROI before submitting.")
+
 
 
 # ======================================
