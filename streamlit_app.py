@@ -1165,9 +1165,9 @@ if "user_roi" in st.session_state and st.session_state.user_roi is not None:
         <style>
         /* Highlight ONLY the Submit ROI button */
         div.stButton > button {
-            background-color: #ffe6e6 !important;
-            color: #a30000 !important;
-            border: 1px solid #ff9999 !important;
+            background-color: #e6f4ea !important;
+            color: #0f5132  !important;
+            border: 1px solid #9fd3b8 !important;
             font-weight: 600;
         }
         </style>
