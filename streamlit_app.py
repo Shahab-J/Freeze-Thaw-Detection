@@ -554,52 +554,34 @@ def assign_freeze_thaw_k(collection):
 
 # ✅ Step 7: ThawRef Calculation for Streamlit
 def compute_thaw_ref_pixelwise(collection, start_year, user_roi):
-    """
-    Computes the ThawRef image for each pixel as the average of the top 3 VH_corrected values
-    during Fall and Spring periods.
-
-    Args:
-        collection (ee.ImageCollection): Must contain 'VH_corrected' band.
-        start_year (int): Processing start year.
-        user_roi (ee.Geometry): Region of interest selected by the user.
-
-    Returns:
-        ee.Image: An image with the 'ThawRef' band.
-    """
-
     if collection is None:
         st.error("❌ ERROR: Input collection is None.")
         return None
-    
-        st.error("❌ ERROR: Input collection is empty or undefined.")
-        return None
 
-    # Define date windows
     fall_start = f'{start_year}-10-01'
     fall_end = f'{start_year}-11-30'
     spring_start = f'{start_year+1}-04-15'
     spring_end = f'{start_year+1}-06-10'
 
-    # Filter images
     fall_collection = collection.filterDate(fall_start, fall_end)
     spring_collection = collection.filterDate(spring_start, spring_end)
-
     combined_collection = fall_collection.merge(spring_collection)
 
-    # Ensure collection is not empty
-    if combined_collection.size().getInfo() == 0:
-        st.error("❌ No images found in Fall and Spring periods for ThawRef.")
+    # ✅ Safe size check
+    combined_count = ee_getinfo(
+        combined_collection.size(),
+        "ThawRef: Fall + Spring image count"
+    )
+    if combined_count == 0:
+        st.error("❌ No images found in Fall and Spring periods for ThawRef. "
+                 "Try a larger ROI or disable cropland clipping.")
         return None
 
-    # Clip images and sort by VH_corrected descending
     combined_clipped = combined_collection.map(lambda img: img.clip(user_roi))
     sorted_by_vh = combined_clipped.sort('VH_corrected', False)
-
-    # Limit to top 3 and compute mean
     top3 = sorted_by_vh.limit(3)
-    thaw_ref = top3.mean().select('VH_corrected').rename('ThawRef')
 
-#   st.success("✅ ThawRef Calculation complete.")
+    thaw_ref = top3.mean().select('VH_corrected').rename('ThawRef')
     return thaw_ref
 
 
