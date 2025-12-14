@@ -1232,10 +1232,22 @@ if (
 
     st.session_state.processing_started = True
 
-    # 🔵 Highly visible operator status (STRONG visual cue)
+    # 🔵 Animated, highly visible operator status (PLACE IT HERE)
     status_box = st.empty()
     status_box.markdown(
         """
+        <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spinner-icon {
+            display: inline-block;
+            font-size: 32px;
+            animation: spin 1.2s linear infinite;
+        }
+        </style>
+
         <div style="
             background-color:#E3F2FD;
             border-left:8px solid #1565C0;
@@ -1249,7 +1261,7 @@ if (
             gap:16px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
         ">
-            <span style="font-size:32px;">🔄</span>
+            <span class="spinner-icon">⟳</span>
             <span>
                 <b>Processing in progress</b><br>
                 Running the full <b>Freeze–Thaw pipeline</b><br>
@@ -1260,11 +1272,11 @@ if (
         unsafe_allow_html=True
     )
 
-    # 🔒 Actual processing lock (spinner stays for backend)
+    # 🔒 Backend execution lock (spinner stays)
     with st.spinner("Running full Freeze–Thaw processing pipeline…"):
         submit_roi()
 
-    # 🟢 Update when finished
+    # 🟢 Update UI when finished
     status_box.markdown(
         """
         <div style="
