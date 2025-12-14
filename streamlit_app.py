@@ -821,7 +821,7 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 # ✅ Step 12: Visualize FT Classification for Streamlit
-def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
+def visualize_ft_classification(collection, user_roi, resolution, max_pixels=None):
     import tempfile
     import base64
     from PIL import Image
@@ -831,7 +831,9 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
         st.error("❌ No classification results available for visualization.")
         return
 
-    # Convert collection to list
+    # --------------------------------------------------
+    # Collection size
+    # --------------------------------------------------
     num_images = ee_getinfo(collection.size(), "Visualization image count")
     if num_images == 0:
         st.warning("⚠️ No images available for the selected date range.")
@@ -847,6 +849,31 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
         "and the total for the selected date range."
     )
 
+    # --------------------------------------------------
+    # Compute TOTAL number of pixels in ROI (ONCE)
+    # --------------------------------------------------
+    roi_pixel_count = ee_getinfo(
+        ee.Image.constant(1)
+        .clip(user_roi)
+        .reduceRegion(
+            reducer=ee.Reducer.count(),
+            geometry=user_roi,
+            scale=resolution,
+            maxPixels=1e13,
+            bestEffort=True
+        )
+        .values()
+        .get(0),
+        "Total ROI pixel count"
+    )
+
+    if roi_pixel_count == 0:
+        st.error("❌ ROI contains no valid pixels at this resolution.")
+        return
+
+    # --------------------------------------------------
+    # Display results
+    # --------------------------------------------------
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
             f"🖼️ Total images from <u>{start_date_str}</u> to "
@@ -864,7 +891,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                 )
 
                 # --------------------------------------------------
-                # Compute pixel stats + ROI coverage (SAFE)
+                # Pixel statistics (SAFE)
                 # --------------------------------------------------
                 stats = img.select("FT_State").reduceRegion(
                     reducer=ee.Reducer.frequencyHistogram(),
@@ -884,11 +911,13 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                 frozen = int(hist.get("1", 0))
                 valid_pixels = thawed + frozen
 
-                roi_coverage = valid_pixels / max_pixels if max_pixels > 0 else 0
+                # --------------------------------------------------
+                # ROI coverage (CORRECT)
+                # --------------------------------------------------
+                roi_coverage = valid_pixels / roi_pixel_count
+                roi_coverage = min(roi_coverage, 1.0)  # safety clamp
 
-                # --------------------------------------------------
-                # Coverage filter (≥ 50%)
-                # --------------------------------------------------
+                # Coverage filter
                 if roi_coverage < MIN_ROI_COVERAGE:
                     st.info(
                         f"ℹ️ {timestamp} skipped — ROI coverage "
@@ -898,7 +927,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                     continue
 
                 # --------------------------------------------------
-                # Thumbnail visualization (lightweight)
+                # Thumbnail visualization
                 # --------------------------------------------------
                 thumb_img = (
                     img.select("FT_State")
@@ -914,7 +943,11 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                 })
 
                 image = Image.open(urllib.request.urlopen(url))
-                st.image(image, caption=f"🗓️ {timestamp}", use_container_width=True)
+                st.image(
+                    image,
+                    caption=f"🗓️ {timestamp}",
+                    use_container_width=True
+                )
 
                 # --------------------------------------------------
                 # Download TIFF
@@ -930,7 +963,7 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                         st.markdown(href, unsafe_allow_html=True)
 
                 # --------------------------------------------------
-                # Stats display
+                # Display statistics
                 # --------------------------------------------------
                 total = thawed + frozen
                 thawed_pct = (thawed / total) * 100 if total > 0 else 0
@@ -948,7 +981,6 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
 
             except Exception as e:
                 st.warning(f"⚠️ Error displaying image {i + 1}: {e}")
-
 
 # ========== ✅ Step 13: Submit ROI and Processing Pipeline ==========
 def submit_roi():
