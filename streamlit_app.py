@@ -253,28 +253,31 @@ m = folium.Map(
     location=[46.29, -72.75],
     zoom_start=12,
     control_scale=True,
-    tiles=None   # 🚨 IMPORTANT: disables default OpenStreetMap
+    tiles=None  # disable Folium default OpenStreetMap
 )
 
-# ✅ Add Satellite FIRST (this becomes the default visible layer)
+# 🛰️ Satellite (FORCED default)
 folium.TileLayer(
     tiles="Esri.WorldImagery",
     attr="Esri",
     name="Satellite",
     overlay=False,
-    control=True
+    control=True,
+    show=True        # ✅ FORCE visible on load
 ).add_to(m)
 
-# ✅ Add OpenStreetMap as optional switch
+# 🗺️ OpenStreetMap (hidden by default)
 folium.TileLayer(
     tiles="OpenStreetMap",
     name="OpenStreetMap",
     overlay=False,
-    control=True
+    control=True,
+    show=False       # ✅ NOT visible on load
 ).add_to(m)
 
-# Layer control (top-right)
-folium.LayerControl(position="topright").add_to(m)
+# Layer control
+folium.LayerControl(position="topright", collapsed=False).add_to(m)
+
 
 
 # ========== ✏️ Draw Control (RESTRICTED) ==========
