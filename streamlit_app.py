@@ -430,7 +430,7 @@ def mosaic_by_date(collection, roi, start_date, end_date):
 # ============================
 # Raw ROI coverage utilities
 # ============================
-MIN_RAW_ROI_COVERAGE = 0.50
+MIN_RAW_ROI_COVERAGE = 0.20
 COVERAGE_BAND = "VH"  # or "VV" if always present
 
 def add_raw_roi_coverage(img, user_roi, resolution):
