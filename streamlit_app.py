@@ -1143,6 +1143,7 @@ if submit:
         st.session_state.resolution = resolution
         st.session_state.clip_to_agriculture = clip_to_agri
 
+        # Reset downstream states
         st.session_state.roi_confirmed = False
         st.session_state.processing_started = False
 
@@ -1154,6 +1155,25 @@ if submit:
     else:
         st.sidebar.warning("⚠️ Please draw an ROI before submitting.")
 
+
+# ======================================
+# 🎨 Highlight Step 1 button AFTER ROI stored
+# ======================================
+if "user_roi" in st.session_state and st.session_state.user_roi is not None:
+    st.markdown(
+        """
+        <style>
+        /* Highlight ONLY the Submit ROI button */
+        div.stButton > button {
+            background-color: #ffe6e6 !important;
+            color: #a30000 !important;
+            border: 1px solid #ff9999 !important;
+            font-weight: 600;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 # ======================================
@@ -1167,6 +1187,22 @@ if (
 
     with st.sidebar:
         st.markdown("---")
+
+        # 🎨 Highlight Step 2 area UNTIL confirmed
+        st.markdown(
+            """
+            <style>
+            section[data-testid="stCheckbox"] {
+                background-color: #fff0f0;
+                border: 1px solid #ff9999;
+                padding: 10px;
+                border-radius: 6px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
         st.markdown("### 👉 Step 2: Confirm Before Processing")
 
         st.warning("""
@@ -1188,6 +1224,7 @@ if (
         if confirm:
             st.session_state.roi_confirmed = True
             st.success("✔️ Confirmation received. The pipeline will now start.")
+
 
 
 # ======================================
