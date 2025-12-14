@@ -828,42 +828,82 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
     import urllib.request
 
     if collection is None:
-        st.error("❌ ERROR: Input collection is None.")
-        return None
-    
         st.error("❌ No classification results available for visualization.")
         return
 
-    image_list = collection.toList(collection.size())
-    num_images = collection.size().getInfo()
+    # Convert collection to list
+    num_images = ee_getinfo(collection.size(), "Visualization image count")
+    if num_images == 0:
+        st.warning("⚠️ No images available for the selected date range.")
+        return
 
-    # Get start and end dates from user input
+    image_list = collection.toList(num_images)
+
     start_date_str = st.session_state.start_date.strftime("%Y-%m-%d")
     end_date_str = st.session_state.end_date.strftime("%Y-%m-%d")
 
-
-# Display the total number of images for the selected date range
     st.markdown(
-    "🔽 Open the dropdown below to view all classified images and the total for the selected date range."
+        "🔽 Open the dropdown below to view all classified images "
+        "and the total for the selected date range."
     )
+
     with st.expander("🧊 View All Freeze–Thaw Results", expanded=False):
         st.markdown(
-            f"🖼️ Total Images for visualization during the selected date range from "
-            f"<u>{start_date_str}</u> to <u>{end_date_str}</u>: <b><span style='font-size: 30px'>{num_images}</span></b> FT classified images.",
+            f"🖼️ Total images from <u>{start_date_str}</u> to "
+            f"<u>{end_date_str}</u>: "
+            f"<b><span style='font-size:30px'>{num_images}</span></b>",
             unsafe_allow_html=True
         )
 
-    # Continue with the rest of the logic (image processing, visualization, etc.)
-        # Loop through the images and display results
         for i in range(num_images):
             try:
                 img = ee.Image(image_list.get(i))
-                timestamp = img.date().format("YYYY-MM-dd").getInfo()
+                timestamp = ee_getinfo(
+                    img.date().format("YYYY-MM-dd"),
+                    "Image timestamp"
+                )
 
-                # Generate the image URL for display
+                # --------------------------------------------------
+                # Compute pixel stats + ROI coverage (SAFE)
+                # --------------------------------------------------
+                stats = img.select("FT_State").reduceRegion(
+                    reducer=ee.Reducer.frequencyHistogram(),
+                    geometry=user_roi,
+                    scale=resolution,
+                    maxPixels=1e13,
+                    bestEffort=True
+                )
+
+                stats_dict = ee_getinfo(stats, f"Stats for {timestamp}")
+                if not stats_dict or "FT_State" not in stats_dict:
+                    st.info(f"ℹ️ {timestamp} skipped — no valid pixels in ROI.")
+                    continue
+
+                hist = stats_dict["FT_State"]
+                thawed = int(hist.get("0", 0))
+                frozen = int(hist.get("1", 0))
+                valid_pixels = thawed + frozen
+
+                roi_coverage = valid_pixels / max_pixels if max_pixels > 0 else 0
+
+                # --------------------------------------------------
+                # Coverage filter (≥ 50%)
+                # --------------------------------------------------
+                if roi_coverage < MIN_ROI_COVERAGE:
+                    st.info(
+                        f"ℹ️ {timestamp} skipped — ROI coverage "
+                        f"{roi_coverage:.0%} "
+                        f"(minimum {MIN_ROI_COVERAGE:.0%})"
+                    )
+                    continue
+
+                # --------------------------------------------------
+                # Thumbnail visualization (lightweight)
+                # --------------------------------------------------
                 thumb_img = (
                     img.select("FT_State")
-                   .clipToBoundsAndScale(geometry=user_roi, scale=max(60, resolution))  # ✅ lighter
+                    .clip(user_roi)
+                    .reproject(crs="EPSG:4326", scale=max(60, resolution))
                 )
 
                 url = thumb_img.getThumbURL({
@@ -872,78 +912,42 @@ def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
                     "dimensions": 768,
                     "palette": ["red", "blue"]
                 })
-                
 
-                # Load the image into Streamlit
                 image = Image.open(urllib.request.urlopen(url))
                 st.image(image, caption=f"🗓️ {timestamp}", use_container_width=True)
 
-                # Save TIFF file and provide a download link
+                # --------------------------------------------------
+                # Download TIFF
+                # --------------------------------------------------
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
                     image.save(tmp.name)
                     with open(tmp.name, "rb") as file:
                         b64 = base64.b64encode(file.read()).decode()
-                        href = f'<a href="data:file/tif;base64,{b64}" download="FT_{timestamp}.tif">📥 Download TIFF</a>'
+                        href = (
+                            f'<a href="data:file/tif;base64,{b64}" '
+                            f'download="FT_{timestamp}.tif">📥 Download TIFF</a>'
+                        )
                         st.markdown(href, unsafe_allow_html=True)
 
-                # Compute Pixel Stats
-                stats_scale = max(120, resolution * 4)
-               # ----------------------------------------
-               # Compute Pixel Stats (safe) + ROI coverage
-               # ----------------------------------------
-               stats = img.select("FT_State").reduceRegion(
-                   reducer=ee.Reducer.frequencyHistogram(),
-                   geometry=user_roi,
-                   scale=resolution,
-                   maxPixels=1e13,
-                   bestEffort=True
-               )
-
-               stats_dict = ee_getinfo(stats, f"Stats for {timestamp}")
-               if not stats_dict or "FT_State" not in stats_dict:
-                   st.info(f"ℹ️ {timestamp} skipped — no valid pixels in ROI.")
-                   continue
-
-               hist = stats_dict["FT_State"]
-
-               thawed = int(hist.get("0", 0))
-               frozen = int(hist.get("1", 0))
-               valid_pixels = thawed + frozen
-
-               roi_coverage = valid_pixels / max_pixels if max_pixels > 0 else 0
-
-               # ✅ Coverage filter
-               if roi_coverage < MIN_ROI_COVERAGE:
-                   st.info(
-                       f"ℹ️ {timestamp} skipped — ROI coverage {roi_coverage:.0%} "
-                       f"(minimum: {MIN_ROI_COVERAGE:.0%})"
-                   )
-                   continue
-
-
-
-                # Extract histogram data
-                hist = stats.get("FT_State", {})
-                thawed = int(hist.get("0", 0))  # Thawed pixels
-                frozen = int(hist.get("1", 0))  # Frozen pixels
+                # --------------------------------------------------
+                # Stats display
+                # --------------------------------------------------
                 total = thawed + frozen
                 thawed_pct = (thawed / total) * 100 if total > 0 else 0
                 frozen_pct = (frozen / total) * 100 if total > 0 else 0
 
-                # Display updated stats with colored squares for Frozen and Thawed and Resolution
                 st.markdown(
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
-                    f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
-                    f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%  \n"
-                    f"📊 ROI Coverage: **{roi_coverage:.0%}**"
-                    f"📏 Resolution: **{resolution} meters**"
+                    f"🟦 Frozen: **{frozen} pixels** ({frozen_pct:.1f}%)  \n"
+                    f"🟥 Thawed: **{thawed} pixels** ({thawed_pct:.1f}%)  \n"
+                    f"📊 ROI Coverage: **{roi_coverage:.0%}**  \n"
+                    f"📏 Resolution: **{resolution} m**"
                 )
+
                 st.divider()
 
             except Exception as e:
-                st.warning(f"⚠️ Error displaying image {i+1}: {e}")
-
-
+                st.warning(f"⚠️ Error displaying image {i + 1}: {e}")
 
 
 # ========== ✅ Step 13: Submit ROI and Processing Pipeline ==========
