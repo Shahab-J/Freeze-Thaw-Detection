@@ -439,7 +439,6 @@ def mosaic_by_date(collection, roi, start_date, end_date):
     return mosaicked_collection
 
 
-
 MIN_RAW_ROI_COVERAGE = 0.50
 COVERAGE_BAND = "VH"  # or "VV" if that is always present
 
@@ -464,18 +463,6 @@ def add_raw_roi_coverage(img, user_roi, resolution):
 
     cov = ee.Number(valid).divide(ee.Number(total)).clamp(0, 1)
     return img.set({"roi_cov_raw": cov})
-
-# --- in submit_roi(), right after mosaicked_images is created ---
-mosaicked_images = mosaicked_images.map(lambda img: add_raw_roi_coverage(img, user_roi, resolution))
-mosaicked_images = mosaicked_images.filter(ee.Filter.gte("roi_cov_raw", MIN_RAW_ROI_COVERAGE))
-
-n_good = ee_getinfo(mosaicked_images.size(), "Raw ROI coverage filter (mosaics)")
-if n_good == 0:
-    st.error("❌ No mosaicked Sentinel-1 images cover at least 50% of the ROI (raw coverage).")
-    return
-
-
-
 
 
 # ✅ Step 4: SigmaDiff Computation for Streamlit
