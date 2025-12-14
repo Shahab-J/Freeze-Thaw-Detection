@@ -81,7 +81,6 @@ inject_clean_background("https://raw.githubusercontent.com/Shahab-J/Freeze-Thaw-
 
 
 
-
 # ✅ Step 1: Setup
 # ========== ✅ Title and Setup ===================
 st.title("🧊 Soil Freeze–Thaw Mapping Tool")
@@ -163,6 +162,7 @@ with st.sidebar.expander("📘 How to Use the Tool", expanded=False):
 
 
 
+MIN_ROI_COVERAGE = 0.50  # 50%
                                                                       
 st.sidebar.title("Set Parameters")
 def_start = date(2023, 10, 1)
@@ -821,7 +821,7 @@ def summarize_ft_classification(collection, user_roi, resolution):
 
 
 # ✅ Step 12: Visualize FT Classification for Streamlit
-def visualize_ft_classification(collection, user_roi, resolution):
+def visualize_ft_classification(collection, user_roi, resolution, max_pixels):
     import tempfile
     import base64
     from PIL import Image
@@ -888,15 +888,38 @@ def visualize_ft_classification(collection, user_roi, resolution):
 
                 # Compute Pixel Stats
                 stats_scale = max(120, resolution * 4)
+               # ----------------------------------------
+               # Compute Pixel Stats (safe) + ROI coverage
+               # ----------------------------------------
+               stats = img.select("FT_State").reduceRegion(
+                   reducer=ee.Reducer.frequencyHistogram(),
+                   geometry=user_roi,
+                   scale=resolution,
+                   maxPixels=1e13,
+                   bestEffort=True
+               )
 
-                stats = img.select("FT_State").reduceRegion(
-                    reducer=ee.Reducer.frequencyHistogram(),
-                    geometry=user_roi,
-                    scale=stats_scale,
-                    maxPixels=1e13,
-                    bestEffort=True,   # ✅ lets EE auto-adjust internally
-                    tileScale=4        # ✅ reduces memory pressure
-               ).getInfo()
+               stats_dict = ee_getinfo(stats, f"Stats for {timestamp}")
+               if not stats_dict or "FT_State" not in stats_dict:
+                   st.info(f"ℹ️ {timestamp} skipped — no valid pixels in ROI.")
+                   continue
+
+               hist = stats_dict["FT_State"]
+
+               thawed = int(hist.get("0", 0))
+               frozen = int(hist.get("1", 0))
+               valid_pixels = thawed + frozen
+
+               roi_coverage = valid_pixels / max_pixels if max_pixels > 0 else 0
+
+               # ✅ Coverage filter
+               if roi_coverage < MIN_ROI_COVERAGE:
+                   st.info(
+                       f"ℹ️ {timestamp} skipped — ROI coverage {roi_coverage:.0%} "
+                       f"(minimum: {MIN_ROI_COVERAGE:.0%})"
+                   )
+                   continue
+
 
 
                 # Extract histogram data
@@ -912,6 +935,7 @@ def visualize_ft_classification(collection, user_roi, resolution):
                     f"**🧊 Freeze–Thaw Stats for {timestamp}**  \n"
                     f"🟦 Frozen: **{frozen} pixels** | {frozen_pct:.1f}%  \n"
                     f"🟥 Thawed: **{thawed} pixels** | {thawed_pct:.1f}%  \n"
+                    f"📊 ROI Coverage: **{roi_coverage:.0%}**"
                     f"📏 Resolution: **{resolution} meters**"
                 )
                 st.divider()
@@ -957,6 +981,23 @@ def submit_roi():
 
     start_date = f"{start_year}-10-01"
     end_date = f"{start_year+1}-06-30"
+
+
+    # ----------------------------------------
+    # Compute theoretical max pixel count in ROI (for ROI coverage)
+    # ----------------------------------------
+    roi_area = user_roi.area()  # m²
+    pixel_area = resolution * resolution  # m²
+
+    max_pixels = ee_getinfo(
+        roi_area.divide(pixel_area),
+        "ROI max pixel count"
+    )
+
+    if not max_pixels or max_pixels == 0:
+        st.error("❌ ROI area too small for selected resolution.")
+        return
+
 
     # ==================================================
     # Step 1 — Sentinel-1 processing
@@ -1111,7 +1152,7 @@ def submit_roi():
         user_selected_start, user_selected_end
     )
     visualize_ft_classification(
-        classified_collection_visual, user_roi, resolution
+        classified_collection_visual, user_roi, resolution, max_pixels
     )
 
     st.success("✅ Full Freeze–Thaw pipeline finished successfully.")
