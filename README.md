@@ -19,10 +19,15 @@ The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for dete
 
 ## 🚀 How to Run
 
-1. Open the notebook in **Google Colab**
-2. Authenticate with your **Google Earth Engine** account
-3. Draw your ROI and press **Submit**
-4. Visualize the FT classification results
+🌐 Open the web app: https://freeze-thaw-detection-kmpqcuusaqtf5ypu5h3vyg.streamlit.app/
+
+- Draw your Region of Interest (ROI) on the map using the pentagon icon
+- Click “Submit ROI” in the left sidebar
+- Click “Confirm before processing” to acknowledge the processing conditions
+- The processing pipeline starts automatically
+- Do not interact with the map during processing — wait until execution is completed
+- Visualize freeze–thaw classification results
+- Export outputs as GeoTIFF
 
 ## 🛠 Requirements
 
