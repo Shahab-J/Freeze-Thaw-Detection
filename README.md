@@ -25,8 +25,8 @@ The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for dete
 - Click “Submit ROI” in the left sidebar
 - Click “Confirm before processing” to acknowledge the processing conditions
 - The processing pipeline starts automatically
-- Do not interact with the map during processing — wait until execution is completed
-- Visualize freeze–thaw classification results
+- Do not interact with the map during processing — wait until you see “View All Freeze–Thaw Results”
+- Click “View All Freeze–Thaw Results” to display the available FT classified images in chronological order
 - Export outputs as GeoTIFF
 
 ## 🛠 Requirements
