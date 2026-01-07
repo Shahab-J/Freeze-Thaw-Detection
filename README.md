@@ -11,7 +11,7 @@ The Freeze-Thaw Mapping Tool offers an interactive and modular pipeline for dete
 - 🌱 Cropland, Grasslands, and Barren Lands Filter Option: Provides the option to restrict analysis to clip results to cropland, grasslands, and barren lands (Class 9: Tropical/Sub-tropical grasslands, Class 10: Temperate/Sub-polar grasslands, Class 15: Cropland, Class 16: Barren lands), based on the 2020 NALCMS dataset at 30m resolution (https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2020_REL_NALCMS).
 - 🧩 User-defined spatial resolution: Supports output resolutions of 10 m, 30 m, or 100 m to match user needs and computational resources.
 - ⚙️ EFTA computation: Implements the Exponential Freeze–Thaw Algorithm (EFTA) using Sentinel-1 VH backscatter for enhanced transition detection (Refer to: https://doi.org/10.3390/rs16071294).
-- 🌐 Random Forest classification: Applies a pre-trained Random Forest (RF) model to classify each image pixel as either Frozen (1) or Thawed (0).
+- 🌐 Random Forest classification: Applies a pre-trained Random Forest (RF) model to classify each image pixel as either Frozen (1) or Thawed (0). Ref: https://www.frontiersin.org/journals/remote-sensing/articles/10.3389/frsen.2025.1728399/abstract
 - 📊 Multi-image visualization: Displays classified results in organized image panels with date labels and a freeze-thaw color legend.
 - 📉 Statistical reporting: Generates pixel-based summaries of class frequency (frozen vs. thawed) for each output image, including percentages and spatial resolution context.
 - 💾 Export capability: Allows downloading classified outputs as GeoTIFF for GIS analysis or JPG/PNG for documentation and presentations.
